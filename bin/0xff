@@ -1,0 +1,71 @@
+#!/usr/bin/ruby
+#
+# Copyright (c) 2018,2019 zhtlab
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+
+require         'rubygems'
+require         'optparse'
+
+VERSION         = "201809180"
+
+$c = 0xff
+
+
+def ShowHelp
+  print "print charachter\n";
+  print "  options:\n";
+  print "    -c [val]:        charachter\n";
+  print "    -v:              version\n";
+  print "    -h:              help\n";
+  exit(0);
+end
+
+
+def GetParam
+  opt = OptionParser.new
+
+  opt.on('-c VAL')           { |v| $c      = v.hex}
+  opt.on('-v')               { print VERSION+"\n"; exit }
+  opt.on('-h')               { ShowHelp(); exit }
+
+  opt.parse!(ARGV)
+
+  rescue
+    ShowHelp()
+  exit(1)
+end
+
+
+def main
+  GetParam()
+
+  while true
+    begin
+      putc $c
+    rescue
+      break
+    end
+  end
+end
+
+
+main()
