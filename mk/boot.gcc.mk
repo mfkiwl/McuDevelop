@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 zhtlab
+# Copyright (c) 2018,2019 zhtlab
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files
@@ -30,7 +30,7 @@ LSTFLAGS	= -Wa,-a,-ad,-alms=$(OBJDIR)/$(notdir $(<:.c=.lst))
 CFLAGS_DEV	= -g -Os -mthumb -mcpu=$(CPU_CORTEX_ARCH) -mlittle-endian \
 		-ffunction-sections -fdata-sections
 
-ASFLAGS		= -acdghlmns=${@:.o=.lst}
+ASFLAGS		= -acdghlmns=${@:.o=.lst} --defsym TARGETCODE=$(TARGETCODE)
 
 LDCONFIG	= ../target/$(DEVICE_TYPE)/$(TARGET)/$(TARGET).ld
 
