@@ -27,16 +27,16 @@
 MK_DIR		= $(CONFIG_ROOTDIR)/../mk
 TMPDIR		= /tmp
 OBJDIR		= obj/$(DEVICE_TYPE)_$(ENV_CC)/$(TARGET)
-DEVICE_DIR	= $(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/$(TARGET)
-COMMON_DIR	= $(CONFIG_ROOTDIR)/../boot/common
-PRINTF_DIR	= $(CONFIG_ROOTDIR)/../boot/lib/printf-MarcoPaland
+DEVICE_DIR	= $(CONFIG_ROOTDIR)/../target/$(DEVICE_TYPE)/$(TARGET)
+COMMON_DIR	= $(CONFIG_ROOTDIR)/../lib/common
+PRINTF_DIR	= $(CONFIG_ROOTDIR)/../lib/printf-MarcoPaland
 
 
 ######################################################
 # include
 #
 include		../config
-include		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/config
+include		../target/$(DEVICE_TYPE)/config
 include		$(MK_DIR)/cortex-m.mk
 
 
@@ -73,7 +73,8 @@ endif
 ######################################################
 # sources
 #
-include		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/$(TARGET)/sources.mk
+#include		$(CONFIG_ROOTDIR)/../target/$(DEVICE_TYPE)/$(TARGET)/sources.mk
+include		../target/$(DEVICE_TYPE)/$(TARGET)/sources.mk
 vpath		%.c $(sort $(dir $(SOURCES)))
 vpath		%.s $(sort $(dir $(SOURCESASM)))
 
@@ -86,7 +87,7 @@ LDFLAGS		= $(LDFLAGS_CFG) $(LDFLAGS_SEC)  $(LDFLAGS_MAP)
 
 DEPENDS		= $(OBJS:.o=.d)
 
-include		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/$(TARGET)/sources.mk
+include		../target/$(DEVICE_TYPE)/$(TARGET)/sources.mk
 
 ######################################################
 # tool definitions
