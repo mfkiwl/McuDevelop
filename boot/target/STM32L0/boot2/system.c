@@ -54,8 +54,8 @@ void
 SystemInit(void)
 {
 
-  extern uint32_t       __vector_table[];
-  SCB->VTOR = (uint32_t)__vector_table;
+  extern uint32_t       __VECTOR_TABLE[];
+  SCB->VTOR = (uint32_t)__VECTOR_TABLE;
 
   /**************************************************
    * clock change and gate control

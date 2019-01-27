@@ -100,7 +100,7 @@ SECTIONS
 
   __etext = .;    /* define a global symbol at end of code */
   __DATA_ROM = .; /* Symbol is used by startup for data initialization */
-  __data_rom__ = .;
+  sectDataRom = .;
 
 
   __VECTOR_RAM = DEFINED(__ram_vector_table__) ? __VECTOR_RAM__ : ORIGIN(FLASH_INTERRUPTS);
@@ -109,29 +109,27 @@ SECTIONS
   .data : AT(__DATA_ROM) {
     . = ALIGN(4);
     __DATA_RAM = .;
-    __data_start__ = .;      /* create a global symbol at data start */
+    sectDataStart = .;       /* create a global symbol at data start */
     *(.data)                 /* .data sections */
     *(.data*)                /* .data* sections */
     KEEP(*(.jcr*))
     . = ALIGN(4);
-    __data_end__ = .;        /* define a global symbol at data end */
+    sectDataEnd = .;        /* define a global symbol at data end */
   } > RAM_DATA
 
-  __DATA_END = __DATA_ROM + (__data_end__ - __data_start__);
-  __TEXTDATA_SIZE = __DATA_END - __VECTOR_TABLE;
+  __DATA_END = __DATA_ROM + (sectDataEnd - sectDataStart);
+  sectTextDataSize = __DATA_END - __VECTOR_TABLE;
 
   /* Uninitialized data section */
   .bss : {
     /* This is used by the startup in order to initialize the .bss section */
     . = ALIGN(4);
-    __START_BSS = .;
-    __bss_start__ = .;
+    sectBssStart = .;
     *(.bss)
     *(.bss*)
     *(COMMON)
     . = ALIGN(4);
-    __bss_end__ = .;
-    __END_BSS = .;
+    sectBssEnd = .;
   } > RAM_DATA
 
   .heap : {
@@ -149,9 +147,9 @@ SECTIONS
   } > RAM_DATA
 
   /* Initializes stack on the end of block */
-  __StackTop   = ORIGIN(RAM_DATA) + LENGTH(RAM_DATA);
-  __StackLimit = __StackTop - szStack;
-  PROVIDE(__stack = __StackTop);
+  sectStackTop = ORIGIN(RAM_DATA) + LENGTH(RAM_DATA);
+  __StackLimit = sectStackTop - szStack;
+  PROVIDE(__stack = sectStackTop);
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 

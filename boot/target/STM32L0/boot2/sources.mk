@@ -23,15 +23,15 @@
 
 SOURCESASM	= $(COMMON_DIR)/start_gcc.s
 SOURCES		= \
-		$(CONFIG_ROOTDIR)/../boot/boot2/main.c \
-		$(CONFIG_ROOTDIR)/../boot/boot2/peri.c \
-		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/boot2/system.c \
-		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/boot2/update.c \
-		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/boot2/periI2c.c \
-		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/boot2/periUart.c \
-		$(CONFIG_ROOTDIR)/../boot/common/string_gcc.c \
-		$(CONFIG_ROOTDIR)/../boot/common/crc32.c \
-		$(CONFIG_ROOTDIR)/../boot/common/fifo.c
+		$(CONFIG_ROOTDIR)/../boot/$(TARGET)/main.c \
+		$(CONFIG_ROOTDIR)/../boot/$(TARGET)/peri.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/system.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/update.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/periI2c.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/periUart.c \
+		$(COMMON_DIR)/string_gcc.c \
+		$(COMMON_DIR)/crc32.c \
+		$(COMMON_DIR)/fifo.c
 
 
 DEFINES		= -DCPU_$(DEVICE_NAME) -D$(DEVICE_NAME) \
@@ -40,15 +40,13 @@ DEFINES		= -DCPU_$(DEVICE_NAME) -D$(DEVICE_NAME) \
 		-D$(COMPILER)=1
 
 INCDIRS		= -I obj/$(DEVICE_TYPE)_$(ENV_CC) \
-		-I $(CONFIG_ROOTDIR)/../boot/$(TARGET) \
 		-I include \
 		-I $(COMMON_DIR) \
-		-I $(CONFIG_ROOTDIR)/../boot/../CMSIS/Include \
+		-I ../$(TARGET) \
+		-I ../target/$(DEVICE_TYPE)/$(TARGET) \
+		-I ../target/$(VENDOR_SERIES)/src \
+		-I $(CONFIG_ROOTDIR)/../boot/$(TARGET) \
+		-I $(CONFIG_ROOTDIR)/../CMSIS/Include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(DEVICE_TYPE)/include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/include \
-		-I $(CONFIG_ROOTDIR)/../boot/target/$(VENDOR_SERIES)/src \
 		-I $(DEVICE_DIR)
-
-#		-I target/STM32H7/STM32H7xx_HAL_Driver/Inc \
-		-I target/STM32H7/Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
-		-I target/STM32H7/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \

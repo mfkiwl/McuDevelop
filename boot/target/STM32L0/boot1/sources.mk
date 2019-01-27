@@ -1,5 +1,5 @@
-
-# Copyright (c) 2018 zhtlab
+#
+# Copyright (c) 2018,2019 zhtlab
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files
@@ -23,10 +23,10 @@
 
 SOURCESASM	= $(COMMON_DIR)/start_gcc.s
 SOURCES		= \
-		$(CONFIG_ROOTDIR)/../boot/boot1/boot1.c \
-		$(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/boot1/system.c \
-		$(CONFIG_ROOTDIR)/../boot/common/string_gcc.c \
-		$(CONFIG_ROOTDIR)/../boot/common/crc32.c
+		$(CONFIG_ROOTDIR)/../boot/$(TARGET)/boot1.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/system.c \
+		$(COMMON_DIR)/string_gcc.c \
+		$(COMMON_DIR)/crc32.c
 
 
 DEFINES		= -DCPU_$(DEVICE_NAME) -D$(DEVICE_NAME) \
@@ -36,8 +36,9 @@ DEFINES		= -DCPU_$(DEVICE_NAME) -D$(DEVICE_NAME) \
 
 INCDIRS		= -I obj/$(DEVICE_TYPE)_$(ENV_CC) \
 		-I $(COMMON_DIR) \
-		-I $(CONFIG_ROOTDIR)/../boot/../CMSIS/Include \
-		-I $(CONFIG_ROOTDIR)/../boot/target/$(DEVICE_TYPE)/Include \
+		-I ../target/$(DEVICE_TYPE)/$(TARGET) \
+		-I $(CONFIG_ROOTDIR)/../boot/$(TARGET) \
+		-I $(CONFIG_ROOTDIR)/../CMSIS/Include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(DEVICE_TYPE)/include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/include \
 		-I $(CONFIG_ROOTDIR)/../Devices/STM32/ \
