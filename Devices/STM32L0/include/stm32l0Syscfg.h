@@ -26,6 +26,13 @@
 
 typedef struct {
   __IO uint32_t         CFGR1;             /* 0x00 */
+#define SYSCFG_CFGR1_MEM_MODE_SHIFT      0
+#define SYSCFG_CFGR1_MEM_MODE_MASK       (3 << (SYSCFG_CFGR1_MEM_MODE_SHIFT))
+#define SYSCFG_CFGR1_MEM_MODE_MAINFLASH  (0 << (SYSCFG_CFGR1_MEM_MODE_SHIFT))
+#define SYSCFG_CFGR1_MEM_MODE_SYSTEMFLASH (1 << (SYSCFG_CFGR1_MEM_MODE_SHIFT))
+#define SYSCFG_CFGR1_MEM_MODE_RESERVED2  (2 << (SYSCFG_CFGR1_MEM_MODE_SHIFT))
+#define SYSCFG_CFGR1_MEM_MODE_SRAM       (3 << (SYSCFG_CFGR1_MEM_MODE_SHIFT))
+
   __IO uint32_t         CFGR2;             /* 0x04 */
   __IO uint32_t         CFGR_EXTICR1;      /* 0x08 */
   __IO uint32_t         CFGR_EXTICR2;      /* 0x0c */

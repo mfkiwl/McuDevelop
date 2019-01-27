@@ -45,13 +45,11 @@ struct _stFirmInfo {
   uint32_t	dummy1;
 };
 
-const char	systemProduct[] = CONFIG_PRODUCT_NAME_TEXT;
-const char	systemVersion[] = CONFIG_VERSION_BOOT_TEXT;
+const char	strProductText[] = CONFIG_PRODUCT_NAME_TEXT;
+const char	strVersionText[] = CONFIG_VERSION_BOOT_TEXT;
 
 static uint32_t	boot1Cnt1ms = 1;
 uint32_t Src,SrcEnd, Dest;
-
-const uint8_t   strVersionText[] = "";
 
 __ATTR_SECTION static void
 Boot1Increment1ms(void)
@@ -142,8 +140,10 @@ MainEntry(int forceUpdate)
     sp = *(pSrc + 0);
     pc = *(pSrc + 1);
 
-    if(sp != 0xffffffffUL && pc != 0xffffffffUL &&
-       !(sp & 3) && (pc & 0xfff00000) == 0x08000000) {
+    if(sp != FLASH_ERASED_VALUE32 &&
+       pc != FLASH_ERASED_VALUE32 &&
+       !(sp & 3) &&
+       (pc & 0xfff00000) == POR_PC_ENTRY_BASE) {
       if(Boot1IsFirmCrcCorrect()) {
 	tout = Boot1GetCounter();
 	while((tout - Boot1GetCounter()) < (CONFIG_FIRMUPDATE_POWERSW_TIMEOUT)) {
@@ -181,7 +181,7 @@ MainEntry(int forceUpdate)
 
   sp = *(pSrc + 0);
   pc = *(pSrc + 1);
-  if(sp != 0xffffffffUL && pc != 0xffffffffUL) {
+  if(sp != FLASH_ERASED_VALUE32 && pc != FLASH_ERASED_VALUE32) {
 
     while(pSrc != pSrcEnd) {
       *pDest++ = *pSrc++;
@@ -207,7 +207,7 @@ SystemSysTickIntr(void)
 
 
 void
-Boot1Exception(void)
+IntrException(void)
 {
   int		i;
   int		num;

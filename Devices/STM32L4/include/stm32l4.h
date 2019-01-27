@@ -48,6 +48,8 @@
 #define APB1_BASE               (0x40000000)
 #define APB2_BASE               (0x40010000)
 
+#define POR_PC_ENTRY_BASE       (0x08000000)
+
 
 /*************************************************************
  * interrupt request definitions

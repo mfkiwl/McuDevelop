@@ -97,6 +97,8 @@ typedef int     IRQn_Type;
 #define APB3_BASE               (0x50000000)
 #define APB4_BASE               (0x58000000)
 
+#define POR_PC_ENTRY_BASE       (0x08000000)
+
 
 /*************************************************************
  * clock definitions
