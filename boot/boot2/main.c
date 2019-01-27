@@ -44,8 +44,8 @@
 #endif
 
 
-const char systemProduct[] = CONFIG_PRODUCT_NAME_TEXT;
-const char systemVersion[] = CONFIG_VERSION_BOOT_TEXT;
+const char strProductText[] = CONFIG_PRODUCT_NAME_TEXT;
+const char strVersionText[] = CONFIG_VERSION_BOOT_TEXT;
 
 static volatile uint32_t        system1ms = 0;
 static int                      ledSpeed = 0;

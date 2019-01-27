@@ -51,6 +51,8 @@ const char	systemVersion[] = CONFIG_VERSION_BOOT_TEXT;
 static uint32_t	boot1Cnt1ms = 1;
 uint32_t Src,SrcEnd, Dest;
 
+const uint8_t   strVersionText[] = "";
+
 __ATTR_SECTION static void
 Boot1Increment1ms(void)
 {
