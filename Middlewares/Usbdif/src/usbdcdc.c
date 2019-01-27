@@ -23,6 +23,8 @@
 
 #define _USBDCDC_C_
 
+#include <stdint.h>
+
 #include "rtos.h"
 
 #include "usb_def.h"
@@ -195,7 +197,7 @@ UsbdCdcDataOut(usbdifClassDef_t *prc, uint8_t epnum, int size)
   /* exec callback with rx data */
   pCdc->RxLength = size;
   ((usbdcdcCb_t *)prc->pUserData)->recv(prc, pCdc->RxBuffer, pCdc->RxLength);
-  printf("usbdcdc recv %x %x\r\n", *pCdc->RxBuffer, pCdc->RxLength);
+  //printf("usbdcdc recv %x %x\r\n", *pCdc->RxBuffer, pCdc->RxLength);
 
   result = USBDIF_STATUS_SUCCESS;
 
