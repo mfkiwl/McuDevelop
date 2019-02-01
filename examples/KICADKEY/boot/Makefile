@@ -110,7 +110,7 @@ $(OBJDIR)/$(TARGET_TOP).srec: Makefile $(OBJDIR)/boot1/boot1.srec $(OBJDIR)/boot
 
 $(OBJDIR)/boot1/boot1.srec: $(BOOT_MK) obj make_config
 	@echo "### compile boot1"
-	@$(MAKE) -f $(BOOT_MK) TARGET=boot1;
+	@$(MAKE) -f $(BOOT_MK) TARGETCODE=$(CONFIG_TARGETCODE_BOOT1) TARGET=boot1;
 
 ifeq ($(VENDOR_SERIES), Kinetis)
 $(OBJDIR)/boot2/boot2.srec: $(BOOT_MK) obj make_config
@@ -122,12 +122,13 @@ $(OBJDIR)/boot2/boot2.srec: $(BOOT_MK) obj make_config
 		DEVICE_ARCHTYPE=$(DEVICE_ARCHTYPE) \
 		DEVICE_NAME=$(DEVICE_NAME) \
 		DEVICE_PERI=$(DEVICE_PERI) \
+		TARGETCODE=$(TARGETCODE_BOOT2) \
 		TARGET=boot2; \
 	$(CD) ../..
 else
 $(OBJDIR)/boot2/boot2.srec: $(BOOT_MK) obj make_config
 	@echo "### compile boot2"
-	@$(MAKE) -f $(BOOT_MK) TARGET=boot2
+	@$(MAKE) -f $(BOOT_MK) TARGETCODE=$(CONFIG_TARGETCODE_BOOT2) TARGET=boot2
 endif
 
 make_config: $(OBJDIR)/$(CONFIG_MK) \
