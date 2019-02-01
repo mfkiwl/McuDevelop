@@ -99,5 +99,4 @@ clean:
 
 
 prog:
-	@echo type \"../progusbhid/src/progusbhid -e -p --wholearea -f obj/bootfirm.xxxxx\"    to burn
-	$(PROGMCU) -e -p -B -f obj/bootfirm.rig100.bin --force --allarea --stm --uart --uartdev=/dev/ttyACM0 -D 0x80000000
+	dfu-util -D obj/bootfirm.bin -a 0 --dfuse-address 0x8000000
