@@ -139,7 +139,7 @@ struct _stDevCounter {
 
 int             DevCounterInit(int unit, devCounterParam_t *param);
 
-int             DevCounterGetCounterValue(int unit, int ch, uint32_t *pVal);
+int             DevCounterGetCounterValue(int unit, uint32_t *pVal);
 int             DevCounterSetPwmDutyValue(int unit, int ch, uint32_t val);
 int             DevCounterGetIcValue(int unit, int ch, uint32_t *pVal);
 

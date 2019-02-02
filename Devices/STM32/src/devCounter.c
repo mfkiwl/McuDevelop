@@ -187,16 +187,15 @@ end:
 
 
 int
-DevCounterGetCounterValue(int unit, int ch, uint32_t *pVal)
+DevCounterGetCounterValue(int unit, uint32_t *pVal)
 {
   int                   result = -1;
   stm32Dev_TIM          *p;
 
   if(!pVal) goto fail;
 
-  if(ch > 4 || ch < 0) goto fail;
   p = counter.sc[unit].dev;
-  *pVal = (&p->CNT)[ch-1];
+  *pVal = p->CNT;
 
   result = 0;
 fail:
