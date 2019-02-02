@@ -225,6 +225,7 @@ typedef int     IRQn_Type;
  */
 
 #define SPI_MODULE_COUNT        1
+#define SPI_MODULE_FIFO_NO      1
 
 #include        "stm32Spi16.h"
 

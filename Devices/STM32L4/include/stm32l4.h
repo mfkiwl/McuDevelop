@@ -582,6 +582,7 @@ struct {
  * 38 SPI
  */
 #define SPI_MODULE_COUNT                (3)
+#define SPI_MODULE_FIFO_YES             1
 
 #include        "stm32Spi16.h"
 
