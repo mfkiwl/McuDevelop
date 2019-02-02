@@ -43,7 +43,7 @@ int
 DevSpiInit(int unit, devSpiParam_t *param)
 {
   int                   result = -1;
-  uint16_t              cr1 = 0, cr2 = 0;
+  uint16_t              cr1 = 0, cr2 = 0, br;
 
   stm32Dev_SPI        *p;
   devSpiSc_t          *psc;
@@ -88,7 +88,9 @@ DevSpiInit(int unit, devSpiParam_t *param)
 
   cr1 |= (SPI_CR1_BIDIMODE_YES | SPI_CR1_BIDIOE_YES |
           SPI_CR1_LSBFRST_NO | SPI_CR1_MSTR_YES);
-  cr1 |= ((psc->param.prescaler) << SPI_CR1_BR_SHIFT) & SPI_CR1_BR_MASK;
+  br = psc->param.prescaler << SPI_CR1_BR_SHIFT;
+  if(br > SPI_CR1_BR_MAXVALUE) br = SPI_CR1_BR_MAXVALUE;
+  cr1 |= br;
   cr1 |= ((psc->param.clkmode << SPI_CR1_CPHA_SHIFT) &
           (SPI_CR1_CPOL_MASK | SPI_CR1_CPHA_MASK));
   cr2 |= (SPI_CR2_DS_VAL(psc->param.bit) | SPI_CR2_FRF_MOTOROLA |
@@ -225,8 +227,15 @@ DevSpiSendPio(devSpiSc_t *psc, uint8_t *ptr, int size)
 
   sz = size;
   while(size > 0) {
-    //while(!(p->SR & SPI_SR_TXE_MASK));
+#ifdef SPI_MODULE_FIFO_NO
+    while(!(p->SR & SPI_SR_TXE_MASK));
+#else
+#ifdef SPI_MODULE_FIFO_YES
     while((p->SR & SPI_SR_FTLVL_MASK) == SPI_SR_FTLVL_FULL);
+#else
+#error no fifo definition
+#endif
+#endif
     *(uint8_t *)&p->DR = *ptr++;
     size--;
   }
@@ -252,7 +261,6 @@ DevSpiRecvPio(devSpiSc_t *psc, uint8_t *ptr, int size)
   int                   sz = 0;
 
   p = psc->dev;
-
   /* flush rx buffer */
   while(p->SR & SPI_SR_RXNE_MASK) {
     *(__IO uint8_t *)&p->DR;
@@ -265,8 +273,15 @@ DevSpiRecvPio(devSpiSc_t *psc, uint8_t *ptr, int size)
 
   sz = size;
   for(int i = 0; i < size; i++) {
-    //while(!(p->SR & SPI_SR_RXNE_MASK));
+#ifdef SPI_MODULE_FIFO_NO
+    while(!(p->SR & SPI_SR_RXNE_MASK));
+#else
+#ifdef SPI_MODULE_FIFO_YES
     while(!(p->SR & SPI_SR_FRLVL_MASK));
+#else
+#error no fifo definition
+#endif
+#endif
     *ptr++ = *(__IO uint8_t *)&p->DR;
   }
   p->CR1 &= ~SPI_CR1_SPE_MASK;
@@ -274,8 +289,8 @@ DevSpiRecvPio(devSpiSc_t *psc, uint8_t *ptr, int size)
 
   if(p->SR & SPI_SR_OVR_MASK) {
     sz = -2;            /* overflow */
-    printf("# DevSpiRecvPio() overflow\r\n");
-    goto fail;
+    //printf("# DevSpiRecvPio() overflow\r\n");
+    //goto fail;
   }
   p->CR1 &= ~SPI_CR1_RXONLY_MASK;
 
