@@ -60,9 +60,10 @@
 
 
 #define BMI160_REG_CMD          0x7e
-#define         CMD_PROG_NVM H          0xa0
+#define         CMD_PROG_NVM            0xa0
 #define         CMD_FIFO_FLUSH          0xb0
 #define         CMD_INT_RESET           0xb1
+#define         CMD_STEP_CNT_CLR        0xb2
 #define         CMD_SOFTRESET           0xb6
 
 #endif
