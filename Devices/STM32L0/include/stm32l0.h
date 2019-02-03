@@ -185,6 +185,17 @@ typedef int     IRQn_Type;
 
 #include        "stm32Tim.h"
 
+typedef enum  {
+  TIM_NUM_INIT = -1,
+  TIM2_NUM = 0,
+  TIM3_NUM,
+  TIM6_NUM,
+  TIM7_NUM,
+  TIM21_NUM,
+  TIM22_NUM,
+  TIM_NUM_MAX
+} timNo_t;
+
 #define TIM2_PTR        ((stm32Dev_TIM *) ((APB1_BASE) + 0x0000))
 #define TIM3_PTR        ((stm32Dev_TIM *) ((APB1_BASE) + 0x0400))
 #define TIM6_PTR        ((stm32Dev_TIM *) ((APB1_BASE) + 0x1000))

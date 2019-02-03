@@ -508,10 +508,24 @@ struct _stStm32l4_DAC {
  */
 #include        "stm32Tim.h"
 
+typedef enum  {
+  TIM_NUM_INIT = -1,
+  TIM1_NUM = 0,
+  TIM2_NUM,
+  TIM3_NUM,
+  TIM6_NUM,
+  TIM7_NUM,
+  TIM15_NUM,
+  TIM16_NUM,
+  TIM_NUM_MAX
+} timNo_t;
+
 #define TIM1_PTR	((stm32Dev_TIM *) (APB2_BASE + 0x2c00))
 #define TIM2_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x0000))
-#define TIM7_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x1000))
-#define TIM8_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x1400))
+#define TIM3_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x0400))
+#define TIM6_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x1000))
+#define TIM7_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x1400))
+/*#define TIM8_PTR	((stm32Dev_TIM *) (APB1_BASE + 0x1400))*/
 #define TIM15_PTR	((stm32Dev_TIM *) (APB2_BASE + 0x4000))
 #define TIM16_PTR	((stm32Dev_TIM *) (APB2_BASE + 0x4400))
 

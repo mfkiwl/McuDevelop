@@ -39,7 +39,7 @@ const static uint32_t sms[] = {
   TIM_SMCR_SMS_TRIGGER, TIM_SMCR_SMS_RESET, TIM_SMCR_SMS_ENC1
 };
 int
-DevCounterInit(int unit, devCounterParam_t *param)
+DevCounterInit(timNo_t unit, devCounterParam_t *param)
 {
   stm32Dev_TIM          *p;
 
@@ -54,28 +54,40 @@ DevCounterInit(int unit, devCounterParam_t *param)
   if(unit == -1) {
     memset(&counter, 0, sizeof(counter));
 #ifdef TIM1_PTR
-    counter.sc[1].dev  = TIM1_PTR;
+    counter.sc[TIM1_NUM].dev  = TIM1_PTR;
 #endif
 #ifdef TIM2_PTR
-    counter.sc[2].dev  = TIM2_PTR;
+    counter.sc[TIM2_NUM].dev  = TIM2_PTR;
 #endif
 #ifdef TIM3_PTR
-    counter.sc[3].dev  = TIM3_PTR;
+    counter.sc[TIM3_NUM].dev  = TIM3_PTR;
 #endif
 #ifdef TIM4_PTR
-    counter.sc[4].dev  = TIM4_PTR;
+    counter.sc[TIM4_NUM].dev  = TIM4_PTR;
 #endif
 #ifdef TIM5_PTR
-    counter.sc[5].dev  = TIM5_PTR;
+    counter.sc[TIM5_NUM].dev  = TIM5_PTR;
+#endif
+#ifdef TIM6_PTR
+    counter.sc[TIM6_NUM].dev  = TIM6_PTR;
+#endif
+#ifdef TIM7_PTR
+    counter.sc[TIM7_NUM].dev  = TIM7_PTR;
 #endif
 #ifdef TIM8_PTR
-    counter.sc[8].dev  = TIM8_PTR;
+    counter.sc[TIM8_NUM].dev  = TIM8_PTR;
 #endif
 #ifdef TIM15_PTR
-    counter.sc[15].dev = TIM15_PTR;
+    counter.sc[TIM15_NUM].dev = TIM15_PTR;
 #endif
 #ifdef TIM16_PTR
-    counter.sc[16].dev = TIM16_PTR;
+    counter.sc[TIM16_NUM].dev = TIM16_PTR;
+#endif
+#ifdef TIM21_PTR
+    counter.sc[TIM21_NUM].dev = TIM21_PTR;
+#endif
+#ifdef TIM22_PTR
+    counter.sc[TIM22_NUM].dev = TIM22_PTR;
 #endif
     goto end;
   }
@@ -187,7 +199,7 @@ end:
 
 
 int
-DevCounterGetCounterValue(int unit, uint32_t *pVal)
+DevCounterGetCounterValue(timNo_t unit, uint32_t *pVal)
 {
   int                   result = -1;
   stm32Dev_TIM          *p;
@@ -202,7 +214,7 @@ fail:
   return result;
 }
 int
-DevCounterSetPwmDutyValue(int unit, int ch, uint32_t val)
+DevCounterSetPwmDutyValue(timNo_t unit, int ch, uint32_t val)
 {
   int                   result = -1;
   stm32Dev_TIM          *p;
@@ -216,7 +228,7 @@ fail:
   return result;
 }
 int
-DevCounterGetIcValue(int unit, int ch, uint32_t *pVal)
+DevCounterGetIcValue(timNo_t unit, int ch, uint32_t *pVal)
 {
   int                   result = -1;
   stm32Dev_TIM          *p;
@@ -234,7 +246,7 @@ fail:
 
 
 void
-DevCounterDebugShowRegs(int unit)
+DevCounterDebugShowRegs(timNo_t unit)
 {
   stm32Dev_TIM          *p;
 

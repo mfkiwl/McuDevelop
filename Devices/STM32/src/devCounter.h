@@ -134,16 +134,16 @@ typedef struct {
 
 } devCounterSc_t;
 struct _stDevCounter {
-  devCounterSc_t          sc[17];
+  devCounterSc_t          sc[TIM_NUM_MAX];
 };
 
-int             DevCounterInit(int unit, devCounterParam_t *param);
+int             DevCounterInit(timNo_t unit, devCounterParam_t *param);
 
-int             DevCounterGetCounterValue(int unit, uint32_t *pVal);
-int             DevCounterSetPwmDutyValue(int unit, int ch, uint32_t val);
-int             DevCounterGetIcValue(int unit, int ch, uint32_t *pVal);
+int             DevCounterGetCounterValue(timNo_t unit, uint32_t *pVal);
+int             DevCounterSetPwmDutyValue(timNo_t unit, int ch, uint32_t val);
+int             DevCounterGetIcValue(timNo_t unit, int ch, uint32_t *pVal);
 
-void            DevCounterDebugShowRegs(int unit);
+void            DevCounterDebugShwRegs(timNo_t unit);
 
 uint32_t        DevCounterGetSystemTimer(void);
 void            DevCounterWaitSystemTimer(uint32_t tout);
