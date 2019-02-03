@@ -316,17 +316,32 @@ MainInitTim(void)
   //param.clktrg.prescaler = 0;
   param.ch.mode = DEVCOUNTER_MODE_IC;
   param.ch.intr = 1;
-  DevCounterInit(2, &param);
+  DevCounterInit(TIM2_NUM, &param);
 
   param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_2);
-  DevCounterInit(2, &param);
+  DevCounterInit(TIM2_NUM, &param);
   param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_3);
-  DevCounterInit(2, &param);
+  DevCounterInit(TIM2_NUM, &param);
   param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_4);
-  DevCounterInit(2, &param);
+  DevCounterInit(TIM2_NUM, &param);
 
   __NVIC_SetPriority(TIM2_IRQn, 0);
   __NVIC_EnableIRQ(TIM2_IRQn);
+
+
+  /********************************************************
+   * TIM22:  freerun count, input capture
+   */
+  memset(&param, 0, sizeof(param));
+  param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_1));
+  param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
+                       DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
+  param.clktrg.reload = 0;
+  //param.clktrg.prescaler = 0;
+  param.ch.mode = DEVCOUNTER_MODE_PWM;
+  param.ch.val = 0;
+  DevCounterInit(TIM22_NUM, &param);
 
   return;
 }
@@ -347,7 +362,7 @@ MainInterruptTim(void)
   mask = TIM_SR_CC1IF_MASK;
   for(int i = 0; i < 4; i++) {
     if(sr & mask) {
-      DevCounterGetIcValue(2, i+1, &val);
+      DevCounterGetIcValue(TIM2_NUM, i+1, &val);
       if(mainTim2Ic[i].flag & MAIN_TIM2_IC_VALID) {
         mainTim2Ic[i].flag |= MAIN_TIM2_IC_OVERWRITE;
       }
