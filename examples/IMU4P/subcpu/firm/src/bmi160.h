@@ -31,11 +31,21 @@
 #define BMI160_REG_CHIP_ID          0x00
 #define BMI160_REG_GYRO_X_LOW       0x0c
 #define BMI160_REG_GYRO_X_HIGH      0x0d
+#define BMI160_REG_GYRO_Y_LOW       0x0e
+#define BMI160_REG_GYRO_Y_HIGH      0x0f
+#define BMI160_REG_GYRO_Z_LOW       0x10
+#define BMI160_REG_GYRO_Z_HIGH      0x11
 #define BMI160_REG_ACC_X_LOW        0x12
 #define BMI160_REG_ACC_X_HIGH       0x13
+#define BMI160_REG_ACC_Y_LOW        0x14
+#define BMI160_REG_ACC_Y_HIGH       0x15
+#define BMI160_REG_ACC_Z_LOW        0x16
+#define BMI160_REG_ACC_Z_HIGH       0x17
 #define BMI160_REG_TIME_LOW         0x18
 #define BMI160_REG_TIME_MID         0x19
 #define BMI160_REG_TIME_HIGH        0x1a
+#define BMI160_REG_TEMP_LOW         0x20
+#define BMI160_REG_TEMP_HIGH        0x21
 
 #define BMI160_REG_IF_CONF          0x6b
 #define         IF_CONF_MODE_SHIFT      4
@@ -50,5 +60,9 @@
 
 
 #define BMI160_REG_CMD          0x7e
+#define         CMD_PROG_NVM H          0xa0
+#define         CMD_FIFO_FLUSH          0xb0
+#define         CMD_INT_RESET           0xb1
+#define         CMD_SOFTRESET           0xb6
 
 #endif
