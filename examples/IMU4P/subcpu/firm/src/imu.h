@@ -24,11 +24,24 @@
 #ifndef _IMU_H_
 #define _IMU_H_
 
+typedef struct {
+  uint16_t      x;
+  uint16_t      y;
+  uint16_t      z;
+} imuAxis_t;
+
+typedef struct {
+  imuAxis_t     acc;
+  imuAxis_t     gyro;
+  uint32_t      ts;
+  uint16_t      temp4x;
+  float         tempf;
+} imuValue_t;
 
 
 
 int             ImuInit(int unit);
-int             ImuReadValue(int unit);
+int             ImuReadValue(int unit, imuValue_t *p);
 void            ImuEnableCs(int unit);
 void            ImuDisableCs(int unit);
 

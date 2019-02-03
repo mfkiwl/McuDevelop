@@ -38,41 +38,51 @@ ImuInit(int unit)
 {
   uint8_t       reg, val;
 
+  /* reset and wait */
+  reg = BMI160_REG_CMD;
+  val = CMD_SOFTRESET;
+  Bmi160SetValue(unit, reg, val);
+
+  SystemWaitCounter(2);
+
+  /* flash fifo and reset interrupt */
+  reg = BMI160_REG_CMD;
+  val = CMD_FIFO_FLUSH;
+  Bmi160SetValue(unit, reg, val);
+
+  reg = BMI160_REG_CMD;
+  val = CMD_INT_RESET;
+  Bmi160SetValue(unit, reg, val);
+
   /* interface mode */
   reg = BMI160_REG_IF_CONF;
   val = IF_CONF_MODE_AUTO_2NDOFF | IF_CONF_SPI3_NO4;
   Bmi160SetValue(unit, reg, val);
 
-  /* start foc */
+  /* start foc  and 10msec*/
   reg = BMI160_REG_CMD;
   val = 0x03;
   Bmi160SetValue(unit, reg, val);
+  SystemWaitCounter(10);
 
-  //wait 10 msec
-  SystemWaitCounter(10*4);      /*adhoc */
-
-  /* enable accel measurement */
+  /* enable accel measurement  and wait 1 msec */
   reg = BMI160_REG_CMD;
   val = 0x11;
   Bmi160SetValue(unit, reg, val);
+  SystemWaitCounter(2);
 
-  //wait 1 msec
-  SystemWaitCounter(1*4);      /*adhoc */
-
-  /* enable gyroscope measurement */
+  /* enable gyroscope measurement  and wait 50 msec*/
   reg = BMI160_REG_CMD;
   val = 0x15;
   Bmi160SetValue(unit, reg, val);
-
-  //wait 50 msec
-  SystemWaitCounter(50*4);      /*adhoc */
+  SystemWaitCounter(50);
 
   /* [5:4]band width 2=800Hz,
    * [3:0]data rate: a=400Hz,b=800,c=1600,d=3200
    * range: 3=2G,5=4G,c=16G
    */
   reg = 0x40;
-  val = 0x2c;
+  val = 0x29;
   Bmi160SetValue(unit, reg, val);
   reg = 0x41;
   val = 0x03;
@@ -83,7 +93,7 @@ ImuInit(int unit)
    * range: 0=2kdeg/s,1=1k,2=500,3=250,4=125
    */
   reg = 0x42;
-  val = 0x2c;
+  val = 0x29;
   Bmi160SetValue(unit, reg, val);
   reg = 0x41;
   val = 0x03;
@@ -117,15 +127,32 @@ ImuInit(int unit)
 
 
 int
-ImuReadValue(int unit)
+ImuReadValue(int unit, imuValue_t *p)
 {
   uint8_t       cmd;
-  uint8_t       buf[32];
-  uint32_t      reg = BMI160_REG_CHIP_ID | BMI160_READ;
-  uint32_t      val = 0xaa55ddbb;
+  uint8_t       buf[34];
+  uint32_t      reg = 0| BMI160_READ;
+  uint16_t      temp;
 
-  Bmi160GetValue(unit, 0x0c, buf, 1);
+  if(!p) goto fail;
 
+  Bmi160GetValue(unit, BMI160_REG_CHIP_ID, buf, 34);
+
+  p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
+  p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
+  p->gyro.z = (buf[BMI160_REG_GYRO_Z_HIGH] << 8) | buf[BMI160_REG_GYRO_Z_LOW];
+
+  p->acc.x = (buf[BMI160_REG_ACC_X_HIGH] << 8) | buf[BMI160_REG_ACC_X_LOW];
+  p->acc.y = (buf[BMI160_REG_ACC_Y_HIGH] << 8) | buf[BMI160_REG_ACC_Y_LOW];
+  p->acc.z = (buf[BMI160_REG_ACC_Z_HIGH] << 8) | buf[BMI160_REG_ACC_Z_LOW];
+
+  p->ts = (buf[BMI160_REG_TIME_HIGH] << 16) |
+    (buf[BMI160_REG_TIME_MID] << 8) | buf[BMI160_REG_TIME_LOW];
+
+  temp = (buf[BMI160_REG_TEMP_HIGH] << 8) | buf[BMI160_REG_TEMP_LOW] ;
+  p->temp4x = (23 << 2) + (temp >> 7);
+
+fail:
   return 0;
 }
 

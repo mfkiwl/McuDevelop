@@ -191,7 +191,7 @@ MainEntry(void)
 
   FifoInit();
 
-  //DevDmaInit(-1, 0, NULL);
+  DevDmaInit(-1, 0, NULL);
   MainInitUsart();
   MainInitTim();
   MainInitSpi();
@@ -231,17 +231,24 @@ MainEntry(void)
     }
 
 
-
     for(int i = 0; i < 4; i++) {
       __disable_irq();
       if(mainTim2Ic[i].flag) {
         mainTim2Ic[i].flag = 0;
         __enable_irq();
-#if 0
-        printf("tim2 ic%d %08x%04x\n", i+1,
-               mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb);
-#endif
-        ImuReadValue(i);
+
+
+        {
+          imuValue_t  imu;
+          ImuReadValue(i, &imu);
+          printf("%4x %4x %4x  ", imu.gyro.x, imu.gyro.y, imu.gyro.z);
+          printf("%4x %4x %4x  ", imu.acc.x,  imu.acc.y,  imu.acc.z);
+          printf("%6x  ", imu.ts);
+          printf("%4x  ", imu.temp4x);
+
+          printf("tim2 ic%d %08x%04x\n", i+1,
+                 mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb);
+        }
 
         __disable_irq();
       }
@@ -368,7 +375,9 @@ MainInitSpi(void)
 
   /* IMU control */
   //param.speed = 40000000;     /* speed: don't care */
-  param.prescaler = 5;          /* adhoc */
+  param.prescaler = 1;          /* 32MHz/2/2 = 8Mbps */
+  param.dmaTx = 0;
+  param.dmaRx = 1;
   DevSpiInit(1, &param);
 
   return;
