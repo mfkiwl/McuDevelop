@@ -43,6 +43,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
   systemClockFreq_t     clk;
   uint32_t              masterClk;
   int                   irq = 0;
+  void                  (*intr)(void);
 
   if(unit == -1) {
     memset(&usart, 0, sizeof(usart));
@@ -85,18 +86,21 @@ DevUsartInit(int unit, devUsartParam_t *param)
   case        1:
     masterClk = clk.pclk2;      /* adhoc */
     irq = USART1_IRQn;
+    intr = DevUsart1Interrupt;
     break;
 #endif
 #ifdef  USART2_PTR
   case        2:
     masterClk = clk.pclk1;      /* adhoc */
     irq = USART2_IRQn;
+    intr = DevUsart2Interrupt;
     break;
 #endif
 #ifdef  USART3_PTR
   case        3:
     masterClk = clk.pclk2;      /* adhoc */
     irq = USART3_IRQn;
+    intr = DevUsart3Interrupt;
     break;
 #endif
   }
@@ -104,22 +108,24 @@ DevUsartInit(int unit, devUsartParam_t *param)
   if(psc->param.mode == DEVUSART_MODE_FIFO) {
     int         d;
     if((d = FifoCreate(psc->param.szFifoTx)) < 0) {
-      psc->param.mode == DEVUSART_MODE_PIO;
+      psc->param.mode = DEVUSART_MODE_PIO;
     } else {
       psc->dFifoTx = d;
       /* rx */
       if((d = FifoCreate(psc->param.szFifoRx)) < 0) {
         FifoDestroy(psc->dFifoTx);
-        psc->param.mode == DEVUSART_MODE_PIO;
+        psc->param.mode = DEVUSART_MODE_PIO;
       } else {
         psc->dFifoRx = d;
       }
     }
   }
-  psc->param.mode == DEVUSART_MODE_PIO;
 
-
+#ifdef SPI_MODULE_FIFO_YES
   p->CR1  = USART_CR1_UE_YES | USART_CR1_FIFOEN_YES;  /* module enable */
+#else
+  p->CR1  = USART_CR1_UE_YES;                         /* module enable */
+#endif
   p->CR2  = 0;
   p->CR3  = 0;
   p->PRESC  = 0;
@@ -151,11 +157,13 @@ DevUsartInit(int unit, devUsartParam_t *param)
   /*** baud */
   p->BRR = masterClk / param->baud;
 
+#ifdef SPI_MODULE_FIFO_YES
   if(psc->param.mode == DEVUSART_MODE_FIFO) {
     p->CR3 |= USART_CR3_RXFTCFG_1_8 | USART_CR3_RXFTIE_YES;   /* threshold intr */
     p->CR1 |= USART_CR1_RXFFIE_YES;     /* full intr */
     p->CR1 |= USART_CR1_RXNEIE_YES;     /* rx intr */
   }
+#endif
   /* enable error interrupt */
   p->CR3 |= USART_CR3_EIE_YES;
 
@@ -166,7 +174,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
   psc->up = 1;
 
   if(irq) {
-    IntrSetEntry(0, irq, DevUsart2Interrupt);
+    IntrSetEntry(0, irq, intr);
     NVIC_SetPriority(irq, 0);
     NVIC_EnableIRQ(irq);
   }
