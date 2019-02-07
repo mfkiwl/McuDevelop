@@ -60,17 +60,19 @@ CommandDelimiter(uint8_t *pStr, uint8_t *av[])
 int
 CommandExec(int ac, uint8_t *av[])
 {
-  if(!strncmp(av[0], "getlist", 7)) {
+  if(!strncmp(av[0], "reset", 7)) {
+    MainResetTimCounter();
+  } else if(!strncmp(av[0], "imu", 3)) {
+    if(!strncmp(av[1], "start", 5)) {
+      MainEnableTim();
+    } else if(!strncmp(av[1], "stop", 4)) {
+      MainDisableTim();
+    }
 
-  } else if(!strncmp(av[0], "setkey", 6)) {
-
-  } else if(!strncmp(av[0], "save", 4)) {
-
-  } else if(!strncmp(av[0], "load", 4)) {
-
-  } else if(!strncmp(av[0], "erase", 5)) {
-
-  } else if(!strncmp(av[0], "dump", 4)) {
+  } else if(!strncmp(av[0], "id", 2)) {
+    if(!strncmp(av[1], "set", 3)) {
+    } else if(!strncmp(av[1], "get", 3)) {
+    }
 
   } else if(!strncmp(av[0], "reboot", 6)) {
     IntrReboot(INTR_REBOOT_NORMAL);
@@ -96,8 +98,11 @@ CommandExec(int ac, uint8_t *av[])
     ((void (*)(void)) *((uint32_t*) 0x0004))();
 
   } else if(!strncmp(av[0], "version", 7)) {
-    extern const uint8_t           strVersionText[];
+    extern const uint8_t        strVersionText[];
+    uint8_t                     **ptr = (uint8_t **)CONFIG_BOOTLOADER_INFO_VERSION_POS;
     puts(strVersionText);
+    puts("\n");
+    puts(*ptr);
     puts("\n");
   }
 

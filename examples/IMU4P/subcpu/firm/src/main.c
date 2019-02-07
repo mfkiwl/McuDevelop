@@ -106,19 +106,18 @@ void
 MainUartLoop(void)
 {
   int           len = 0;
+  int           c;
+  static int    cnt = 0;
 
-  do {
-    int                 cnt = 0;
-    uint8_t             c;
+  while((c = _getc()) >= 0) {
 
-    //len = UsbCdcAcmRecv(dUsbCdc, &c, sizeof(c));
-    if(len > 0) {
+    if(c >= 0) {
       if(c == '\n') {
       } else if(c == '\r') {
         int             ac;
 
         c = '\n';
-        //UsbCdcAcmSend(dUsbCdc, &c, 1);
+        puts("\n");
 
         mainCommandBuf[mainCommandPos] = '\0';
         CommandProcess(mainCommandBuf);
@@ -128,19 +127,20 @@ MainUartLoop(void)
         cnt = 0;
         if(mainCommandPos > 0) {
           mainCommandPos--;
-          //UsbCdcAcmSend(dUsbCdc, "\b \b", 3);
+          puts("\b \b");
         }
       } else {
         if(mainCommandPos < sizeof(mainCommandBuf)) {
+          int   str[2];
           mainCommandBuf[mainCommandPos] = c;
           mainCommandPos++;
-          //UsbCdcAcmSend(dUsbCdc, &c, 1);
+          str[0] = c;
+          str[1] = '\n';
+          puts(str);
         }
       }
     }
-
-    //UsbCdcAcmLoop(dUsbCdc);
-  } while (len > 0);
+  }
 
   return;
 }
@@ -161,6 +161,7 @@ MainEntry(void)
   int                   isPowerSwPushed;
   uint32_t              tout;
   uint32_t              val, valPrev;
+  int                   cnt[4] = {0};
 
   extern uint32_t  sectVectorStart;
 
@@ -223,13 +224,12 @@ MainEntry(void)
     if((tLedWait - SystemGetCounter()) >= 1000) {
       tLedWait = SystemGetCounter();
       if(fLed) {
-        SystemGpioSetUpdateLedOff();
+        SystemGpioSetPowerLedOff();
       } else {
-        SystemGpioSetUpdateLedOn();
+        SystemGpioSetPowerLedOn();
       }
       fLed = !fLed;
     }
-
 
     for(int i = 0; i < 4; i++) {
       __disable_irq();
@@ -237,19 +237,19 @@ MainEntry(void)
         mainTim2Ic[i].flag = 0;
         __enable_irq();
 
-
         {
           imuValue_t  imu;
           ImuReadValue(i, &imu);
+          printf("%08x%04x  ", mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb);
+          printf("%d %8x ", i, cnt[i]);
           printf("%4x %4x %4x  ", imu.gyro.x, imu.gyro.y, imu.gyro.z);
           printf("%4x %4x %4x  ", imu.acc.x,  imu.acc.y,  imu.acc.z);
           printf("%6x  ", imu.ts);
-          printf("%4x  ", imu.temp4x);
+          printf("%2x  ", imu.temp4x);
+          puts("\n");
 
-          printf("tim2 ic%d %08x%04x\n", i+1,
-                 mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb);
+          cnt[i]++;
         }
-
         __disable_irq();
       }
       __enable_irq();
@@ -277,7 +277,7 @@ MainInitUsart(void)
   param.baud = CONFIG_SYSTEM_USART_BAUD;
   param.bit = DEVUSART_BIT_8;
   param.stop = DEVUSART_STOP_1;
-  param.mode = DEVUSART_MODE_FIFO;
+  param.mode = DEVUSART_MODE_PIO;
   param.parity = DEVUSART_PARITY_NONE;
   param.szFifoTx = 6;
   param.szFifoRx = 6;
@@ -305,43 +305,70 @@ MainInitTim(void)
   DevCounterInit(-1, NULL);
 
   /********************************************************
+   * 32.768kHz --> [ETR TIM2]
+   */
+
+  /********************************************************
    * TIM2:  freerun count, input capture
    */
   memset(&param, 0, sizeof(param));
   param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG) |
-                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_1));
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_1) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_2) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_3) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_4));
+
   param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
-                       DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
+                       DEVTIME_CLKTRG_CTG_EXTERNAL2 | DEVTIME_CLKTRG_SEL(0));
+  param.clktrg.intr = 1;
+  //param.clktrg.filter = 0;
   param.clktrg.reload = 0xffff;
   //param.clktrg.prescaler = 0;
+
   param.ch.mode = DEVCOUNTER_MODE_IC;
   param.ch.intr = 1;
-  DevCounterInit(TIM2_NUM, &param);
-
-  param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_2);
-  DevCounterInit(TIM2_NUM, &param);
-  param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_3);
-  DevCounterInit(TIM2_NUM, &param);
-  param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_4);
   DevCounterInit(TIM2_NUM, &param);
 
   __NVIC_SetPriority(TIM2_IRQn, 0);
   __NVIC_EnableIRQ(TIM2_IRQn);
 
+  return;
+}
 
-  /********************************************************
-   * TIM22:  freerun count, input capture
-   */
+
+void
+MainEnableTim(void)
+{
+  devCounterParam_t     param;
+
   memset(&param, 0, sizeof(param));
-  param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG) |
-                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_1));
-  param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
-                       DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
-  param.clktrg.reload = 0;
-  //param.clktrg.prescaler = 0;
-  param.ch.mode = DEVCOUNTER_MODE_PWM;
-  param.ch.val = 0;
-  DevCounterInit(TIM22_NUM, &param);
+  param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_1) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_2) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_3) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_4));
+
+  param.ch.mode = DEVCOUNTER_MODE_IC;
+  param.ch.intr = 1;
+
+  DevCounterInit(TIM2_NUM, &param);
+
+  return;
+}
+
+
+void
+MainDisableTim(void)
+{
+  devCounterParam_t     param;
+
+  memset(&param, 0, sizeof(param));
+  param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_1) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_2) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_3) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_4));
+
+  param.ch.mode = DEVCOUNTER_MODE_DISABLE;
+  DevCounterInit(TIM2_NUM, &param);
 
   return;
 }
@@ -351,15 +378,13 @@ void
 MainInterruptTim(void)
 {
   uint32_t      val;
-  uint32_t      sr, mask;
+  uint32_t      sr, mask, dier;
 
   sr = TIM2_PTR->SR;
-
-  if(sr & TIM_SR_UIF_MASK) {
-    tim2msb++;
-  }
+  dier = TIM2_PTR->DIER;
 
   mask = TIM_SR_CC1IF_MASK;
+  sr &= dier;
   for(int i = 0; i < 4; i++) {
     if(sr & mask) {
       DevCounterGetIcValue(TIM2_NUM, i+1, &val);
@@ -372,9 +397,28 @@ MainInterruptTim(void)
     }
     mask <<= 1;
   }
+
+  if(sr & TIM_SR_UIF_MASK) {
+    TIM2_PTR->SR = ~TIM_SR_UIF_MASK;
+    tim2msb++;
+  }
+
   return;
 }
 
+
+void
+MainResetTimCounter(void)
+{
+  __disable_irq();
+
+  //MainInitTim();
+  DevCounterClearCounterValue(TIM2_NUM);
+  tim2msb = 0;
+
+  __enable_irq();
+  return;
+}
 
 /*** SPI  ***********************************************************/
 static void

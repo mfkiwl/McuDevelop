@@ -1,19 +1,10 @@
-getlist                 show key list
-setset [key]...         set key
-                          [code] [keyname] [cnt0] [key01] [key02] ... [cnt1] [key11] [key12]
-                          code     scan code
-                          keyname  char of the key top
-                          cnt0     number of key0x (up to 4 keys)
-                          key0x    key code (USB HID,  count is up to cnt0)
-                          cnt1     number of key1x (up to 4 keys)
-                          key1x    key code (USB HID,  count is up to cnt1)
+reset                   timestamp counter reset
 
-                          the detail is result of "getlist" command
+imu start               start sending the imu data to uart
+imu stop                stop  sending the imu data
 
-save                    the key maps are saved to EEPROM
-load                    the key maps are loaded from EEPROM
-erase                   the area of key maps in EEPROM is erased
-dump                    the area of key maps in EEPROM is dumped
+id set [hex]            the serial id is set to EEPROM
+id get                  the serial id value is shown to console
 
 firmupdate              enter the firmupdate mode
 reboot                  reboot

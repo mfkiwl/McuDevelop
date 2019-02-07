@@ -25,6 +25,8 @@
 #define _MAIN_H_
 
 void                    MainUsbdifIntr(void);
+void                    MainDisableTim(void);
+void                    MainResetTimCounter(void);
 
 
 #ifdef _MAIN_C_
