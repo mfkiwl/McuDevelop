@@ -35,7 +35,7 @@
 #define GPIO_INT1               GPIO_PORTNUM(GPIO_PORT_A,  1)
 #define GPIO_INT2               GPIO_PORTNUM(GPIO_PORT_A,  2)
 #define GPIO_INT3               GPIO_PORTNUM(GPIO_PORT_A,  3)
-#define GPIO_TIM2_ETR           GPIO_PORTNUM(GPIO_PORT_A,  4)
+#define GPIO_TIM2_ETR           GPIO_PORTNUM(GPIO_PORT_A, 15)
 
 #define GPIO_SPI1_SCK           GPIO_PORTNUM(GPIO_PORT_A,  5)
 #define GPIO_SPI1_MISO          GPIO_PORTNUM(GPIO_PORT_A,  6)
