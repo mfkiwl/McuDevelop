@@ -107,7 +107,7 @@ CONFIG_MEMORY_MAINFIRM_SIZE		= ((CONFIG_MEMORY_MAINFIRM_END)-(CONFIG_MEMORY_MAIN
 
 CONFIG_MEMORY_KEYMAP                    = (CONFIG_MEMORY_ROM_EEPROM_BASE)
 
-CONFIG_MCO_ENABLE                       = 0
+CONFIG_MCO_ENABLE                       = 1
 
 
 ###############################
@@ -174,7 +174,7 @@ __CHECK_DEVICE_DEFINES                  = 1
 ##############################
 ### USART
 CONFIG_SYSTEM_USART_PORT                = 1
-CONFIG_SYSTEM_USART_BAUD                = 460800
+CONFIG_SYSTEM_USART_BAUD                = 2000000
 CONFIG_CONSOLE_NUMBER                   = (CONFIG_SYSTEM_USART_PORT)
 
 
