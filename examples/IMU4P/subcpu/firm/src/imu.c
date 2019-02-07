@@ -82,7 +82,7 @@ ImuInit(int unit)
    * range: 3=2G,5=4G,c=16G
    */
   reg = 0x40;
-  val = 0x29;
+  val = 0x2c;
   Bmi160SetValue(unit, reg, val);
   reg = 0x41;
   val = 0x03;
@@ -93,7 +93,7 @@ ImuInit(int unit)
    * range: 0=2kdeg/s,1=1k,2=500,3=250,4=125
    */
   reg = 0x42;
-  val = 0x29;
+  val = 0x2c;
   Bmi160SetValue(unit, reg, val);
   reg = 0x41;
   val = 0x03;
