@@ -48,6 +48,7 @@ DevCounterInit(timNo_t unit, devCounterParam_t *param)
   uint32_t              cr1 = 0;
   uint32_t              cr2 = 0;
   uint32_t              dier = 0;
+  uint32_t              dierm = 0;
   uint32_t              smcr = 0;
   uint32_t              val;
 
@@ -96,7 +97,9 @@ DevCounterInit(timNo_t unit, devCounterParam_t *param)
 
   /*** clock trigger settings */
   if(param->chnum & DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG)) {
-    if((param->clktrg.mode & DEVTIME_CLKTRG_CTG_MASK) == DEVTIME_CLKTRG_CTG_INTERNAL) {
+    p->CNT = 0;
+    switch(param->clktrg.mode & DEVTIME_CLKTRG_CTG_MASK) {
+    case DEVTIME_CLKTRG_CTG_INTERNAL:
       smcr |= TIM_SMCR_ECE_MODE2DIS | TIM_SMCR_ETPS_DIV1 | TIM_SMCR_SMS_INTCLK;
       if(param->clktrg.polneg) {
         smcr |= TIM_SMCR_ETP_FALLING;
@@ -112,20 +115,38 @@ DevCounterInit(timNo_t unit, devCounterParam_t *param)
       val >>= DEVTIME_CLKTRG_SEL_SHIFT;
       val <<= TIM_SMCR_TS_SHIFT;
       smcr |= val & TIM_SMCR_TS_MASK;
-      /* set output trigger sel */
-      val   = param->clktrg.mode & DEVTIME_CLKTRG_TRGO_MASK;
-      val >>= DEVTIME_CLKTRG_TRGO_SHIFT;
-      val <<= TIM_CR2_MMS_SHIFT;
-      cr2 |= val & TIM_CR2_MMS_MASK;
-    } else {
-      if((param->clktrg.mode & DEVTIME_CLKTRG_CTG_MASK) == DEVTIME_CLKTRG_CTG_EXTERNAL2) {
-        smcr |= TIM_SMCR_ECE_MODE2EN;
-        smcr |= (param->clktrg.filter << TIM_SMCR_ETF_SHIFT) & TIM_SMCR_ETF_MASK;
-        if(param->clktrg.polneg) {
-          smcr |= TIM_SMCR_ETP_FALLING;
-        }
+      break;
+    case      DEVTIME_CLKTRG_CTG_EXTERNAL1:
+      /* ITRx, TI1FPx, TI2FPx */
+      //smcr |= TIM_SMCR_ECE_MODE2DIS | TIM_SMCR_ETPS_DIV1 | TIM_SMCR_SMS_TRIGGER;
+      smcr |= TIM_SMCR_ECE_MODE2DIS | TIM_SMCR_ETPS_DIV1 | TIM_SMCR_SMS_EXT1;
+      /* set the slave mode */
+      if(param->clktrg.mode & DEVTIME_CLKTRG_SLAVE_MASK) smcr |= TIM_SMCR_MSM_SYNC;
+      /* set input trigger sel */
+      val   = param->clktrg.mode & DEVTIME_CLKTRG_SEL_MASK;
+      val >>= DEVTIME_CLKTRG_SEL_SHIFT;
+      val <<= TIM_SMCR_TS_SHIFT;
+      smcr |= val & TIM_SMCR_TS_MASK;
+      break;
+
+    case      DEVTIME_CLKTRG_CTG_EXTERNAL2:
+      //smcr |= TIM_SMCR_ECE_MODE2EN;
+      smcr |= TIM_SMCR_ECE_MODE2EN | TIM_SMCR_ETPS_DIV1 | TIM_SMCR_SMS_TRIGGER;
+      smcr |= (param->clktrg.filter << TIM_SMCR_ETF_SHIFT) & TIM_SMCR_ETF_MASK;
+      if(param->clktrg.polneg) {
+        smcr |= TIM_SMCR_ETP_FALLING;
       }
+
+      break;
     }
+
+    /* set output trigger sel */
+    val   = param->clktrg.mode & DEVTIME_CLKTRG_TRGO_MASK;
+    val >>= DEVTIME_CLKTRG_TRGO_SHIFT;
+    val <<= TIM_CR2_MMS_SHIFT;
+    cr2 |= val & TIM_CR2_MMS_MASK;
+
+
     if(param->clktrg.intr) {
       dier |= TIM_DIER_UIE_YES;
     }
@@ -135,7 +156,7 @@ DevCounterInit(timNo_t unit, devCounterParam_t *param)
     if(param->clktrg.down) {
       cr1 |= TIM_CR1_DIR_DOWN;  /* down counter */
     }
-    if(!(smcr &TIM_SMCR_MSM_MASK)) {
+    if(!(smcr & TIM_SMCR_MSM_MASK)) {
       cr1 |= TIM_CR1_CEN_YES;
     }
   }
@@ -154,6 +175,8 @@ DevCounterInit(timNo_t unit, devCounterParam_t *param)
       if(param->ch.polneg) {
         ccer |= TIM_CCER_CC1P_YES << ((i)*2);   /* capture/compare polarity */
       }
+      dierm = ((TIM_DIER_CC1IE_YES << (i>>1)) |
+               (TIM_DIER_CC1DE_YES << (i>>1)));
       if(param->ch.intr) {
         dier |= TIM_DIER_CC1IE_YES << (i>>1);
       }
@@ -181,7 +204,10 @@ DevCounterInit(timNo_t unit, devCounterParam_t *param)
     p->CCMR2 |= ccmr[1];
     p->CCER  |= ccer;
     p->BDTR   = bdtr;
-    p->DIER  |= dier;
+    val  = p->DIER;
+    val &= ~dierm;
+    val |=  dier;
+    p->DIER   = val;
   }
 
   if(param->chnum & DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG)) {
@@ -198,6 +224,19 @@ end:
 }
 
 
+int
+DevCounterClearCounterValue(timNo_t unit)
+{
+  int                   result = -1;
+  stm32Dev_TIM          *p;
+
+  p = counter.sc[unit].dev;
+  p->CNT = 0;
+
+  result = 0;
+fail:
+  return result;
+}
 int
 DevCounterGetCounterValue(timNo_t unit, uint32_t *pVal)
 {

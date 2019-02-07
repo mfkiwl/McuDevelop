@@ -82,6 +82,7 @@ typedef struct {
 #define DEVTIME_CLKTRG_TRGO_RESET       (0 << (DEVTIME_CLKTRG_TRGO_SHIFT))
 #define DEVTIME_CLKTRG_TRGO_ENABLE      (1 << (DEVTIME_CLKTRG_TRGO_SHIFT))
 #define DEVTIME_CLKTRG_TRGO_UPDATE      (2 << (DEVTIME_CLKTRG_TRGO_SHIFT))
+#define DEVTIME_CLKTRG_TRGO_VAL(x)      (((x) << (DEVTIME_CLKTRG_TRGO_SHIFT)) & DEVTIME_CLKTRG_TRGO_MASK)
 #define DEVTIME_CLKTRG_MODE_SHIFT       (12)
 #define DEVTIME_CLKTRG_MODE_MASK        (0xf << (DEVTIME_CLKTRG_MODE_SHIFT))
 #define DEVTIME_CLKTRG_MODE_FREERUN     (0 << (DEVTIME_CLKTRG_MODE_SHIFT))
@@ -139,6 +140,7 @@ struct _stDevCounter {
 
 int             DevCounterInit(timNo_t unit, devCounterParam_t *param);
 
+int             DevCounterClearCounterValue(timNo_t unit);
 int             DevCounterGetCounterValue(timNo_t unit, uint32_t *pVal);
 int             DevCounterSetPwmDutyValue(timNo_t unit, int ch, uint32_t val);
 int             DevCounterGetIcValue(timNo_t unit, int ch, uint32_t *pVal);
