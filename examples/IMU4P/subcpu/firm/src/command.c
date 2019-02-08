@@ -30,6 +30,7 @@
 
 #include        "config.h"
 #include        "system.h"
+#include        "main.h"
 
 #include        "command.h"
 
