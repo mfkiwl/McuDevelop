@@ -210,8 +210,9 @@ MainEntry(void)
 
   __enable_irq();
 
-  ImuInit(0);
-  ImuInit(1);
+  for(int i = 0; i < 4; i++) {
+    ImuInit(i);
+  }
 
   int i;
   int isPushSw = 0, isPushSwPrev = 0;
