@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 zhtlab
+ * Copyright (c) 2018,2019 zhtlab
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -29,6 +29,8 @@
 #define BMI160_WRITE            (0<<7)
 
 #define BMI160_REG_CHIP_ID          0x00
+#define         CHIP_ID_BMI160                  0xd1
+#define         CHIP_ID_BMI160_COMPATIBLE       0xa2
 #define BMI160_REG_GYRO_X_LOW       0x0c
 #define BMI160_REG_GYRO_X_HIGH      0x0d
 #define BMI160_REG_GYRO_Y_LOW       0x0e
@@ -65,5 +67,15 @@
 #define         CMD_INT_RESET           0xb1
 #define         CMD_STEP_CNT_CLR        0xb2
 #define         CMD_SOFTRESET           0xb6
+
+
+int     Bmi160Probe(int unit);
+int     Bmi160Init(int unit);
+int     Bmi160ReadValue(int unit, imuValue_t *p);
+void    Bmi160SetValue(int unit, int reg, uint8_t val);
+void    Bmi160GetValue(int unit, int reg, uint8_t *ptr, int size);
+
+#ifdef  _BMI160_H_
+#endif
 
 #endif
