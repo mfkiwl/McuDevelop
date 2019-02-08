@@ -70,7 +70,8 @@ SOURCES =	\
 		src/main.c \
 		src/command.c \
 		src/intr.c \
-		src/imu.c
+		src/imu.c \
+		src/bmi160.c
 
 
 LIBSEXT		= -L$(LIBAEABI_CORTEXM0_DIR) -laeabi-cortexm0

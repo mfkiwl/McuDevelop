@@ -24,6 +24,10 @@
 #ifndef _IMU_H_
 #define _IMU_H_
 
+#define IMU_ERRNO_SUCCESS       0
+#define IMU_ERRNO_UNKNOWN       (-1)
+
+
 typedef struct {
   uint16_t      x;
   uint16_t      y;
@@ -45,8 +49,9 @@ int             ImuReadValue(int unit, imuValue_t *p);
 void            ImuEnableCs(int unit);
 void            ImuDisableCs(int unit);
 
-void            Bmi160SetValue(int unit, int reg, uint8_t val);
-void            Bmi160GetValue(int unit, int reg, uint8_t *ptr, int size);
+void            ImuSetValue(int unit, int reg, uint8_t val);
+void            ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
+
 
 #ifdef  _IMU_C_
 #endif

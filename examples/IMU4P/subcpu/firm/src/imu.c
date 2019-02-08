@@ -27,101 +27,45 @@
 
 #include        "system.h"
 #include        "devGpio.h"
-#include        "bmi160.h"
 #include        "gpio.h"
 #include        "devSpi16.h"
 
 #include        "imu.h"
 
+#include        "bmi160.h"
+
+
+typedef struct {
+  int           (*probe)(int unit);
+  int           (*init)(int unit);
+  int           (*read)(int unit, imuValue_t *p);
+} imuFunc_t;
+
+
+static int     imuFuncNum[4];
+const static imuFunc_t  imuFunc[] = {
+  {Bmi160Probe, Bmi160Init, Bmi160ReadValue},
+  {NULL, NULL, NULL},
+};
+
 int
 ImuInit(int unit)
 {
-  uint8_t       reg, val;
+  int                   result;
+  int                   re;
+  const imuFunc_t       *pFunc = imuFunc;
+  int                   i = 0;
 
-  /* reset and wait */
-  reg = BMI160_REG_CMD;
-  val = CMD_SOFTRESET;
-  Bmi160SetValue(unit, reg, val);
+  while(pFunc->probe) {
+    if(pFunc->probe(unit) == IMU_ERRNO_SUCCESS) {
+      pFunc->init(unit);
+      imuFuncNum[unit] = i;
+    }
+    pFunc++;
+    i++;
+  }
 
-  SystemWaitCounter(2);
-
-  /* flash fifo and reset interrupt */
-  reg = BMI160_REG_CMD;
-  val = CMD_FIFO_FLUSH;
-  Bmi160SetValue(unit, reg, val);
-
-  reg = BMI160_REG_CMD;
-  val = CMD_INT_RESET;
-  Bmi160SetValue(unit, reg, val);
-
-  /* interface mode */
-  reg = BMI160_REG_IF_CONF;
-  val = IF_CONF_MODE_AUTO_2NDOFF | IF_CONF_SPI3_NO4;
-  Bmi160SetValue(unit, reg, val);
-
-  /* start foc  and 10msec*/
-  reg = BMI160_REG_CMD;
-  val = 0x03;
-  Bmi160SetValue(unit, reg, val);
-  SystemWaitCounter(10);
-
-  /* enable accel measurement  and wait 1 msec */
-  reg = BMI160_REG_CMD;
-  val = 0x11;
-  Bmi160SetValue(unit, reg, val);
-  SystemWaitCounter(2);
-
-  /* enable gyroscope measurement  and wait 50 msec*/
-  reg = BMI160_REG_CMD;
-  val = 0x15;
-  Bmi160SetValue(unit, reg, val);
-  SystemWaitCounter(50);
-
-  /* [5:4]band width 2=800Hz,
-   * [3:0]data rate: a=400Hz,b=800,c=1600,d=3200
-   * range: 3=2G,5=4G,c=16G
-   */
-  reg = 0x40;
-  val = 0x2c;
-  Bmi160SetValue(unit, reg, val);
-  reg = 0x41;
-  val = 0x03;
-  Bmi160SetValue(unit, reg, val);
-
-  /* [5:4]acc_bwp: = 800Hz,
-   * [3:0]data rate: a=400Hz,b=800,c=1600,d=3200
-   * range: 0=2kdeg/s,1=1k,2=500,3=250,4=125
-   */
-  reg = 0x42;
-  val = 0x2c;
-  Bmi160SetValue(unit, reg, val);
-  reg = 0x41;
-  val = 0x03;
-  Bmi160SetValue(unit, reg, val);
-
-  /* interrupt  data ready, map int1, */
-  reg = 0x51;
-  val = 0x10;
-  Bmi160SetValue(unit, reg, val);
-  reg = 0x56;
-  val = 0x80;
-  Bmi160SetValue(unit, reg, val);
-  /* step counter */
-  reg = 0x52;
-  val = 0x38;
-  Bmi160SetValue(unit, reg, val);
-#if 0
-  reg = 0x55;
-  val = 0x01;
-  Bmi160SetValue(unit, reg, val);
-#endif
-#if 1
-  /* enable interrupt */
-  reg = 0x53;
-  val = 0x0b;
-  Bmi160SetValue(unit, reg, val);
-#endif
-  return 0;
+  return result;
 }
 
 
@@ -129,34 +73,19 @@ ImuInit(int unit)
 int
 ImuReadValue(int unit, imuValue_t *p)
 {
-  uint8_t       cmd;
-  uint8_t       buf[34];
-  uint32_t      reg = 0| BMI160_READ;
-  uint16_t      temp;
+  int                   result;
+  const imuFunc_t       *pFunc = imuFunc;
 
-  if(!p) goto fail;
+  pFunc[imuFuncNum[unit]].read(unit, p);
 
-  Bmi160GetValue(unit, BMI160_REG_CHIP_ID, buf, 34);
-
-  p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
-  p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
-  p->gyro.z = (buf[BMI160_REG_GYRO_Z_HIGH] << 8) | buf[BMI160_REG_GYRO_Z_LOW];
-
-  p->acc.x = (buf[BMI160_REG_ACC_X_HIGH] << 8) | buf[BMI160_REG_ACC_X_LOW];
-  p->acc.y = (buf[BMI160_REG_ACC_Y_HIGH] << 8) | buf[BMI160_REG_ACC_Y_LOW];
-  p->acc.z = (buf[BMI160_REG_ACC_Z_HIGH] << 8) | buf[BMI160_REG_ACC_Z_LOW];
-
-  p->ts = (buf[BMI160_REG_TIME_HIGH] << 16) |
-    (buf[BMI160_REG_TIME_MID] << 8) | buf[BMI160_REG_TIME_LOW];
-
-  temp = (buf[BMI160_REG_TEMP_HIGH] << 8) | buf[BMI160_REG_TEMP_LOW] ;
-  p->temp4x = (23 << 2) + (temp >> 7);
-
-fail:
-  return 0;
+  return result;
 }
 
 
+/************************************************************
+ * ImuEnableCs()
+ * ImuDisableCs()
+ */
 void
 ImuEnableCs(int unit)
 {
@@ -172,8 +101,6 @@ ImuEnableCs(int unit)
 
   return;
 }
-
-
 void
 ImuDisableCs(int unit)
 {
@@ -191,11 +118,16 @@ ImuDisableCs(int unit)
 }
 
 
+/************************************************************
+ * ImuSetValue()
+ * ImuGetValue()
+ */
 void
-Bmi160SetValue(int unit, int reg, uint8_t val)
+ImuSetValue(int unit, int reg, uint8_t val)
 {
   uint8_t       buf[2];
-  buf[0] = reg & ~BMI160_READ_WRITE_MASK;  /* read */
+
+  buf[0] = reg;
   buf[1] = val;
 
   ImuEnableCs(unit);
@@ -204,13 +136,12 @@ Bmi160SetValue(int unit, int reg, uint8_t val)
 
   return;
 }
-
 void
-Bmi160GetValue(int unit, int reg, uint8_t *ptr, int size)
+ImuGetValue(int unit, int reg, uint8_t *ptr, int size)
 {
   uint8_t       cmd;
 
-  cmd = reg | BMI160_READ;
+  cmd = reg;
 
   ImuEnableCs(unit);
   DevSpiSend(1, &cmd, 1);
@@ -219,5 +150,3 @@ Bmi160GetValue(int unit, int reg, uint8_t *ptr, int size)
 
   return;
 }
-
-

@@ -25,8 +25,15 @@
 #define _MAIN_H_
 
 void                    MainUsbdifIntr(void);
+void                    MainEnableTim(void);
 void                    MainDisableTim(void);
 void                    MainResetTimCounter(void);
+
+
+void                    SystemIncrement1ms(void);
+void                    SystemSysTickIntr(void);
+uint32_t                SystemGetCounter(void);
+void                    SystemWaitCounter(int ms);
 
 
 #ifdef _MAIN_C_

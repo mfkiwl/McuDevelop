@@ -33,6 +33,7 @@
 #include        "devGpio.h"
 #include        "devUsart.h"
 #include        "devSpi16.h"
+#include        "devDma4.h"
 #include        "devCounter.h"
 #include        "gpio.h"
 #include        "devCrs.h"
@@ -131,7 +132,7 @@ MainUartLoop(void)
         }
       } else {
         if(mainCommandPos < sizeof(mainCommandBuf)) {
-          int   str[2];
+          uint8_t       str[2];
           mainCommandBuf[mainCommandPos] = c;
           mainCommandPos++;
           str[0] = c;
