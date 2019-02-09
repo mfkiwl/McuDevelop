@@ -40,9 +40,8 @@ Bmi160Probe(int unit)
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       c;
 
-  Bmi160GetValue(unit, BMI160_REG_CHIP_ID, &c, 1);
-  if(c == CHIP_ID_BMI160 ||
-     c == CHIP_ID_BMI160_COMPATIBLE) {
+  ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, &c, 1);
+  if(c == CHIP_ID_BMI160) {
     result = IMU_ERRNO_SUCCESS;
   }
 
@@ -62,40 +61,40 @@ Bmi160Init(int unit)
   /* reset and wait */
   reg = BMI160_REG_CMD;
   val = CMD_SOFTRESET;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 
   SystemWaitCounter(2);
 
   /* flash fifo and reset interrupt */
   reg = BMI160_REG_CMD;
   val = CMD_FIFO_FLUSH;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 
   reg = BMI160_REG_CMD;
   val = CMD_INT_RESET;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 
   /* interface mode */
   reg = BMI160_REG_IF_CONF;
   val = IF_CONF_MODE_AUTO_2NDOFF | IF_CONF_SPI3_NO4;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 
   /* start foc  and 10msec*/
   reg = BMI160_REG_CMD;
   val = 0x03;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
   SystemWaitCounter(10);
 
   /* enable accel measurement  and wait 1 msec */
   reg = BMI160_REG_CMD;
   val = 0x11;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
   SystemWaitCounter(2);
 
   /* enable gyroscope measurement  and wait 50 msec*/
   reg = BMI160_REG_CMD;
   val = 0x15;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
   SystemWaitCounter(50);
 
   /* [5:4]band width 2=800Hz,
@@ -103,44 +102,44 @@ Bmi160Init(int unit)
    * range: 3=2G,5=4G,c=16G
    */
   reg = 0x40;
-  val = 0x2c;
-  Bmi160SetValue(unit, reg, val);
+  val = 0x28;
+  ImuSetValueStandard(unit, reg, val);
   reg = 0x41;
   val = 0x03;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 
   /* [5:4]acc_bwp: = 800Hz,
    * [3:0]data rate: a=400Hz,b=800,c=1600,d=3200
    * range: 0=2kdeg/s,1=1k,2=500,3=250,4=125
    */
   reg = 0x42;
-  val = 0x2c;
-  Bmi160SetValue(unit, reg, val);
+  val = 0x28;
+  ImuSetValueStandard(unit, reg, val);
   reg = 0x41;
   val = 0x03;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 
   /* interrupt  data ready, map int1, */
   reg = 0x51;
   val = 0x10;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
   reg = 0x56;
   val = 0x80;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
   /* step counter */
   reg = 0x52;
   val = 0x38;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 #if 0
   reg = 0x55;
   val = 0x01;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 #endif
 #if 1
   /* enable interrupt */
   reg = 0x53;
   val = 0x0b;
-  Bmi160SetValue(unit, reg, val);
+  ImuSetValueStandard(unit, reg, val);
 #endif
 
   return result;
@@ -157,7 +156,7 @@ Bmi160ReadValue(int unit, imuValue_t *p)
 
   if(!p) goto fail;
 
-  Bmi160GetValue(unit, BMI160_REG_CHIP_ID, buf, 34);
+  ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, buf, 34);
 
   p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
   p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
@@ -175,32 +174,4 @@ Bmi160ReadValue(int unit, imuValue_t *p)
 
 fail:
   return 0;
-}
-
-
-/************************************************************
- * Bmi160SetValue()
- * Bmi160GetValue()
- */
-void
-Bmi160SetValue(int unit, int reg, uint8_t val)
-{
-  uint8_t       cmd;
-
-  cmd = reg & ~BMI160_READ_WRITE_MASK;  /* write */
-
-  ImuSetValue(unit, cmd, val);
-
-  return;
-}
-void
-Bmi160GetValue(int unit, int reg, uint8_t *ptr, int size)
-{
-  uint8_t       cmd;
-
-  cmd = reg | BMI160_READ;              /* read */
-
-  ImuGetValue(unit, cmd, ptr, size);
-
-  return;
 }

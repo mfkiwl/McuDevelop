@@ -210,9 +210,17 @@ MainEntry(void)
 
   __enable_irq();
 
+  /* CS pin is generated low and high */
+  for(int j = 0; j < 1000; j++) {
+    for(int i = 0; i < 4; i++) {
+      ImuGenCsPulse(i, 0);
+    }
+  }
+
   for(int i = 0; i < 4; i++) {
     ImuInit(i);
   }
+
 
   int i;
   int isPushSw = 0, isPushSwPrev = 0;
@@ -431,12 +439,13 @@ MainInitSpi(void)
   DevSpiInit(-1, NULL);
 
   memset(&param, 0, sizeof(param));
-  param.clkmode = SPI_CR1_CPOL_NO | SPI_CR1_CPHA_NO;
+  //param.clkmode = SPI_CR1_CPOL_NO | SPI_CR1_CPHA_NO;
+  param.clkmode = SPI_CR1_CPOL_YES | SPI_CR1_CPHA_YES;
   param.bit = 8;
 
   /* IMU control */
   //param.speed = 40000000;     /* speed: don't care */
-  param.prescaler = 1;          /* 32MHz/2/2 = 8Mbps */
+  param.prescaler = 3;          /* 32MHz/2/(2^x) x={1:8Mbps, 2:4Mbps} */
   param.dmaTx = 0;
   param.dmaRx = 1;
   DevSpiInit(1, &param);

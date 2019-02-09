@@ -28,6 +28,11 @@
 #define IMU_ERRNO_UNKNOWN       (-1)
 
 
+#define IMU_SPI_READ_WRITE_MASK (1<<7)
+#define IMU_SPI_READ            (1<<7)
+#define IMU_SPI_WRITE           (0<<7)
+
+
 typedef struct {
   uint16_t      x;
   uint16_t      y;
@@ -39,7 +44,6 @@ typedef struct {
   imuAxis_t     gyro;
   uint32_t      ts;
   uint16_t      temp4x;
-  float         tempf;
 } imuValue_t;
 
 
@@ -49,9 +53,11 @@ int             ImuReadValue(int unit, imuValue_t *p);
 void            ImuEnableCs(int unit);
 void            ImuDisableCs(int unit);
 
+void            ImuGenCsPulse(int unit, uint32_t ms);
 void            ImuSetValue(int unit, int reg, uint8_t val);
 void            ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
-
+void            ImuSetValueStandard(int unit, int reg, uint8_t val);
+void            ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size);
 
 #ifdef  _IMU_C_
 #endif

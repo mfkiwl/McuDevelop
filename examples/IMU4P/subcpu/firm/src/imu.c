@@ -33,6 +33,8 @@
 #include        "imu.h"
 
 #include        "bmi160.h"
+#include        "adxl345.h"
+#include        "mpu9250.h"
 
 
 typedef struct {
@@ -42,16 +44,21 @@ typedef struct {
 } imuFunc_t;
 
 
-static int     imuFuncNum[4];
+static int     imuFuncNum[4] = {
+  -1, -1, -1, -1
+};
 const static imuFunc_t  imuFunc[] = {
   {Bmi160Probe, Bmi160Init, Bmi160ReadValue},
+  {Adxl345Probe, Adxl345Init, Adxl345ReadValue},
+  //{Mpu9250Probe, Mpu9250Init, Mpu9250ReadValue},
   {NULL, NULL, NULL},
 };
+
 
 int
 ImuInit(int unit)
 {
-  int                   result;
+  int                   result = IMU_ERRNO_UNKNOWN;
   int                   re;
   const imuFunc_t       *pFunc = imuFunc;
   int                   i = 0;
@@ -60,6 +67,8 @@ ImuInit(int unit)
     if(pFunc->probe(unit) == IMU_ERRNO_SUCCESS) {
       pFunc->init(unit);
       imuFuncNum[unit] = i;
+      result = IMU_ERRNO_SUCCESS;
+      break;
     }
     pFunc++;
     i++;
@@ -76,7 +85,9 @@ ImuReadValue(int unit, imuValue_t *p)
   int                   result;
   const imuFunc_t       *pFunc = imuFunc;
 
-  pFunc[imuFuncNum[unit]].read(unit, p);
+  if(imuFuncNum[unit] >= 0) {
+    pFunc[imuFuncNum[unit]].read(unit, p);
+  }
 
   return result;
 }
@@ -119,9 +130,21 @@ ImuDisableCs(int unit)
 
 
 /************************************************************
+ * ImuGenCsPulse()
  * ImuSetValue()
  * ImuGetValue()
+ * ImuSetValueStandard()
+ * ImuGetValueStandard()
  */
+void
+ImuGenCsPulse(int unit, uint32_t ms)
+{
+  ImuEnableCs(unit);
+  SystemWaitCounter(ms);
+  ImuDisableCs(unit);
+
+  return;
+}
 void
 ImuSetValue(int unit, int reg, uint8_t val)
 {
@@ -147,6 +170,28 @@ ImuGetValue(int unit, int reg, uint8_t *ptr, int size)
   DevSpiSend(1, &cmd, 1);
   DevSpiRecv(1,  ptr, size);
   ImuDisableCs(unit);
+
+  return;
+}
+void
+ImuSetValueStandard(int unit, int reg, uint8_t val)
+{
+  uint8_t       cmd;
+
+  cmd = reg & ~IMU_SPI_READ_WRITE_MASK;  /* write */
+
+  ImuSetValue(unit, cmd, val);
+
+  return;
+}
+void
+ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size)
+{
+  uint8_t       cmd;
+
+  cmd = reg | IMU_SPI_READ;              /* read */
+
+  ImuGetValue(unit, cmd, ptr, size);
 
   return;
 }

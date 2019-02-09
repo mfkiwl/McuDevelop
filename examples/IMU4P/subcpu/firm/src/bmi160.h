@@ -30,7 +30,6 @@
 
 #define BMI160_REG_CHIP_ID          0x00
 #define         CHIP_ID_BMI160                  0xd1
-#define         CHIP_ID_BMI160_COMPATIBLE       0xa2
 #define BMI160_REG_GYRO_X_LOW       0x0c
 #define BMI160_REG_GYRO_X_HIGH      0x0d
 #define BMI160_REG_GYRO_Y_LOW       0x0e
