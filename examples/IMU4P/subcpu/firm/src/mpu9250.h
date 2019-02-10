@@ -28,18 +28,6 @@
 #define MPU9250_READ             (1<<7)
 #define MPU9250_WRITE            (0<<7)
 
-#if 0
-#define MPU9250_REG_IF_CONF          0x6b
-#define         IF_CONF_MODE_SHIFT      4
-#define         IF_CONF_MODE_MASK       (1<<I(F_CONF_MODE_SHIFT))
-#define         IF_CONF_MODE_AUTO_2NDOFF (0<<(IF_CONF_MODE_SHIFT))
-#define         IF_CONF_MODE_I2C_2NDOIS  (1<<(IF_CONF_MODE_SHIFT))
-#define         IF_CONF_MODE_AUTO_2NDMAG (2<<(IF_CONF_MODE_SHIFT))
-#define         IF_CONF_SPI3_SHIFT      0
-#define         IF_CONF_SPI3_MASK       (1<<(IF_CONF_SPI3_SHIFT))
-#define         IF_CONF_SPI3_NO4        (0<<(IF_CONF_SPI3_SHIFT))
-#define         IF_CONF_SPI3_YES        (1<<(IF_CONF_SPI3_SHIFT))
-#endif
 
 #define MPU9250_REG_GYRO_CONFIG         0x1c
 #define         GYRO_CONFIG_GYRO_FS_SEL_SHIFT   3
@@ -90,8 +78,8 @@
 #define         INT_PIN_LATCH_INT_EN_MASK       (1<<(INT_PIN_LATCH_INT_EN_SHIFT))
 #define         INT_PIN_LATCH_INT_EN_EDGE       (0<<(INT_PIN_LATCH_INT_EN_SHIFT))
 #define         INT_PIN_LATCH_INT_EN_STATE      (1<<(INT_PIN_LATCH_INT_EN_SHIFT))
-#define         INT_PIN_INT_ANYRD_2CLEAR_SHIFT   4
-#define         INT_PIN_INT_ANYRD_2CLEAR_MASK    (1<<(INT_PIN_INT_ANYRD_2CLEAR_SHIFT))
+#define         INT_PIN_INT_ANYRD_2CLEAR_SHIFT  4
+#define         INT_PIN_INT_ANYRD_2CLEAR_MASK   (1<<(INT_PIN_INT_ANYRD_2CLEAR_SHIFT))
 #define         INT_PIN_INT_ANYRD_2CLEAR_INT_STATUS  (0<<(INT_PIN_INT_ANYRD_2CLEAR_SHIFT))
 #define         INT_PIN_INT_ANYRD_2CLEAR_READ   (1<<(INT_PIN_INT_ANYRD_2CLEAR_SHIFT))
 #define         INT_PIN_ACTL_FSYNC_SHIFT        3
@@ -108,10 +96,10 @@
 #define         INT_PIN_BYPASS_EN_YES           (1<<(INT_PIN_BYPASS_EN_SHIFT))
 
 #define MPU9250_REG_INT_ENABLE          0x38
-#define         INT_ENABLE_WOM_EN_SHIFT        6
-#define         INT_ENABLE_WOM_EN_MASK         (1<<(INT_ENABLE_WOM_EN_SHIFT))
-#define         INT_ENABLE_WOM_EN_NO           (0<<(INT_ENABLE_WOM_EN_SHIFT))
-#define         INT_ENABLE_WOM_EN_YES          (1<<(INT_ENABLE_WOM_EN_SHIFT))
+#define         INT_ENABLE_WOM_EN_SHIFT         6
+#define         INT_ENABLE_WOM_EN_MASK          (1<<(INT_ENABLE_WOM_EN_SHIFT))
+#define         INT_ENABLE_WOM_EN_NO            (0<<(INT_ENABLE_WOM_EN_SHIFT))
+#define         INT_ENABLE_WOM_EN_YES           (1<<(INT_ENABLE_WOM_EN_SHIFT))
 #define         INT_ENABLE_FIFO_OVERFLOW_EN_SHIFT       4
 #define         INT_ENABLE_FIFO_OVERFLOW_EN_MASK        (1<<(INT_ENABLE_FIFO_OVERFLOW_EN_SHIFT))
 #define         INT_ENABLE_FIFO_OVERFLOW_EN_NO          (0<<(INT_ENABLE_FIFO_OVERFLOW_EN_SHIFT))
@@ -125,7 +113,7 @@
 #define         INT_ENABLE_RAW_RDY_EN_NO        (0<<(INT_ENABLE_RAW_RDY_EN_SHIFT))
 #define         INT_ENABLE_RAW_RDY_EN_YES       (1<<(INT_ENABLE_RAW_RDY_EN_SHIFT))
 
-
+#define MPU9250_REG_INT_STATUS          0x3a
 #define MPU9250_REG_ACCEL_XOUT_L        0x3b
 #define MPU9250_REG_ACCEL_XOUT_H        0x3c
 #define MPU9250_REG_ACCEL_YOUT_L        0x3d
