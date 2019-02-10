@@ -48,6 +48,26 @@
 #define BMI160_REG_TEMP_LOW         0x20
 #define BMI160_REG_TEMP_HIGH        0x21
 
+#define BMI160_REG_ACC_CONF         0x40
+#define         ACC_CONF_ODR_SHIFT      0
+#define         ACC_CONF_ODR_MASK       (0xf<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_100HZ      (0x8<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_200HZ      (0x9<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_400HZ      (0xa<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_800HZ      (0xb<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_1600HZ     (0xc<<(ACC_CONF_ODR_SHIFT))
+#define BMI160_REG_ACC_RANGE        0x41
+#define BMI160_REG_GYRO_CONF        0x42
+#define         GYRO_CONF_ODR_SHIFT     0
+#define         GYRO_CONF_ODR_MASK      (0xf<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_100HZ     (0x8<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_200HZ     (0x9<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_400HZ     (0xa<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_800HZ     (0xb<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_1600HZ    (0xc<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_3200HZ    (0xd<<(GYRO_CONF_ODR_SHIFT))
+#define BMI160_REG_GYRO_RANGE       0x43
+
 #define BMI160_REG_IF_CONF          0x6b
 #define         IF_CONF_MODE_SHIFT      4
 #define         IF_CONF_MODE_MASK       (1<<IF_CONF_MODE_SHIFT)

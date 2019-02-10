@@ -25,6 +25,7 @@
 
 #include        <stdint.h>
 
+#include        "config.h"
 #include        "main.h"
 #include        "imu.h"
 
@@ -101,21 +102,21 @@ Bmi160Init(int unit)
    * [3:0]data rate: a=400Hz,b=800,c=1600,d=3200
    * range: 3=2G,5=4G,c=16G
    */
-  reg = 0x40;
-  val = 0x28;
+  reg = BMI160_REG_ACC_CONF;
+  val = (0x20 | ACC_CONF_ODR_100HZ) + (CONFIG_IMU_RATE_DEFAULT);
   ImuSetValueStandard(unit, reg, val);
-  reg = 0x41;
+  reg = BMI160_REG_ACC_RANGE;
   val = 0x03;
   ImuSetValueStandard(unit, reg, val);
 
-  /* [5:4]acc_bwp: = 800Hz,
+  /* [5:4]band bwp: = 800Hz,
    * [3:0]data rate: a=400Hz,b=800,c=1600,d=3200
    * range: 0=2kdeg/s,1=1k,2=500,3=250,4=125
    */
-  reg = 0x42;
-  val = 0x28;
+  reg = BMI160_REG_GYRO_CONF;
+  val = (0x20 | GYRO_CONF_ODR_100HZ) + (CONFIG_IMU_RATE_DEFAULT);
   ImuSetValueStandard(unit, reg, val);
-  reg = 0x41;
+  reg = BMI160_REG_GYRO_RANGE;
   val = 0x03;
   ImuSetValueStandard(unit, reg, val);
 

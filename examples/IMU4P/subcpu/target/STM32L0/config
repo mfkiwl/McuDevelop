@@ -180,33 +180,10 @@ CONFIG_CONSOLE_NUMBER                   = (CONFIG_SYSTEM_USART_PORT)
 
 ###############################
 ### USB
-
-CONFIG_AUDIO_FS_96K000                           = 96000
-CONFIG_AUDIO_FS_48K000                           = 48000
-CONFIG_AUDIO_FS_44K100                           = 44100
-CONFIG_AUDIO_FS_32K000                           = 32000
-CONFIG_AUDIO_FS_16K000                           = 16000
-
-CONFIG_USB_MAXNUM_DEVICES                        = 1
-CONFIG_USB_MAXNUM_CONFIGURATIONS                 = 1
-CONFIG_USB_MAXNUM_INTERFACES                     = 9
-CONFIG_USB_MAXNUM_REGCLASSES                     = 4
-
-### USB AUDIO terminarl definitions
-CONFIG_USB_AUDIO_200_ENABLE                     = 1
-
-CONFIG_USB_AUDIO_TERM_STREAMIN                  = 1
-CONFIG_USB_AUDIO_TERM_SPOUT                     = 2
-CONFIG_USB_AUDIO_TERM_SPVOLUME                  = 3
-CONFIG_USB_AUDIO_TERM_MICIN                     = 4
-CONFIG_USB_AUDIO_TERM_STREAMOUT                 = 5
-
-CONFIG_USB_AUDIO_TERM_CLK_SOURCE_SP             = 16
-CONFIG_USB_AUDIO_TERM_CLK_SELECTOR_SP           = 17
-CONFIG_USB_AUDIO_TERM_CLK_SOURCE_MIC            = 18
-CONFIG_USB_AUDIO_TERM_CLK_SELECTOR_MIC          = 19
-
-
-### KEYs
-CONFIG_KEY_ROW_CNT                              = 7
-CONFIG_KEY_COL_CNT                              = 5
+CONFIG_IMU_RATE_100HZ                   = 0
+CONFIG_IMU_RATE_200HZ                   = 1
+CONFIG_IMU_RATE_400HZ                   = 2
+CONFIG_IMU_RATE_800HZ                   = 3
+CONFIG_IMU_RATE_1600HZ                  = 5
+CONFIG_IMU_RATE_3200HZ                  = 6
+CONFIG_IMU_RATE_DEFAULT                 = (CONFIG_IMU_RATE_100HZ)

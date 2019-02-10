@@ -25,6 +25,7 @@
 
 #include        <stdint.h>
 
+#include        "config.h"
 #include        "main.h"
 #include        "imu.h"
 
@@ -57,17 +58,26 @@ Adxl345Init(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
+  imuValue_t    imu;
+
+  /* disable interrupt */
+  reg = ADXL345_REG_INT_ENABLE;
+  val = 0;
+  ImuSetValueStandard(unit, reg, val);
 
   /* power ctl   off first */
   reg = ADXL345_POWER_CTL;
   val = 0x00;
   ImuSetValueStandard(unit, reg, val);
 
+  /* dummy read for clear the interrupt */
+  Adxl345ReadValue(unit, &imu);
+
   SystemWaitCounter(2);
 
   /* bw rate */
   reg = ADXL345_BW_RATE;
-  val = BW_RATE_RATE_100HZ;
+  val = BW_RATE_RATE_100HZ + (CONFIG_IMU_RATE_DEFAULT);
   ImuSetValueStandard(unit, reg, val);
 
   /* SPI 4lines */
