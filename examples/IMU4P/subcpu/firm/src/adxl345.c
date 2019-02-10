@@ -72,7 +72,7 @@ Adxl345Init(int unit)
 
   /* SPI 4lines */
   reg = ADXL345_REG_DATA_FORMAT;
-  val = DATA_FORMAT_RANGE_PM16G;
+  val = DATA_FORMAT_INT_INVERT_HIGH | DATA_FORMAT_RANGE_PM16G;
   ImuSetValueStandard(unit, reg, val);
 
   /* interrupt  data ready, map int1, */
