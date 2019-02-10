@@ -445,7 +445,7 @@ MainInitSpi(void)
 
   /* IMU control */
   //param.speed = 40000000;     /* speed: don't care */
-  param.prescaler = 3;          /* 32MHz/2/(2^x) x={1:8Mbps, 2:4Mbps} */
+  param.prescaler = 3;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
   param.dmaTx = 0;
   param.dmaRx = 1;
   DevSpiInit(1, &param);
