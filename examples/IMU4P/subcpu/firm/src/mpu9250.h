@@ -29,6 +29,20 @@
 #define MPU9250_WRITE            (0<<7)
 
 
+#define MPU9250_REG_SMPLRT              0x19
+
+#define MPU9250_REG_CONFIG              0x1a
+#define         CONFIG_DLPF_CFG_SHIFT   0
+#define         CONFIG_DLPF_CFG_MASK    (7<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_250HZ   (0<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_184HZ   (1<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_92HZ    (2<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_41HZ    (3<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_20HZ    (4<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_10HZ    (5<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_5HZ     (6<<(CONFIG_DLPF_CFG_SHIFT))
+#define         CONFIG_DLPF_CFG_3600HZ  (7<<(CONFIG_DLPF_CFG_SHIFT))
+
 #define MPU9250_REG_GYRO_CONFIG         0x1c
 #define         GYRO_CONFIG_GYRO_FS_SEL_SHIFT   3
 #define         GYRO_CONFIG_GYRO_FS_SEL_MASK    (3<<(GYRO_CONFIG_GYRO_FS_SEL_SHIFT))
@@ -114,20 +128,20 @@
 #define         INT_ENABLE_RAW_RDY_EN_YES       (1<<(INT_ENABLE_RAW_RDY_EN_SHIFT))
 
 #define MPU9250_REG_INT_STATUS          0x3a
-#define MPU9250_REG_ACCEL_XOUT_L        0x3b
-#define MPU9250_REG_ACCEL_XOUT_H        0x3c
-#define MPU9250_REG_ACCEL_YOUT_L        0x3d
-#define MPU9250_REG_ACCEL_YOUT_H        0x3e
-#define MPU9250_REG_ACCEL_ZOUT_L        0x3f
-#define MPU9250_REG_ACCEL_ZOUT_H        0x40
-#define MPU9250_REG_TEMP_OUT_L          0x41
-#define MPU9250_REG_TEMP_OUT_H          0x42
-#define MPU9250_REG_GYRO_XOUT_L         0x43
-#define MPU9250_REG_GYRO_XOUT_H         0x44
-#define MPU9250_REG_GYRO_YOUT_L         0x45
-#define MPU9250_REG_GYRO_YOUT_H         0x46
-#define MPU9250_REG_GYRO_ZOUT_L         0x47
-#define MPU9250_REG_GYRO_ZOUT_H         0x48
+#define MPU9250_REG_ACCEL_XOUT_H        0x3b
+#define MPU9250_REG_ACCEL_XOUT_L        0x3c
+#define MPU9250_REG_ACCEL_YOUT_H        0x3d
+#define MPU9250_REG_ACCEL_YOUT_L        0x3e
+#define MPU9250_REG_ACCEL_ZOUT_H        0x3f
+#define MPU9250_REG_ACCEL_ZOUT_L        0x40
+#define MPU9250_REG_TEMP_OUT_H          0x41
+#define MPU9250_REG_TEMP_OUT_L          0x42
+#define MPU9250_REG_GYRO_XOUT_H         0x43
+#define MPU9250_REG_GYRO_XOUT_L         0x44
+#define MPU9250_REG_GYRO_YOUT_H         0x45
+#define MPU9250_REG_GYRO_YOUT_L         0x46
+#define MPU9250_REG_GYRO_ZOUT_H         0x47
+#define MPU9250_REG_GYRO_ZOUT_L         0x48
 
 #define MPU9250_REG_MOT_DETECT_CTRL     0x69
 #define         MOT_DETECT_CTRL_ACCEL_INTEL_EN_SHIFT    7
@@ -139,10 +153,14 @@
 #define         MOT_DETECT_CTRL_ACCEL_INTEL_MODE_NO     (0<<(MOT_DETECT_CTRL_ACCEL_INTEL_MODE_SHIFT))
 #define         MOT_DETECT_CTRL_ACCEL_INTEL_MODE_YES    (1<<(MOT_DETECT_CTRL_ACCEL_INTEL_MODE_SHIFT))
 
-#define MPU9250_REG_PWR_MGMT1        0x6b
-#define MPU9250_REG_PWR_MGMT2        0x6c
+#define MPU9250_REG_PWR_MGMT1           0x6b
+#define         PWR_MGMT1_HRESET_SHIFT          1
+#define         PWR_MGMT1_HRESET_MASK           (1<<(PWR_MGMT1_HRESET_SHIFT))
+#define         PWR_MGMT1_HRESET_NO             (0<<(PWR_MGMT1_HRESET_SHIFT))
+#define         PWR_MGMT1_HRESET_YES            (1<<(PWR_MGMT1_HRESET_SHIFT))
+#define MPU9250_REG_PWR_MGMT2           0x6c
 
-#define MPU9250_REG_WHOAMI           0x75
+#define MPU9250_REG_WHOAMI              0x75
 #define         WHOAMI_VALUE                    0x71
 
 

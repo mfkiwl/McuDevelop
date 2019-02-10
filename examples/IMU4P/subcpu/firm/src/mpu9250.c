@@ -58,6 +58,13 @@ Mpu9250Init(int unit)
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
 
+  /* reset first */
+  reg = MPU9250_REG_PWR_MGMT1;
+  val = PWR_MGMT1_HRESET_YES;
+  ImuSetValueStandard(unit, reg, val);
+
+  SystemWaitCounter(2);
+
   /* power management */
   reg = MPU9250_REG_PWR_MGMT1;
   val = 0;
@@ -66,12 +73,22 @@ Mpu9250Init(int unit)
   val = 0;
   ImuSetValueStandard(unit, reg, val);
 
+  /* sampling rate */
+  reg = MPU9250_REG_SMPLRT;
+  val = 7;
+  ImuSetValueStandard(unit, reg, val);
+
+  /* config */
+  reg = MPU9250_REG_CONFIG;
+  val = CONFIG_DLPF_CFG_250HZ;
+  ImuSetValueStandard(unit, reg, val);
+
   /* configuration accel */
   reg = MPU9250_REG_ACCEL_CONFIG;
   val = ACCEL_CONFIG_FS_SEL_PM2G;
   ImuSetValueStandard(unit, reg, val);
   reg = MPU9250_REG_ACCEL_CONFIG2;
-  val = ACCEL_CONFIG2_FCHOICE_YES | ACCEL_CONFIG2_A_DLPFCFG_420HZ;
+  val = ACCEL_CONFIG2_FCHOICE_YES | ACCEL_CONFIG2_A_DLPFCFG_218HZ;
   ImuSetValueStandard(unit, reg, val);
 
   /* configuration gyro */
@@ -81,7 +98,10 @@ Mpu9250Init(int unit)
 
   /* interrupt */
   reg = MPU9250_REG_INT_PIN;
-  val = INT_PIN_ACTL_HIGH | INT_PIN_OPEN_PUSHPULL | INT_PIN_LATCH_INT_EN_EDGE;
+  val = (INT_PIN_ACTL_HIGH |
+         INT_PIN_OPEN_PUSHPULL |
+         INT_PIN_LATCH_INT_EN_EDGE |
+         INT_PIN_INT_ANYRD_2CLEAR_INT_STATUS);
   ImuSetValueStandard(unit, reg, val);
   reg = MPU9250_REG_INT_ENABLE;
   val = INT_ENABLE_RAW_RDY_EN_YES;
@@ -110,7 +130,6 @@ Mpu9250ReadValue(int unit, imuValue_t *p)
 {
   uint8_t       cmd;
   uint8_t       buf[64];
-  uint32_t      reg = 0 | MPU9250_READ;
   uint16_t      temp;
 
   if(!p) goto fail;
