@@ -50,7 +50,7 @@ static int     imuFuncNum[4] = {
 const static imuFunc_t  imuFunc[] = {
   {Bmi160Probe, Bmi160Init, Bmi160ReadValue},
   {Adxl345Probe, Adxl345Init, Adxl345ReadValue},
-  //{Mpu9250Probe, Mpu9250Init, Mpu9250ReadValue},
+  {Mpu9250Probe, Mpu9250Init, Mpu9250ReadValue},
   {NULL, NULL, NULL},
 };
 
