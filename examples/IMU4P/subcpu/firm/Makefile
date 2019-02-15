@@ -56,6 +56,7 @@ SOURCES =	\
 		$(CONFIG_ROOTDIR)/../lib/openbsd/string/memcmp.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strtok.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strncmp.c \
+		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strncpy.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/stdlib/strtoul.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/stdlib/ctype_.c \
 		$(DEVICELIB_DIR)/$(VENDOR_SERIES)/src/devGpio.c \
