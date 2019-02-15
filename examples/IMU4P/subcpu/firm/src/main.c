@@ -46,6 +46,7 @@
 const uint8_t           strVersionText[] = CONFIG_VERSION_FIRM_TEXT;
 
 
+mainSetting_t           setting;
 static uint32_t         system1ms = 0;
 
 void            MainEntry(void);
@@ -136,7 +137,7 @@ MainUartLoop(void)
           mainCommandBuf[mainCommandPos] = c;
           mainCommandPos++;
           str[0] = c;
-          str[1] = '\n';
+          str[1] = '\0';
           puts(str);
         }
       }

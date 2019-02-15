@@ -51,6 +51,7 @@
 #define SRAM_BASE               (0x20000000)
 
 #define POR_PC_ENTRY_BASE       (0x08000000)
+#define EEPROM_BASE             (0x08080000)
 
 
 /*************************************************************

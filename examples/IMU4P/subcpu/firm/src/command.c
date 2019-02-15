@@ -35,6 +35,7 @@
 #include        "command.h"
 
 
+extern mainSetting_t            setting;
 #define COMMAND_WORDS_MAX       16
 int             commandArgc;
 uint8_t         *commandArgv[COMMAND_WORDS_MAX];
@@ -71,8 +72,17 @@ CommandExec(int ac, uint8_t *av[])
     }
 
   } else if(!strncmp(av[0], "id", 2)) {
-    if(!strncmp(av[1], "set", 3)) {
+    uint8_t     id[MAIN_SETTING_ID_LEN+1];
+    int         addr = EEPROM_BASE;
+    if(ac >= 3 && !strncmp(av[1], "set", 3)) {
+      strncpy(id, av[2], MAIN_SETTING_ID_LEN);
+      id[MAIN_SETTING_ID_LEN] = '\0';
+      addr = EEPROM_BASE + MAIN_SETTING_ID_POS;
+      DevFlashProgram(0, addr, MAIN_SETTING_ID_LEN, &id);
     } else if(!strncmp(av[1], "get", 3)) {
+      addr = EEPROM_BASE + MAIN_SETTING_ID_POS;
+      puts((uint8_t *)addr);
+      puts("\n");
     }
 
   } else if(!strncmp(av[0], "reboot", 6)) {

@@ -24,6 +24,14 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#define MAIN_SETTING_ID_POS             0
+#define MAIN_SETTING_ID_LEN             32
+
+typedef struct {
+  uint8_t       id[MAIN_SETTING_ID_LEN];
+} mainSetting_t;
+
+
 void                    MainUsbdifIntr(void);
 void                    MainEnableTim(void);
 void                    MainDisableTim(void);
