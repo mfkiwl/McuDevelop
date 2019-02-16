@@ -31,6 +31,15 @@
 
 #include        "bmi160.h"
 
+typedef struct {
+  uint8_t       accRange;
+  uint8_t       accOdr;
+  uint8_t       gyroRange;
+  uint8_t       gyroOdr;
+} bmi160Setting_t;
+
+static bmi160Setting_t setting[CONFIG_NUM_OF_IMUS];
+
 
 /************************************************************
  * Bmi160Probe()
@@ -40,9 +49,17 @@ Bmi160Probe(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       c;
+  bmi160Setting_t       *pSet;
 
   ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, &c, 1);
   if(c == CHIP_ID_BMI160) {
+    pSet = &setting[unit];
+
+    pSet->accOdr    = 0x20 | ACC_CONF_ODR_1600HZ;
+    pSet->accRange  = 3;
+    pSet->gyroOdr   = 0x20 | GYRO_CONF_ODR_1600HZ;
+    pSet->gyroRange = 3;
+
     result = IMU_ERRNO_SUCCESS;
   }
 
@@ -58,6 +75,9 @@ Bmi160Init(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
+  bmi160Setting_t       *pSet;
+
+  pSet = &setting[unit];
 
   /* reset and wait */
   reg = BMI160_REG_CMD;
@@ -103,10 +123,10 @@ Bmi160Init(int unit)
    * range: 3=2G,5=4G,c=16G
    */
   reg = BMI160_REG_ACC_CONF;
-  val = (0x20 | ACC_CONF_ODR_100HZ) + (CONFIG_IMU_RATE_DEFAULT);
+  val = pSet->accOdr;
   ImuSetValueStandard(unit, reg, val);
   reg = BMI160_REG_ACC_RANGE;
-  val = 0x03;
+  val = pSet->accRange;
   ImuSetValueStandard(unit, reg, val);
 
   /* [5:4]band bwp: = 800Hz,
@@ -114,10 +134,10 @@ Bmi160Init(int unit)
    * range: 0=2kdeg/s,1=1k,2=500,3=250,4=125
    */
   reg = BMI160_REG_GYRO_CONF;
-  val = (0x20 | GYRO_CONF_ODR_100HZ) + (CONFIG_IMU_RATE_DEFAULT);
+  val = pSet->gyroOdr;
   ImuSetValueStandard(unit, reg, val);
   reg = BMI160_REG_GYRO_RANGE;
-  val = 0x03;
+  val = pSet->gyroRange;
   ImuSetValueStandard(unit, reg, val);
 
   /* interrupt  data ready, map int1, */
@@ -175,4 +195,91 @@ Bmi160ReadValue(int unit, imuValue_t *p)
 
 fail:
   return 0;
+}
+
+
+int
+Bmi160GetSettings(int unit, imuSetting_t *p)
+{
+  int                   result = IMU_ERRNO_UNKNOWN;
+  int                   freqVal;
+  bmi160Setting_t       *pSet;
+
+  pSet = &setting[unit];
+
+  switch(pSet->accRange & ACC_CONF_RANGE_MASK) {
+  case ACC_CONF_RANGE_PM4G:  p->acc_fs =  400; break;
+  case ACC_CONF_RANGE_PM8G:  p->acc_fs =  800; break;
+  case ACC_CONF_RANGE_PM16G: p->acc_fs = 1600; break;
+  default:                   p->acc_fs =  200; break;
+  }
+  switch(pSet->gyroRange & GYRO_CONF_RANGE_MASK) {
+  case GYRO_CONF_RANGE_PM2000DPS: p->gyro_fs =  200; break;
+  case GYRO_CONF_RANGE_PM1000DPS: p->gyro_fs =  100; break;
+  case GYRO_CONF_RANGE_PM500DPS:  p->gyro_fs =   50; break;
+  case GYRO_CONF_RANGE_PM250DPS:  p->gyro_fs =   25; break;
+  case GYRO_CONF_RANGE_PM125DPS:  p->gyro_fs =   12; break;
+  default:                        p->gyro_fs =  200; break;
+  }
+  freqVal = GYRO_CONF_ODR_3200HZ - ((pSet->gyroOdr & GYRO_CONF_ODR_MASK) >> GYRO_CONF_ODR_SHIFT);
+  p->freq = 3200 >> (freqVal);
+
+  return IMU_ERRNO_SUCCESS;
+}
+
+
+int
+Bmi160SetSettings(int unit, imuSetting_t *p)
+{
+  int                   result = IMU_ERRNO_UNKNOWN;
+  bmi160Setting_t       *pSet;
+
+  pSet = &setting[unit];
+
+  if(p->acc_fs != IMU_SETTING_INVALID) {
+    pSet->accRange &= ~ACC_CONF_RANGE_MASK;
+    if(     p->acc_fs >= 1600) pSet->accRange |= ACC_CONF_RANGE_PM16G;
+    else if(p->acc_fs >=  800) pSet->accRange |= ACC_CONF_RANGE_PM8G;
+    else if(p->acc_fs >=  400) pSet->accRange |= ACC_CONF_RANGE_PM4G;
+    else                       pSet->accRange |= ACC_CONF_RANGE_PM2G;
+  }
+  if(p->gyro_fs != IMU_SETTING_INVALID) {
+    pSet->gyroRange &= ~GYRO_CONF_RANGE_MASK;
+    if(     p->gyro_fs >= 200) pSet->gyroRange |= GYRO_CONF_RANGE_PM2000DPS;
+    else if(p->gyro_fs >= 100) pSet->gyroRange |= GYRO_CONF_RANGE_PM1000DPS;
+    else if(p->gyro_fs >=  50) pSet->gyroRange |= GYRO_CONF_RANGE_PM500DPS;
+    else if(p->gyro_fs >=  25) pSet->gyroRange |= GYRO_CONF_RANGE_PM250DPS;
+    else                       pSet->gyroRange |= GYRO_CONF_RANGE_PM125DPS;
+  }
+  if(p->freq != IMU_SETTING_INVALID) {
+    pSet->accOdr  &= ~ACC_CONF_ODR_MASK;
+    pSet->gyroOdr &= ~GYRO_CONF_ODR_MASK;
+    if(       p->freq >= 3200) {        /* 3200Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_1600HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_3200HZ;
+    } else if(p->freq >= 1600) {        /* 1600Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_1600HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_1600HZ;
+    } else if(p->freq >= 800) {         /*  800Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_800HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_800HZ;
+    } else if(p->freq >= 400) {         /*  400Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_400HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_400HZ;
+    } else if(p->freq >= 200) {         /*  200Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_200HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_200HZ;
+    } else if(p->freq >= 100) {         /*  100Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_100HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_100HZ;
+    } else if(p->freq >=  50) {         /*  50Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_50HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_50HZ;
+    } else {                            /*  25Hz */
+      pSet->accOdr  |= ACC_CONF_ODR_25HZ;
+      pSet->gyroOdr |= GYRO_CONF_ODR_25HZ;
+    }
+  }
+
+  return IMU_ERRNO_SUCCESS;
 }

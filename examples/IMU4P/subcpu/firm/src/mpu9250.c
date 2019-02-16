@@ -25,10 +25,19 @@
 
 #include        <stdint.h>
 
+#include        "config.h"
 #include        "main.h"
 #include        "imu.h"
 
 #include        "mpu9250.h"
+
+typedef struct {
+  uint8_t  accConfig;
+  uint8_t  gyroConfig;
+  uint8_t  sampleDiv;
+} mpu9250Setting_t;
+
+static mpu9250Setting_t setting[CONFIG_NUM_OF_IMUS];
 
 
 /************************************************************
@@ -39,9 +48,16 @@ Mpu9250Probe(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       c;
+  mpu9250Setting_t       *pSet;
 
   ImuGetValueStandard(unit, MPU9250_REG_WHOAMI, &c, 1);
   if(c == WHOAMI_VALUE) {
+    pSet = &setting[unit];
+
+    pSet->sampleDiv = 7;
+    pSet->accConfig = ACCEL_CONFIG_FS_SEL_PM2G;
+    pSet->gyroConfig = GYRO_CONFIG_FCHOICEB_0 | GYRO_CONFIG_GYRO_FS_SEL_250DPS;
+
     result = IMU_ERRNO_SUCCESS;
   }
 
@@ -57,6 +73,9 @@ Mpu9250Init(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
+  mpu9250Setting_t       *pSet;
+
+  pSet = &setting[unit];
 
   /* reset first */
   reg = MPU9250_REG_PWR_MGMT1;
@@ -75,25 +94,25 @@ Mpu9250Init(int unit)
 
   /* sampling rate */
   reg = MPU9250_REG_SMPLRT;
-  val = 7;
+  val = pSet->sampleDiv;
   ImuSetValueStandard(unit, reg, val);
 
   /* config */
   reg = MPU9250_REG_CONFIG;
-  val = CONFIG_DLPF_CFG_250HZ;
+  val = CONFIG_DLPF_CFG_184HZ | GYRO_CONFIG_FCHOICEB_0;
   ImuSetValueStandard(unit, reg, val);
 
   /* configuration accel */
   reg = MPU9250_REG_ACCEL_CONFIG;
-  val = ACCEL_CONFIG_FS_SEL_PM2G;
+  val = pSet->accConfig;
   ImuSetValueStandard(unit, reg, val);
   reg = MPU9250_REG_ACCEL_CONFIG2;
-  val = ACCEL_CONFIG2_FCHOICE_YES | ACCEL_CONFIG2_A_DLPFCFG_218HZ;
+  val = ACCEL_CONFIG2_FCHOICEB_0 | ACCEL_CONFIG2_A_DLPFCFG_218HZ;
   ImuSetValueStandard(unit, reg, val);
 
   /* configuration gyro */
   reg = MPU9250_REG_GYRO_CONFIG;
-  val = GYRO_CONFIG_GYRO_FS_SEL_250DPS;
+  val = pSet->gyroConfig;
   ImuSetValueStandard(unit, reg, val);
 
   /* interrupt */
@@ -154,4 +173,64 @@ Mpu9250ReadValue(int unit, imuValue_t *p)
 
 fail:
   return 0;
+}
+
+
+int
+Mpu9250GetSettings(int unit, imuSetting_t *p)
+{
+  int                   result = IMU_ERRNO_UNKNOWN;
+  mpu9250Setting_t       *pSet;
+
+  pSet = &setting[unit];
+
+
+  switch(pSet->accConfig & ACCEL_CONFIG_FS_SEL_MASK) {
+  case ACCEL_CONFIG_FS_SEL_PM4G:  p->acc_fs =  400; break;
+  case ACCEL_CONFIG_FS_SEL_PM8G:  p->acc_fs =  800; break;
+  case ACCEL_CONFIG_FS_SEL_PM16G: p->acc_fs = 1600; break;
+  default:                        p->acc_fs =  200; break;
+  }
+  switch(pSet->gyroConfig & GYRO_CONFIG_GYRO_FS_SEL_MASK) {
+  case GYRO_CONFIG_GYRO_FS_SEL_2000DPS: p->gyro_fs =  200; break;
+  case GYRO_CONFIG_GYRO_FS_SEL_1000DPS: p->gyro_fs =  100; break;
+  case GYRO_CONFIG_GYRO_FS_SEL_500DPS:  p->gyro_fs =   50; break;
+  case GYRO_CONFIG_GYRO_FS_SEL_250DPS:  p->gyro_fs =   25; break;
+  default:                              p->gyro_fs =  200; break;
+  }
+  p->freq = 1000 / (pSet->sampleDiv+1);
+
+  p->mag_fs = -1;       /* n/a */
+
+  return IMU_ERRNO_SUCCESS;
+}
+
+
+int
+Mpu9250SetSettings(int unit, imuSetting_t *p)
+{
+  int                   result = IMU_ERRNO_UNKNOWN;
+  mpu9250Setting_t       *pSet;
+
+  pSet = &setting[unit];
+
+  if(p->acc_fs != IMU_SETTING_INVALID) {
+    pSet->accConfig &= ~ACCEL_CONFIG_FS_SEL_MASK;
+    if(     p->acc_fs >= 1600) pSet->accConfig |= ACCEL_CONFIG_FS_SEL_PM16G;
+    else if(p->acc_fs >=  800) pSet->accConfig |= ACCEL_CONFIG_FS_SEL_PM8G;
+    else if(p->acc_fs >=  400) pSet->accConfig |= ACCEL_CONFIG_FS_SEL_PM4G;
+    else                       pSet->accConfig |= ACCEL_CONFIG_FS_SEL_PM2G;
+  }
+  if(p->gyro_fs != IMU_SETTING_INVALID) {
+    pSet->gyroConfig &= ~GYRO_CONFIG_GYRO_FS_SEL_MASK;
+    if(     p->gyro_fs >= 200) pSet->gyroConfig |= GYRO_CONFIG_GYRO_FS_SEL_2000DPS;
+    else if(p->gyro_fs >= 100) pSet->gyroConfig |= GYRO_CONFIG_GYRO_FS_SEL_1000DPS;
+    else if(p->gyro_fs >=  50) pSet->gyroConfig |= GYRO_CONFIG_GYRO_FS_SEL_500DPS;
+    else                       pSet->gyroConfig |= GYRO_CONFIG_GYRO_FS_SEL_250DPS;
+  }
+  if(p->freq != IMU_SETTING_INVALID) {
+    pSet->sampleDiv = 1000/p->freq - 1;
+  }
+
+  return IMU_ERRNO_SUCCESS;
 }

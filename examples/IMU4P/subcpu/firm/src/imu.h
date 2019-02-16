@@ -26,6 +26,7 @@
 
 #define IMU_ERRNO_SUCCESS       0
 #define IMU_ERRNO_UNKNOWN       (-1)
+#define IMU_ERRNO_UNIT          (-2)
 
 
 #define IMU_SPI_READ_WRITE_MASK (1<<7)
@@ -47,9 +48,22 @@ typedef struct {
 } imuValue_t;
 
 
+/* full scale range */
+typedef struct {
+#define IMU_SETTING_INVALID     (0xffff)
+  uint16_t      acc_fs;         /* in 10mG */
+  uint16_t      gyro_fs;        /* in 10DPS */
+  uint16_t      mag_fs;         /* in mT */
+  uint16_t      freq;           /* in Hz */
+  uint32_t      reserved[14];
+} imuSetting_t;
 
+
+int             ImuProbe(int unit);
 int             ImuInit(int unit);
 int             ImuReadValue(int unit, imuValue_t *p);
+int             ImuGetSettings(int unit, imuSetting_t *p);
+int             ImuSetSettings(int unit, imuSetting_t *p);
 void            ImuEnableCs(int unit);
 void            ImuDisableCs(int unit);
 
@@ -58,6 +72,7 @@ void            ImuSetValue(int unit, int reg, uint8_t val);
 void            ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
 void            ImuSetValueStandard(int unit, int reg, uint8_t val);
 void            ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size);
+
 
 #ifdef  _IMU_C_
 #endif

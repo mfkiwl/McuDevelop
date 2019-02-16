@@ -43,16 +43,18 @@
 #define         CONFIG_DLPF_CFG_5HZ     (6<<(CONFIG_DLPF_CFG_SHIFT))
 #define         CONFIG_DLPF_CFG_3600HZ  (7<<(CONFIG_DLPF_CFG_SHIFT))
 
-#define MPU9250_REG_GYRO_CONFIG         0x1c
+#define MPU9250_REG_GYRO_CONFIG         0x1b
 #define         GYRO_CONFIG_GYRO_FS_SEL_SHIFT   3
 #define         GYRO_CONFIG_GYRO_FS_SEL_MASK    (3<<(GYRO_CONFIG_GYRO_FS_SEL_SHIFT))
 #define         GYRO_CONFIG_GYRO_FS_SEL_250DPS  (0<<(GYRO_CONFIG_GYRO_FS_SEL_SHIFT))
 #define         GYRO_CONFIG_GYRO_FS_SEL_500DPS  (1<<(GYRO_CONFIG_GYRO_FS_SEL_SHIFT))
 #define         GYRO_CONFIG_GYRO_FS_SEL_1000DPS (2<<(GYRO_CONFIG_GYRO_FS_SEL_SHIFT))
 #define         GYRO_CONFIG_GYRO_FS_SEL_2000DPS (3<<(GYRO_CONFIG_GYRO_FS_SEL_SHIFT))
-#define         GYRO_CONFIG_FCHOICE_SHIFT       0
-#define         GYRO_CONFIG_FCHOICE_MASK        (3<<(GYRO_CONFIG_FCHOICE_SHIFT))
-//#define         GYRO_CONFIG_FCHOICE_        (<<(GYRO_CONFIG_FCHOICE_SHIFT))
+#define         GYRO_CONFIG_FCHOICEB_SHIFT      0
+#define         GYRO_CONFIG_FCHOICEB_MASK       (3<<(GYRO_CONFIG_FCHOICEB_SHIFT))
+#define         GYRO_CONFIG_FCHOICEB_0          (0<<(GYRO_CONFIG_FCHOICEB_SHIFT))
+#define         GYRO_CONFIG_FCHOICEB_1          (1<<(GYRO_CONFIG_FCHOICEB_SHIFT))
+#define         GYRO_CONFIG_FCHOICEB_3          (3<<(GYRO_CONFIG_FCHOICEB_SHIFT))
 
 #define MPU9250_REG_ACCEL_CONFIG        0x1c
 #define         ACCEL_CONFIG_FS_SEL_SHIFT       3
@@ -63,11 +65,11 @@
 #define         ACCEL_CONFIG_FS_SEL_PM16G       (3<<(ACCEL_CONFIG_FS_SEL_SHIFT))
 
 #define MPU9250_REG_ACCEL_CONFIG2       0x1d
-#define         ACCEL_CONFIG2_FCHOICE_SHIFT     3
-#define         ACCEL_CONFIG2_FCHOICE_MASK      (1<<(ACCEL_CONFIG2_FCHOICE_SHIFT))
-#define         ACCEL_CONFIG2_FCHOICE_NO        (0<<(ACCEL_CONFIG2_FCHOICE_SHIFT))
-#define         ACCEL_CONFIG2_FCHOICE_1046HZ    (0<<(ACCEL_CONFIG2_FCHOICE_SHIFT))
-#define         ACCEL_CONFIG2_FCHOICE_YES       (1<<(ACCEL_CONFIG2_FCHOICE_SHIFT))
+#define         ACCEL_CONFIG2_FCHOICEB_SHIFT    2
+#define         ACCEL_CONFIG2_FCHOICEB_MASK     (3<<(ACCEL_CONFIG2_FCHOICEB_SHIFT))
+#define         ACCEL_CONFIG2_FCHOICEB_0        (0<<(ACCEL_CONFIG2_FCHOICEB_SHIFT))
+#define         ACCEL_CONFIG2_FCHOICEB_1046HZ   (0<<(ACCEL_CONFIG2_FCHOICEB_SHIFT))
+#define         ACCEL_CONFIG2_FCHOICEB_1        (1<<(ACCEL_CONFIG2_FCHOICEB_SHIFT))
 #define         ACCEL_CONFIG2_A_DLPFCFG_SHIFT   0
 #define         ACCEL_CONFIG2_A_DLPFCFG_MASK    (7<<(ACCEL_CONFIG2_A_DLPFCFG_SHIFT))
 #define         ACCEL_CONFIG2_A_DLPFCFG_218HZ   (0<<(ACCEL_CONFIG2_A_DLPFCFG_SHIFT))
@@ -167,8 +169,8 @@
 int     Mpu9250Probe(int unit);
 int     Mpu9250Init(int unit);
 int     Mpu9250ReadValue(int unit, imuValue_t *p);
-void    Mpu9250SetValue(int unit, int reg, uint8_t val);
-void    Mpu9250GetValue(int unit, int reg, uint8_t *ptr, int size);
+int     Mpu9250GetSettings(int unit, imuSetting_t *p);
+int     Mpu9250SetSettings(int unit, imuSetting_t *p);
 
 #ifdef  _MPU9250_H_
 #endif

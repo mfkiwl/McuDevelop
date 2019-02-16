@@ -51,15 +51,26 @@
 #define BMI160_REG_ACC_CONF         0x40
 #define         ACC_CONF_ODR_SHIFT      0
 #define         ACC_CONF_ODR_MASK       (0xf<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_25HZ       (0x6<<(ACC_CONF_ODR_SHIFT))
+#define         ACC_CONF_ODR_50HZ       (0x7<<(ACC_CONF_ODR_SHIFT))
 #define         ACC_CONF_ODR_100HZ      (0x8<<(ACC_CONF_ODR_SHIFT))
 #define         ACC_CONF_ODR_200HZ      (0x9<<(ACC_CONF_ODR_SHIFT))
 #define         ACC_CONF_ODR_400HZ      (0xa<<(ACC_CONF_ODR_SHIFT))
 #define         ACC_CONF_ODR_800HZ      (0xb<<(ACC_CONF_ODR_SHIFT))
 #define         ACC_CONF_ODR_1600HZ     (0xc<<(ACC_CONF_ODR_SHIFT))
 #define BMI160_REG_ACC_RANGE        0x41
+#define         ACC_CONF_RANGE_SHIFT    0
+#define         ACC_CONF_RANGE_MASK     (0xf<<(ACC_CONF_RANGE_SHIFT))
+#define         ACC_CONF_RANGE_PM2G     (0x3<<(ACC_CONF_RANGE_SHIFT))
+#define         ACC_CONF_RANGE_PM4G     (0x5<<(ACC_CONF_RANGE_SHIFT))
+#define         ACC_CONF_RANGE_PM8G     (0x8<<(ACC_CONF_RANGE_SHIFT))
+#define         ACC_CONF_RANGE_PM16G    (0xc<<(ACC_CONF_RANGE_SHIFT))
+
 #define BMI160_REG_GYRO_CONF        0x42
 #define         GYRO_CONF_ODR_SHIFT     0
 #define         GYRO_CONF_ODR_MASK      (0xf<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_25HZ      (0x6<<(GYRO_CONF_ODR_SHIFT))
+#define         GYRO_CONF_ODR_50HZ      (0x7<<(GYRO_CONF_ODR_SHIFT))
 #define         GYRO_CONF_ODR_100HZ     (0x8<<(GYRO_CONF_ODR_SHIFT))
 #define         GYRO_CONF_ODR_200HZ     (0x9<<(GYRO_CONF_ODR_SHIFT))
 #define         GYRO_CONF_ODR_400HZ     (0xa<<(GYRO_CONF_ODR_SHIFT))
@@ -67,6 +78,13 @@
 #define         GYRO_CONF_ODR_1600HZ    (0xc<<(GYRO_CONF_ODR_SHIFT))
 #define         GYRO_CONF_ODR_3200HZ    (0xd<<(GYRO_CONF_ODR_SHIFT))
 #define BMI160_REG_GYRO_RANGE       0x43
+#define         GYRO_CONF_RANGE_SHIFT   0
+#define         GYRO_CONF_RANGE_MASK    (0xf<<(GYRO_CONF_RANGE_SHIFT))
+#define         GYRO_CONF_RANGE_PM2000DPS (0x0<<(GYRO_CONF_RANGE_SHIFT))
+#define         GYRO_CONF_RANGE_PM1000DPS (0x1<<(GYRO_CONF_RANGE_SHIFT))
+#define         GYRO_CONF_RANGE_PM500DPS  (0x2<<(GYRO_CONF_RANGE_SHIFT))
+#define         GYRO_CONF_RANGE_PM250DPS  (0x3<<(GYRO_CONF_RANGE_SHIFT))
+#define         GYRO_CONF_RANGE_PM125DPS  (0x4<<(GYRO_CONF_RANGE_SHIFT))
 
 #define BMI160_REG_IF_CONF          0x6b
 #define         IF_CONF_MODE_SHIFT      4
@@ -91,8 +109,9 @@
 int     Bmi160Probe(int unit);
 int     Bmi160Init(int unit);
 int     Bmi160ReadValue(int unit, imuValue_t *p);
-void    Bmi160SetValue(int unit, int reg, uint8_t val);
-void    Bmi160GetValue(int unit, int reg, uint8_t *ptr, int size);
+int     Bmi160GetSettings(int unit, imuSetting_t *p);
+int     Bmi160SetSettings(int unit, imuSetting_t *p);
+
 
 #ifdef  _BMI160_H_
 #endif
