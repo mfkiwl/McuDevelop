@@ -24,13 +24,16 @@
 #define _COMMAND_C_
 
 #include        <stdint.h>
+#include        <stdlib.h>
 #include        <stdio.h>
 #include        <string.h>
 #include        <ctype.h>
 
 #include        "config.h"
 #include        "system.h"
+#include        "imu.h"
 #include        "main.h"
+#include        "devFlash.h"
 
 #include        "command.h"
 
@@ -62,13 +65,38 @@ CommandDelimiter(uint8_t *pStr, uint8_t *av[])
 int
 CommandExec(int ac, uint8_t *av[])
 {
-  if(!strncmp(av[0], "reset", 7)) {
+  int           re;
+
+  if(!strncmp(av[0], "reset", 5)) {
     MainResetTimCounter();
+
+  } else if(!strncmp(av[0], "start", 5)) {
+    MainEnableTim();
+
+  } else if(!strncmp(av[0], "stop", 4)) {
+    MainDisableTim();
+
+  } else if(!strncmp(av[0], "init", 4)) {
+    for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
+      ImuInit(i);
+    }
+
   } else if(!strncmp(av[0], "imu", 3)) {
-    if(!strncmp(av[1], "start", 5)) {
-      MainEnableTim();
-    } else if(!strncmp(av[1], "stop", 4)) {
-      MainDisableTim();
+    int         unit;
+    imuSetting_t settings;
+    unit = strtoul(av[1], NULL, 10);
+    if(!strncmp(av[2], "get", 3)) {
+      re = ImuGetSettings(unit, &settings);
+      printf("%dHz %d0mG %d0DPS\n",
+             settings.freq, settings.acc_fs, settings.gyro_fs);
+    } else if(!strncmp(av[2], "set", 3)) {
+      if(ac >= 4) {
+        memset(&settings, 0xff, sizeof(settings));
+        settings.freq = strtoul(av[3], NULL, 10);
+        if(ac >= 5) settings.acc_fs  = strtoul(av[4], NULL, 10);
+        if(ac >= 6) settings.gyro_fs = strtoul(av[5], NULL, 10);
+        ImuSetSettings(unit, &settings);
+      }
     }
 
   } else if(!strncmp(av[0], "id", 2)) {
@@ -78,7 +106,7 @@ CommandExec(int ac, uint8_t *av[])
       strncpy(id, av[2], MAIN_SETTING_ID_LEN);
       id[MAIN_SETTING_ID_LEN] = '\0';
       addr = EEPROM_BASE + MAIN_SETTING_ID_POS;
-      DevFlashProgram(0, addr, MAIN_SETTING_ID_LEN, &id);
+      DevFlashProgram(0, addr, MAIN_SETTING_ID_LEN, &id[0]);
     } else if(!strncmp(av[1], "get", 3)) {
       addr = EEPROM_BASE + MAIN_SETTING_ID_POS;
       puts((uint8_t *)addr);

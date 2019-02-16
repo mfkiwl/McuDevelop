@@ -218,7 +218,10 @@ MainEntry(void)
     }
   }
 
-  for(int i = 0; i < 4; i++) {
+  for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
+    ImuProbe(i);
+  }
+  for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
     ImuInit(i);
   }
 
@@ -253,8 +256,8 @@ MainEntry(void)
           ImuReadValue(i, &imu);
           printf("%08x%04x  ", mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb);
           printf("%d %8x ", i, cnt[i]);
-          printf("%4x %4x %4x  ", imu.gyro.x, imu.gyro.y, imu.gyro.z);
           printf("%4x %4x %4x  ", imu.acc.x,  imu.acc.y,  imu.acc.z);
+          printf("%4x %4x %4x  ", imu.gyro.x, imu.gyro.y, imu.gyro.z);
           printf("%6x  ", imu.ts);
           printf("%2x  ", imu.temp4x);
           puts("\n");

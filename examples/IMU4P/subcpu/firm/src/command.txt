@@ -1,9 +1,21 @@
 reset                   timestamp counter reset
+start                   start sending the imu data to uart
+stop                    stop  sending the imu data
+init                    initialize the imu.
+                        the parameters which is set by "imu [num] set" command is used
+                        are updated
 
-imu start               start sending the imu data to uart
-imu stop                stop  sending the imu data
+imu [num] set [freq] [acc] [gyro] [mag]
+                         the max ranges are set to accel, gyro, and
+                         compass to internal ram. then type "init", each parameters
+                                 freq unit Hz
+                                 acc unit 10mG (0.01m/s^2)
+                                 gyro unit 10DPS
+                                 compass unit mT
+                        specify "-1" if the parameter is not set
+imu [num] get           the imu parameters are shown
 
-id set [hex]            the serial id is set to EEPROM
+id set [str]            the serial id is set to EEPROM up to 32 charactors
 id get                  the serial id value is shown to console
 
 firmupdate              enter the firmupdate mode
