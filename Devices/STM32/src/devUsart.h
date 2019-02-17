@@ -79,6 +79,7 @@ void            DevUsart3Interrupt(void);
 #ifdef  _DEV_USART_C_
 static int      DevUsartSendPio(devUsartSc_t *psc, uint8_t *ptr, int size);
 static int      DevUsartSendFifo(devUsartSc_t *psc);
+static int      DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size);
 static void     DevUsartInterrupt(int unit);
 #endif
 

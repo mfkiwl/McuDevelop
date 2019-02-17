@@ -27,6 +27,7 @@
 #include        "string.h"
 
 #include        "system.h"
+#include        "devDma4.h"
 #include        "intr.h"
 #include        "fifo.h"
 #include        "devUsart.h"
@@ -293,16 +294,15 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
   if(!psc->up) goto fail;
   p = psc->dev;
 
-#if 0
   if(psc->param.mode == DEVUSART_MODE_FIFO) {
     FifoWriteIn(psc->dFifoTx, ptr, size);
     p->CR1 |= USART_CR1_TXEIE_YES;
 
   } else if(psc->param.mode == DEVUSART_MODE_PIO) {
     DevUsartSendPio(psc, ptr, size);
+  } else if(psc->param.mode == DEVUSART_MODE_DMA) {
+    DevUsartSendDma(psc, ptr, size);
   }
-#endif
-  DevUsartSendPio(psc, ptr, size);
 
 fail:
   return 0;
@@ -322,7 +322,8 @@ DevUsartRecv(int unit, uint8_t *ptr, int size)
   if(psc->param.mode == DEVUSART_MODE_FIFO) {
     sz = FifoReadOut(psc->dFifoRx, ptr, size);
 
-  } else if(psc->param.mode == DEVUSART_MODE_PIO) {
+  } else if(psc->param.mode == DEVUSART_MODE_PIO ||
+            psc->param.mode == DEVUSART_MODE_DMA) {
     uint32_t    flag;
     if(p->ISR & USART_ISR_RXNE_MASK) {
       *ptr = p->RDR;
@@ -399,6 +400,55 @@ DevUsartSendFifo(devUsartSc_t *psc)
   if(FifoGetDirtyLen(psc->dFifoTx) == 0) {
     p->CR1 &= ~USART_CR1_TXEIE_MASK;
   }
+
+fail:
+  return 0;
+}
+
+
+const static uint8_t    devUsartSendDmaReqTbl[]    = DMA_REQ_USARTTX_TBL;
+static int
+DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size)
+{
+  stm32Dev_USART        *p;
+  int                   chDma;
+
+  p = psc->dev;
+
+  if(p->CR3 & USART_CR3_DMAT_MASK) {
+    chDma = (devUsartSendDmaReqTbl[psc->unit] >> 4) & 0xf;
+    while(!DevDmaIsFinished(1, chDma));
+    DevDmaStop(1, chDma);
+
+    p->CR3 &= ~USART_CR3_DMAT_MASK;
+  }
+
+
+  /* start dma */
+  {
+    devDmaParam_t       param;
+
+    memset(&param, 0, sizeof(param));
+    param.req = devUsartSendDmaReqTbl[psc->unit];
+    param.a = (void *)  ptr;
+    param.b = (void *) &p->TDR;
+    param.cnt = size;
+    param.dirBA = 0;
+    param.aInc = 1;
+    param.aSize = DEVDMA_SIZE_8BITS;
+    param.bSize = DEVDMA_SIZE_8BITS;
+
+    chDma = (devUsartSendDmaReqTbl[psc->unit] >> 4) & 0xf;
+    DevDmaInit(1, chDma, &param);
+  }
+
+  p->CR3 |= USART_CR3_DMAT_YES;
+#if 0
+  while(!DevDmaIsFinished(1, chDma));
+  DevDmaStop(1, chDma);
+
+  p->CR3 &= ~USART_CR3_DMAT_MASK;
+#endif
 
 fail:
   return 0;
