@@ -265,3 +265,77 @@ ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size)
 
   return;
 }
+
+
+uint8_t         imuHexText[] = {
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+};
+int
+ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str)
+{
+  uint8_t       *p;
+  int           n;
+
+  p = str;
+
+  /* time stamps */
+  for(int i = 32; i >= 0; i -= 4) {
+    *p++ = imuHexText[(ts1 >> i) & 0xf];
+  }
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(ts0 >> i) & 0xf];
+  }
+  *p++ = ' ';
+
+  /* unit */
+  *p++ = imuHexText[unit & 0xf];
+  *p++ = ' ';
+
+  /* cnt */
+  for(int i = 28; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->cnt >> i) & 0xf];
+  }
+  *p++ = ' ';
+
+  /* accel */
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->acc.x >> i) & 0xf];
+  }
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->acc.y >> i) & 0xf];
+  }
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->acc.z >> i) & 0xf];
+  }
+  *p++ = ' ';
+
+  /* gyro */
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->gyro.x >> i) & 0xf];
+  }
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->gyro.y >> i) & 0xf];
+  }
+  for(int i = 12; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->gyro.z >> i) & 0xf];
+  }
+  *p++ = ' ';
+
+  /* temp x4 */
+  for(int i = 4; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->temp4x >> i) & 0xf];
+  }
+  *p++ = ' ';
+
+  /* timestamp in imu */
+  for(int i = 28; i >= 0; i -= 4) {
+    *p++ = imuHexText[(imu->ts >> i) & 0xf];
+  }
+  *p++ = ' ';
+
+  *p++ = '\n';
+  *p = '\0';
+
+  return 0;
+}

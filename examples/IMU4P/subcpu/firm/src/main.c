@@ -213,7 +213,7 @@ MainEntry(void)
 
   /* CS pin is generated low and high */
   for(int j = 0; j < 1000; j++) {
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
       ImuGenCsPulse(i, 0);
     }
   }
@@ -231,6 +231,7 @@ MainEntry(void)
 
   uint32_t      tLedWait;
   int           fLed = 0;
+
   /* Infinite loop */
   while(1) {
     MainUartLoop();
@@ -245,22 +246,19 @@ MainEntry(void)
       fLed = !fLed;
     }
 
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
       __disable_irq();
       if(mainTim2Ic[i].flag) {
         mainTim2Ic[i].flag = 0;
         __enable_irq();
 
         {
-          imuValue_t  imu;
+          imuValue_t    imu;
+          uint8_t       str[80];
           ImuReadValue(i, &imu);
-          printf("%08x%04x  ", mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb);
-          printf("%d %8x ", i, cnt[i]);
-          printf("%4x %4x %4x  ", imu.acc.x,  imu.acc.y,  imu.acc.z);
-          printf("%4x %4x %4x  ", imu.gyro.x, imu.gyro.y, imu.gyro.z);
-          printf("%6x  ", imu.ts);
-          printf("%2x  ", imu.temp4x);
-          puts("\n");
+          imu.cnt = cnt[i];
+          ImuBuildText(i, mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb, &imu, str);
+          puts(str);
 
           cnt[i]++;
         }
@@ -291,7 +289,7 @@ MainInitUsart(void)
   param.baud = CONFIG_SYSTEM_USART_BAUD;
   param.bit = DEVUSART_BIT_8;
   param.stop = DEVUSART_STOP_1;
-  param.mode = DEVUSART_MODE_PIO;
+  param.mode = DEVUSART_MODE_DMA;
   param.parity = DEVUSART_PARITY_NONE;
   param.szFifoTx = 6;
   param.szFifoRx = 6;
@@ -449,7 +447,7 @@ MainInitSpi(void)
 
   /* IMU control */
   //param.speed = 40000000;     /* speed: don't care */
-  param.prescaler = 3;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
+  param.prescaler = 1;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
   param.dmaTx = 0;
   param.dmaRx = 1;
   DevSpiInit(1, &param);

@@ -41,6 +41,7 @@ typedef struct {
 } imuAxis_t;
 
 typedef struct {
+  uint32_t      cnt;
   imuAxis_t     acc;
   imuAxis_t     gyro;
   uint32_t      ts;
@@ -72,6 +73,7 @@ void            ImuSetValue(int unit, int reg, uint8_t val);
 void            ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
 void            ImuSetValueStandard(int unit, int reg, uint8_t val);
 void            ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size);
+int             ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str);
 
 
 #ifdef  _IMU_C_
