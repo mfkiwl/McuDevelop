@@ -58,37 +58,48 @@
  * interrupt request definitions
  */
 enum irqNumbers {
-  Reset_IRQn            =  (-15),
-  NMI_IRQn              =  (-14),
-  HardFault_IRQn        =  (-13),
-  MemoryManagement_IRQn =  (-12),
-  BusFault_IRQn         =  (-11),
-  UsageFault_IRQn       =  (-10),
-  SVCall_IRQn           =  ( -5),
-  DebugMonitor_IRQn     =  ( -4),
-  PendSV_IRQn           =  ( -2),
-  SysTick_IRQn          =  ( -1),
-  WWDG_IRQn             =     0,
-  PVD_IRQn,
-  RTC_IRQn,
-  FLASH_IRQn,
-  RCCCRS_IRQn,
-  ADC1_IRQn             =    12,
-  TIM2_IRQn             =    15,
-  TIM3_IRQn,
-  TIM6_DAC_IRQn,
-  TIM7_IRQn,
-  TIM21_IRQn            =    20,
-  I2C3_IRQn,
-  TIM22_IRQn,
-  I2C1_IRQn,
-  I2C2_IRQn,
-  SPI1_IRQn,
-  SPI2_IRQn,
-  USART1_IRQn,
-  USART2_IRQn,
-
-  USB_FS_IRQn           =    31,
+  Reset_IRQn            = (-15),
+  NMI_IRQn              = (-14),
+  HardFault_IRQn        = (-13),
+  MemoryManagement_IRQn = (-12),
+  BusFault_IRQn         = (-11),
+  UsageFault_IRQn       = (-10),
+  SVCall_IRQn           = ( -5),
+  DebugMonitor_IRQn     = ( -4),
+  PendSV_IRQn           = ( -2),
+  SysTick_IRQn          = ( -1),
+  WWDG_IRQn             =    0, //  0
+  PVD_IRQn,                     //  1
+  RTC_IRQn,                     //  2
+  FLASH_IRQn,                   //  3
+  RCCCRS_IRQn,                  //  4
+  EXTI1_0_IRQn,                 //  5
+  EXTI3_2_IRQn,                 //  6
+  EXTI15_4_IRQn,                //  7
+  TSC_IRQn,                     //  8
+  DMA1_CH1_IRQn,                //  9
+  DMA1_CH2TO3_IRQn,             // 10
+  DMA1_CH4TO7_IRQn,             // 11
+  ADC1_IRQn,                    // 12
+  LPTIM1_IRQn,                  // 13
+  USART45_IRQn,                 // 14
+  TIM2_IRQn,                    // 15
+  TIM3_IRQn,                    // 16
+  TIM6_DAC_IRQn,                // 17
+  TIM7_IRQn,                    // 18
+  Reserved19_IRQn,              // 19
+  TIM21_IRQn,                   // 20
+  I2C3_IRQn,                    // 21
+  TIM22_IRQn,                   // 22
+  I2C1_IRQn,                    // 23
+  I2C2_IRQn,                    // 24
+  SPI1_IRQn,                    // 25
+  SPI2_IRQn,                    // 26
+  USART1_IRQn,                  // 27
+  USART2_IRQn,                  // 28
+  LPUART1_AES_RNG_IRQn,         // 29
+  Reserved30_IRQn,              // 30
+  USB_FS_IRQn,                  // 31
 
 };
 
