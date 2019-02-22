@@ -27,6 +27,7 @@
 #include        <string.h>
 
 #include        "system.h"
+#include        "devErrno.h"
 #include        "devDma4.h"
 
 struct _stDma         dma;
@@ -165,10 +166,32 @@ end:
 }
 
 
+void
+DevDmaClearIntr(int unit, int ch)
+{
+  stm32Dev_DMA  *p;
+
+  if(ch >= 8) unit = 2;
+  ch &= 7;
+
+#ifdef DMA2_PTR
+  if(unit == 1) {
+    DMA1_PTR->IFCR = DMA_ISR_CGIF_CLEAR(ch);
+  } else {
+    DMA2_PTR->IFCR = DMA_ISR_CGIF_CLEAR(ch);
+  }
+#else
+  DMA1_PTR->IFCR = DMA_ISR_CGIF_CLEAR(ch);
+#endif
+
+  return;
+}
+
+
 int
 DevDmaIsFinished(int unit, int ch)
 {
-  int           result = 0;
+  int           result = DEV_ERRNO_UNKNOWN;
   stm32Dev_DMA  *p;
 
   if(ch >= 8) unit = 2;
@@ -177,7 +200,7 @@ DevDmaIsFinished(int unit, int ch)
   ch &= 7;
 
   if(!p->CH[ch-1].CNDTR) {
-    result = 1;       /* finished, if NDT is 0 */
+    result = DEV_ERRNO_SUCCESS; /* finished, if NDT is 0 */
   }
 
 end:

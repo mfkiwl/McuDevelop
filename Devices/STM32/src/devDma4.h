@@ -68,6 +68,8 @@ int             DevDmaStop(int unit, int ch);
 int             DevDmaIsFinished(int unit, int ch);
 void            DevDmaDebugShowRegs(int unit, int ch);
 
+void            DevDmaClearIntr(int unit, int ch);
+
 
 #ifdef  _DEV_DMA_C_
 #endif
