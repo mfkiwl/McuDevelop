@@ -41,6 +41,7 @@ typedef struct {
 } imuAxis_t;
 
 typedef struct {
+  uint8_t       raw[64];
   uint32_t      cnt;
   imuAxis_t     acc;
   imuAxis_t     gyro;
@@ -62,6 +63,8 @@ typedef struct {
 
 int             ImuProbe(int unit);
 int             ImuInit(int unit);
+int             ImuRecvValue(int unit, imuValue_t *p);
+int             ImuIsFinishReceiving(int unit);
 int             ImuReadValue(int unit, imuValue_t *p);
 int             ImuGetSettings(int unit, imuSetting_t *p);
 int             ImuSetSettings(int unit, imuSetting_t *p);
@@ -70,10 +73,13 @@ void            ImuDisableCs(int unit);
 
 void            ImuGenCsPulse(int unit, uint32_t ms);
 void            ImuSetValue(int unit, int reg, uint8_t val);
-void            ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
+int             ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
+void            ImuGetValueNonblockEnd(int unit);
 void            ImuSetValueStandard(int unit, int reg, uint8_t val);
-void            ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size);
+int             ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size);
 int             ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str);
+
+void            ImuDmaInterrupt(void);
 
 
 #ifdef  _IMU_C_

@@ -43,6 +43,14 @@ void                    SystemSysTickIntr(void);
 uint32_t                SystemGetCounter(void);
 void                    SystemWaitCounter(int ms);
 
+void                    MainInterruptDmaCh1(void);
+void                    MainInterruptDmaCh2to3(void);
+void                    MainInterruptDmaCh4to7(void);
+
+void                    SystemIncrement1ms(void);
+void                    SystemSysTickIntr(void);
+uint32_t                SystemGetCounter(void);
+void                    SystemWaitCounter(int ms);
 
 #ifdef _MAIN_C_
 static void             MainTask(void const * argument);

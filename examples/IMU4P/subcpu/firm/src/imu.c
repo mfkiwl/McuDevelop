@@ -28,9 +28,11 @@
 #include        "system.h"
 #include        "devGpio.h"
 #include        "gpio.h"
+#include        "devErrno.h"
 #include        "devSpi16.h"
 
 #include        "imu.h"
+#include        "main.h"
 
 #include        "bmi160.h"
 #include        "adxl345.h"
@@ -40,6 +42,7 @@
 typedef struct {
   int           (*probe)(int unit);
   int           (*init)(int unit);
+  int           (*recv)(int unit, imuValue_t *p);
   int           (*read)(int unit, imuValue_t *p);
   int           (*get)(int unit, imuSetting_t *p);
   int           (*set)(int unit, imuSetting_t *p);
@@ -51,9 +54,9 @@ static int     imuFuncNum[IMU_NUMOF_SENSORS] = {
   -1
 };
 const static imuFunc_t  imuFunc[] = {
-  {Bmi160Probe, Bmi160Init, Bmi160ReadValue, Bmi160GetSettings, Bmi160SetSettings},
-  {Adxl345Probe, Adxl345Init, Adxl345ReadValue, NULL, NULL},
-  {Mpu9250Probe, Mpu9250Init, Mpu9250ReadValue, Mpu9250GetSettings, Mpu9250SetSettings},
+  {Bmi160Probe, Bmi160Init, Bmi160RecvValue, Bmi160ReadValue, Bmi160GetSettings, Bmi160SetSettings},
+  {Adxl345Probe, Adxl345Init, Adxl345RecvValue, Adxl345ReadValue, NULL, NULL},
+  {Mpu9250Probe, Mpu9250Init, Mpu9250RecvValue, Mpu9250ReadValue, Mpu9250GetSettings, Mpu9250SetSettings},
   {NULL, NULL, NULL, NULL, NULL},
 };
 
@@ -93,6 +96,28 @@ ImuInit(int unit)
     result = pFunc->init(unit);
   }
 
+  return result;
+}
+
+
+int
+ImuRecvValue(int unit, imuValue_t *p)
+{
+  int                   result = IMU_ERRNO_UNKNOWN;
+  const imuFunc_t       *pFunc = imuFunc;
+  int                   (*cb)(int unit, imuValue_t *p);
+
+  if(unit < 0 ||  unit >= IMU_NUMOF_SENSORS) {
+    result = IMU_ERRNO_UNIT;
+    goto fail;
+  }
+
+  if(imuFuncNum[unit] >= 0) {
+    cb = pFunc[imuFuncNum[unit]].recv;
+    if(cb) result = cb(unit, p);
+  }
+
+fail:
   return result;
 }
 
@@ -229,19 +254,39 @@ ImuSetValue(int unit, int reg, uint8_t val)
 
   return;
 }
-void
+int
 ImuGetValue(int unit, int reg, uint8_t *ptr, int size)
 {
+  int           re;
   uint8_t       cmd;
 
   cmd = reg;
 
   ImuEnableCs(unit);
   DevSpiSend(1, &cmd, 1);
-  DevSpiRecv(1,  ptr, size);
+  re = DevSpiRecv(1,  ptr, size);
+  if(re != DEV_ERRNO_NONBLOCK) {
+    ImuDisableCs(unit);
+  }
+
+  return re;
+}
+void
+ImuReadValueNonblockEnd(int unit)
+{
+  DevSpiRecvStopDma(1);
   ImuDisableCs(unit);
 
   return;
+}
+int
+ImuIsFinishReceiving(int unit)
+{
+  int   result;
+
+  result = DevSpiRecvIsFinishDma(1);
+
+  return result;
 }
 void
 ImuSetValueStandard(int unit, int reg, uint8_t val)
@@ -254,16 +299,17 @@ ImuSetValueStandard(int unit, int reg, uint8_t val)
 
   return;
 }
-void
+int
 ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size)
 {
+  int           re;
   uint8_t       cmd;
 
   cmd = reg | IMU_SPI_READ;              /* read */
 
-  ImuGetValue(unit, cmd, ptr, size);
+  re = ImuGetValue(unit, cmd, ptr, size);
 
-  return;
+  return re;
 }
 
 
