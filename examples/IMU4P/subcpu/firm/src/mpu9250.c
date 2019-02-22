@@ -26,6 +26,7 @@
 #include        <stdint.h>
 
 #include        "config.h"
+#include        "devErrno.h"
 #include        "main.h"
 #include        "imu.h"
 
@@ -47,14 +48,24 @@ int
 Mpu9250Probe(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
+  int           re;
   uint8_t       c;
   mpu9250Setting_t       *pSet;
 
-  ImuGetValueStandard(unit, MPU9250_REG_WHOAMI, &c, 1);
+  re = ImuGetValueStandard(unit, MPU9250_REG_WHOAMI, &c, 1);
+#if CONFIG_IMU_WAIT_DMA_NONBLOCK
+  if(re == DEV_ERRNO_NONBLOCK) {
+    while(ImuIsFinishReceiving(unit) != IMU_ERRNO_SUCCESS);
+  }
+#endif
+
   if(c == WHOAMI_VALUE) {
+#if CONFIG_IMU_DEBUG_PROBE
+    printf("# imu probed unit: %d MPU8250\n", unit);
+#endif
     pSet = &setting[unit];
 
-    pSet->sampleDiv = 7;
+    pSet->sampleDiv = 0;
     pSet->accConfig = ACCEL_CONFIG_FS_SEL_PM2G;
     pSet->gyroConfig = GYRO_CONFIG_FCHOICEB_0 | GYRO_CONFIG_GYRO_FS_SEL_250DPS;
 
@@ -145,17 +156,55 @@ Mpu9250Init(int unit)
 #define TL      ((MPU9250_REG_TEMP_OUT_L)  -(MPU9250_REG_INT_STATUS))
 #define TH      ((MPU9250_REG_TEMP_OUT_H)  -(MPU9250_REG_INT_STATUS))
 int
-Mpu9250ReadValue(int unit, imuValue_t *p)
+Mpu9250RecvValue(int unit, imuValue_t *p)
 {
+  int           result;
   uint8_t       cmd;
-  uint8_t       buf[64];
+  uint8_t       *buf;
   uint16_t      temp;
 
   if(!p) goto fail;
 
-  ImuGetValueStandard(unit, MPU9250_REG_INT_STATUS, buf, 38);
+  buf = p->raw;
 
+  result = ImuGetValueStandard(unit, MPU9250_REG_INT_STATUS, buf, 38);
+  if(result == DEV_ERRNO_NONBLOCK) goto fail;
+
+#if 0
   memset(p, 0, sizeof(imuValue_t));
+
+  p->acc.x  = (buf[AXH] << 8) | buf[AXL];
+  p->acc.y  = (buf[AYH] << 8) | buf[AYL];
+  p->acc.z  = (buf[AZH] << 8) | buf[AZL];
+  p->gyro.x = (buf[GXH] << 8) | buf[GXL];
+  p->gyro.y = (buf[GYH] << 8) | buf[GYL];
+  p->gyro.z = (buf[GZH] << 8) | buf[GZL];
+
+  temp = (buf[TH] << 8) | buf[TL];
+  p->temp4x = (23 << 2) + (temp >> 7);
+#endif
+
+#if 0
+  p->ts = (buf[TH] << 8) | buf[TL];
+#endif
+  Mpu9250ReadValue(unit, p);
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+  return result;
+}
+int
+Mpu9250ReadValue(int unit, imuValue_t *p)
+{
+  int           result;
+  uint8_t       cmd;
+  uint8_t       *buf;
+  uint16_t      temp;
+
+  if(!p) goto fail;
+
+  buf = p->raw;
 
   p->acc.x  = (buf[AXH] << 8) | buf[AXL];
   p->acc.y  = (buf[AYH] << 8) | buf[AYL];
@@ -171,8 +220,10 @@ Mpu9250ReadValue(int unit, imuValue_t *p)
   p->ts = (buf[TH] << 8) | buf[TL];
 #endif
 
+  result = DEV_ERRNO_SUCCESS;
+
 fail:
-  return 0;
+  return result;
 }
 
 

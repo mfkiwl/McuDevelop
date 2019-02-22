@@ -108,6 +108,7 @@
 
 int     Bmi160Probe(int unit);
 int     Bmi160Init(int unit);
+int     Bmi160RecvValue(int unit, imuValue_t *p);
 int     Bmi160ReadValue(int unit, imuValue_t *p);
 int     Bmi160GetSettings(int unit, imuSetting_t *p);
 int     Bmi160SetSettings(int unit, imuSetting_t *p);

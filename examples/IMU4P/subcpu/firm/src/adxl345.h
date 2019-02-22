@@ -86,6 +86,7 @@
 
 int     Adxl345Probe(int unit);
 int     Adxl345Init(int unit);
+int     Adxl345RecvValue(int unit, imuValue_t *p);
 int     Adxl345ReadValue(int unit, imuValue_t *p);
 void    Adxl345SetValue(int unit, int reg, uint8_t val);
 void    Adxl345GetValue(int unit, int reg, uint8_t *ptr, int size);

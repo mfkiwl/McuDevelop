@@ -26,6 +26,7 @@
 #include        <stdint.h>
 
 #include        "config.h"
+#include        "devErrno.h"
 #include        "main.h"
 #include        "imu.h"
 
@@ -48,11 +49,22 @@ int
 Bmi160Probe(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
+  int           re;
   uint8_t       c;
   bmi160Setting_t       *pSet;
 
-  ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, &c, 1);
+  re = ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, &c, 1);
+#if CONFIG_IMU_WAIT_DMA_NONBLOCK
+  if(re == DEV_ERRNO_NONBLOCK) {
+    while(ImuIsFinishReceiving(unit) != IMU_ERRNO_SUCCESS);
+  }
+#endif
+
   if(c == CHIP_ID_BMI160) {
+#if CONFIG_IMU_DEBUG_PROBE
+    printf("# imu probed unit: %d BMI160\n", unit);
+#endif
+
     pSet = &setting[unit];
 
     pSet->accOdr    = 0x20 | ACC_CONF_ODR_1600HZ;
@@ -168,16 +180,55 @@ Bmi160Init(int unit)
 
 
 int
-Bmi160ReadValue(int unit, imuValue_t *p)
+Bmi160RecvValue(int unit, imuValue_t *p)
 {
+  int           result;
   uint8_t       cmd;
-  uint8_t       buf[34];
+  uint8_t       *buf;
   uint32_t      reg = 0 | BMI160_READ;
   uint16_t      temp;
 
   if(!p) goto fail;
 
-  ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, buf, 34);
+  buf = p->raw;
+
+  result = ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, buf, 34);
+  if(result == DEV_ERRNO_NONBLOCK) goto fail;
+
+#if 0
+  p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
+  p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
+  p->gyro.z = (buf[BMI160_REG_GYRO_Z_HIGH] << 8) | buf[BMI160_REG_GYRO_Z_LOW];
+
+  p->acc.x = (buf[BMI160_REG_ACC_X_HIGH] << 8) | buf[BMI160_REG_ACC_X_LOW];
+  p->acc.y = (buf[BMI160_REG_ACC_Y_HIGH] << 8) | buf[BMI160_REG_ACC_Y_LOW];
+  p->acc.z = (buf[BMI160_REG_ACC_Z_HIGH] << 8) | buf[BMI160_REG_ACC_Z_LOW];
+
+  p->ts = (buf[BMI160_REG_TIME_HIGH] << 16) |
+    (buf[BMI160_REG_TIME_MID] << 8) | buf[BMI160_REG_TIME_LOW];
+
+  temp = (buf[BMI160_REG_TEMP_HIGH] << 8) | buf[BMI160_REG_TEMP_LOW] ;
+  p->temp4x = (23 << 2) + (temp >> 7);
+#endif
+  Bmi160ReadValue(unit, p);
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+  return result;
+}
+
+
+int
+Bmi160ReadValue(int unit, imuValue_t *p)
+{
+  int           result;
+  uint8_t       *buf;
+  uint16_t      temp;
+
+  if(!p) goto fail;
+
+  buf = p->raw;
 
   p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
   p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
@@ -193,8 +244,10 @@ Bmi160ReadValue(int unit, imuValue_t *p)
   temp = (buf[BMI160_REG_TEMP_HIGH] << 8) | buf[BMI160_REG_TEMP_LOW] ;
   p->temp4x = (23 << 2) + (temp >> 7);
 
+  result = DEV_ERRNO_SUCCESS;
+
 fail:
-  return 0;
+  return result;
 }
 
 

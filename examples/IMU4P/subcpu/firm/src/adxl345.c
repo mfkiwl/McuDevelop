@@ -26,6 +26,7 @@
 #include        <stdint.h>
 
 #include        "config.h"
+#include        "devErrno.h"
 #include        "main.h"
 #include        "imu.h"
 
@@ -39,10 +40,20 @@ int
 Adxl345Probe(int unit)
 {
   int           result = IMU_ERRNO_UNKNOWN;
+  int           re;
   uint8_t       c;
 
-  ImuGetValueStandard(unit, ADXL345_REG_DEVID, &c, 1);
+  re = ImuGetValueStandard(unit, ADXL345_REG_DEVID, &c, 1);
+#if CONFIG_IMU_WAIT_DMA_NONBLOCK
+  if(re == DEV_ERRNO_NONBLOCK) {
+    while(ImuIsFinishReceiving(unit) != IMU_ERRNO_SUCCESS);
+  }
+#endif
+
   if(c == DEVID_ADXL345) {
+#if CONFIG_IMU_DEBUG_PROBE
+    printf("# imu probed unit: %d ADXL345\n", unit);
+#endif
     result = IMU_ERRNO_SUCCESS;
   }
 
@@ -111,15 +122,54 @@ Adxl345Init(int unit)
 #define ZL      ((ADXL345_REG_DATAZ_LOW )-(ADXL345_REG_DATAX_LOW))
 #define ZH      ((ADXL345_REG_DATAZ_HIGH)-(ADXL345_REG_DATAX_LOW))
 int
-Adxl345ReadValue(int unit, imuValue_t *p)
+Adxl345RecvValue(int unit, imuValue_t *p)
 {
+  int           result;
   uint8_t       cmd;
-  uint8_t       buf[32];
+  uint8_t       *buf;
   uint16_t      temp;
 
   if(!p) goto fail;
 
-  ImuGetValueStandard(unit, ADXL345_MB | ADXL345_REG_DATAX_LOW, buf, 6);
+  buf = p->raw;
+
+  result = ImuGetValueStandard(unit, ADXL345_MB | ADXL345_REG_DATAX_LOW, buf, 6);
+  if(result == DEV_ERRNO_NONBLOCK) goto fail;
+
+#if 0
+  p->acc.x = (buf[XH] << 8) | buf[XL];
+  p->acc.y = (buf[YH] << 8) | buf[YL];
+  p->acc.z = (buf[ZH] << 8) | buf[ZL];
+  p->gyro.x = 0;
+  p->gyro.y = 0;
+  p->gyro.z = 0;
+
+  p->ts = 0;
+  p->temp4x = 0;
+#endif
+  Adxl345ReadValue(unit, p);
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+  return 0;
+}
+
+
+int
+Adxl345ReadValue(int unit, imuValue_t *p)
+{
+  int           result;
+  uint8_t       cmd;
+  uint8_t       *buf;
+  uint16_t      temp;
+
+  if(!p) goto fail;
+
+  buf = p->raw;
+
+  result = ImuGetValueStandard(unit, ADXL345_MB | ADXL345_REG_DATAX_LOW, buf, 6);
+  if(result == DEV_ERRNO_NONBLOCK) goto fail;
 
   p->acc.x = (buf[XH] << 8) | buf[XL];
   p->acc.y = (buf[YH] << 8) | buf[YL];
@@ -130,6 +180,8 @@ Adxl345ReadValue(int unit, imuValue_t *p)
 
   p->ts = 0;
   p->temp4x = 0;
+
+  result = DEV_ERRNO_SUCCESS;
 
 fail:
   return 0;

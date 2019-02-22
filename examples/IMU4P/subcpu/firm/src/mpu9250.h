@@ -168,6 +168,7 @@
 
 int     Mpu9250Probe(int unit);
 int     Mpu9250Init(int unit);
+int     Mpu9250RecvValue(int unit, imuValue_t *p);
 int     Mpu9250ReadValue(int unit, imuValue_t *p);
 int     Mpu9250GetSettings(int unit, imuSetting_t *p);
 int     Mpu9250SetSettings(int unit, imuSetting_t *p);
