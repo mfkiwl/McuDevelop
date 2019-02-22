@@ -42,10 +42,27 @@ typedef struct {
 #define DEVUSART_PARITY_MASK    2
 
   uint8_t               mode;
+#if 0
 #define DEVUSART_MODE_PIO       0
 #define DEVUSART_MODE_FIFO      1
 #define DEVUSART_MODE_INTR      2
 #define DEVUSART_MODE_DMA       3
+#else
+
+#define DEVUSART_MODE_BITDMA       (1<<0)
+#define DEVUSART_MODE_BITFIFO      (1<<1)
+#define DEVUSART_MODE_PIO          (0)
+#define DEVUSART_MODE_PIO_FIFO     (DEVUSART_MODE_BITFIFO)
+#define DEVUSART_MODE_DMA          (DEVUSART_MODE_BITDMA)
+#define DEVUSART_MODE_DMA_FIFO     (DEVUSART_MODE_BITDMA | DEVUSART_MODE_BITFIFO)
+
+#if 0
+#define DEVUSART_MODE_FIFO      (DEVUSART_MODE_PIO_FIFO)
+#define DEVUSART_MODE_INTR      2
+  //#define DEVUSART_MODE_DMA       (DEVUSART_MODE_BITDMA)
+#endif
+
+#endif
   uint8_t               szFifoTx;       /* 2 ^ n */
   uint8_t               szFifoRx;       /* 2 ^ n */
 } devUsartParam_t;

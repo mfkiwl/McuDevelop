@@ -27,6 +27,7 @@
 #include        "string.h"
 
 #include        "system.h"
+#include        "devErrno.h"
 #include        "devDma4.h"
 #include        "intr.h"
 #include        "fifo.h"
@@ -106,16 +107,18 @@ DevUsartInit(int unit, devUsartParam_t *param)
 #endif
   }
 
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
     int         d;
     if((d = FifoCreate(psc->param.szFifoTx)) < 0) {
-      psc->param.mode = DEVUSART_MODE_PIO;
+      //psc->param.mode = DEVUSART_MODE_PIO;
+      psc->param.mode &= ~DEVUSART_MODE_BITFIFO;
     } else {
       psc->dFifoTx = d;
       /* rx */
       if((d = FifoCreate(psc->param.szFifoRx)) < 0) {
         FifoDestroy(psc->dFifoTx);
-        psc->param.mode = DEVUSART_MODE_PIO;
+        //psc->param.mode = DEVUSART_MODE_PIO;
+        psc->param.mode &= ~DEVUSART_MODE_BITFIFO;
       } else {
         psc->dFifoRx = d;
       }
@@ -159,11 +162,11 @@ DevUsartInit(int unit, devUsartParam_t *param)
   p->BRR = masterClk / param->baud;
 
 #ifdef SPI_MODULE_FIFO_YES
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+  //if(psc->param.mode == DEVUSART_MODE_FIFO) {
     p->CR3 |= USART_CR3_RXFTCFG_1_8 | USART_CR3_RXFTIE_YES;   /* threshold intr */
     p->CR1 |= USART_CR1_RXFFIE_YES;     /* full intr */
     p->CR1 |= USART_CR1_RXNEIE_YES;     /* rx intr */
-  }
+    //}
 #endif
   /* enable error interrupt */
   p->CR3 |= USART_CR3_EIE_YES;
@@ -199,7 +202,7 @@ DevUsartLoop(int unit)
   if(!psc->up) goto fail;
 
 #if 0
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+  if(psc->param.mode == DEVUSART_MODE_BITFIFO) {
     DevUsartSendFifo(psc);
   }
 #endif
@@ -225,7 +228,7 @@ DevUsartInterrupt(int unit)
   p->ICR = flag;
 
   /*** rx with fifo */
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
     uint8_t             buf[USART_RX_FIFO_SIZE+1];      /* fifo + sz(RDR) */
     uint8_t             *pBuf;
     int                 i, c;
@@ -253,7 +256,7 @@ DevUsartInterrupt(int unit)
   }
   /*** tx */
   if(flag & USART_ISR_TXE_MASK) {
-    if(psc->param.mode == DEVUSART_MODE_FIFO) {
+    if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
       DevUsartSendFifo(psc);
     }
   }
@@ -294,7 +297,8 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
   if(!psc->up) goto fail;
   p = psc->dev;
 
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+#if 0
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
     FifoWriteIn(psc->dFifoTx, ptr, size);
     p->CR1 |= USART_CR1_TXEIE_YES;
 
@@ -302,6 +306,21 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
     DevUsartSendPio(psc, ptr, size);
   } else if(psc->param.mode == DEVUSART_MODE_DMA) {
     DevUsartSendDma(psc, ptr, size);
+  }
+#endif
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
+    FifoWriteIn(psc->dFifoTx, ptr, size);
+    if(psc->param.mode & DEVUSART_MODE_BITDMA) {
+      DevUsartSendDma(psc, ptr, size);
+    } else {
+      p->CR1 |= USART_CR1_TXEIE_YES;
+    }
+  } else {
+    if(psc->param.mode & DEVUSART_MODE_BITDMA) {
+      DevUsartSendDma(psc, ptr, size);
+    } else {
+      DevUsartSendPio(psc, ptr, size);
+    }
   }
 
 fail:
@@ -319,11 +338,11 @@ DevUsartRecv(int unit, uint8_t *ptr, int size)
   if(!psc->up) goto fail;
   p = psc->dev;
 
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
     sz = FifoReadOut(psc->dFifoRx, ptr, size);
 
-  } else if(psc->param.mode == DEVUSART_MODE_PIO ||
-            psc->param.mode == DEVUSART_MODE_DMA) {
+  } else /*if(psc->param.mode == DEVUSART_MODE_PIO ||
+           psc->param.mode == DEVUSART_MODE_DMA)*/ {
     uint32_t    flag;
     if(p->ISR & USART_ISR_RXNE_MASK) {
       *ptr = p->RDR;
@@ -346,7 +365,7 @@ DevUsartGetDataLen(int unit)
   if(!psc->up) goto fail;
   p = psc->dev;
 
-  if(psc->param.mode == DEVUSART_MODE_FIFO) {
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
     sz = FifoGetDirtyLen(psc->dFifoRx);
 
   } else if(psc->param.mode == DEVUSART_MODE_PIO) {
@@ -417,7 +436,7 @@ DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size)
 
   if(p->CR3 & USART_CR3_DMAT_MASK) {
     chDma = (devUsartSendDmaReqTbl[psc->unit] >> 4) & 0xf;
-    while(!DevDmaIsFinished(1, chDma));
+    while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
     DevDmaStop(1, chDma);
 
     p->CR3 &= ~USART_CR3_DMAT_MASK;
@@ -444,7 +463,7 @@ DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size)
 
   p->CR3 |= USART_CR3_DMAT_YES;
 #if 0
-  while(!DevDmaIsFinished(1, chDma));
+  while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
   DevDmaStop(1, chDma);
 
   p->CR3 &= ~USART_CR3_DMAT_MASK;
