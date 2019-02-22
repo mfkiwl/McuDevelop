@@ -27,6 +27,7 @@
 #include        <string.h>
 
 #include        "system.h"
+#include        "devErrno.h"
 #include        "devDma4.h"
 
 #include        "devSpi16.h"
@@ -337,12 +338,13 @@ DevSpiSendDma(devSpiSc_t *psc, uint8_t *ptr, int size)
     param.aInc = 1;
     param.aSize = DEVDMA_SIZE_8BITS;
     param.bSize = DEVDMA_SIZE_8BITS;
+    param.intrTC = psc->param.dmaIntr;
 
     chDma = (devSpiSendDmaReqTbl[psc->unit] >> 4) & 0xf;
     DevDmaInit(1, chDma, &param);
   }
 
-  while(!DevDmaIsFinished(1, chDma));
+  while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
   DevDmaStop(1, chDma);
 
   while(p->SR & SPI_SR_BSY_MASK);
@@ -395,14 +397,21 @@ DevSpiRecvDma(devSpiSc_t *psc, uint8_t *ptr, int size)
     param.aInc = 1;
     param.aSize = DEVDMA_SIZE_8BITS;
     param.bSize = DEVDMA_SIZE_8BITS;
+    param.intrTC = psc->param.dmaIntr;
 
     chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
     DevDmaInit(1, chDma, &param);
   }
 
+  /* start receiving */
   p->CR1 |= SPI_CR1_SPE_YES;
 
-  while(!DevDmaIsFinished(1, chDma));
+  if(psc->param.dmaNonblock) {
+    size = DEV_ERRNO_NONBLOCK;
+    goto end;
+  }
+
+  while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
   DevDmaStop(1, chDma);
 
   p->CR1 &= ~SPI_CR1_SPE_MASK;
@@ -410,5 +419,62 @@ DevSpiRecvDma(devSpiSc_t *psc, uint8_t *ptr, int size)
 
 fail:
   p->CR1 &= ~SPI_CR1_RXONLY_MASK;
+end:
   return size;
+}
+
+
+int
+DevSpiRecvIsFinishDma(int unit)
+{
+  int           result = DEV_ERRNO_UNKNOWN;
+
+  devSpiSc_t            *psc;
+  stm32Dev_SPI          *p;
+
+  int                   chDma;
+
+  if(unit > SPI_MODULE_COUNT) goto fail;
+  psc = &spi.sc[unit];
+  if(!psc->up) goto fail;
+
+  p = psc->dev;
+
+  chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
+
+  result = DevDmaIsFinished(1, chDma);
+
+fail:
+  return result;
+}
+
+int
+DevSpiRecvStopDma(int unit)
+{
+  int                   result = -1;
+
+  devSpiSc_t            *psc;
+  stm32Dev_SPI          *p;
+
+  int                   chDma;
+
+  if(unit > SPI_MODULE_COUNT) goto fail;
+  psc = &spi.sc[unit];
+  if(!psc->up) goto fail;
+
+  p = psc->dev;
+
+  chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
+  //while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
+  DevDmaStop(1, chDma);
+
+  p->CR1 &= ~SPI_CR1_SPE_MASK;
+  //while(p->SR & SPI_SR_BSY_MASK);
+
+  result = 0;
+
+fail:
+  p->CR1 &= ~SPI_CR1_RXONLY_MASK;
+
+  return result;
 }

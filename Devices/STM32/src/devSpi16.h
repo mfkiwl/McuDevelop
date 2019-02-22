@@ -32,6 +32,8 @@ typedef struct {
   uint8_t               bit;
   uint8_t               dmaRx:  1;      /* use dma */
   uint8_t               dmaTx:  1;      /* use dma */
+  uint8_t               dmaIntr: 1;
+  uint8_t               dmaNonblock: 1;
 
   uint8_t               mode;
 #define DEVSPI_MODE_PIO       0
@@ -60,6 +62,8 @@ int             DevSpiInit(int unit, devSpiParam_t *param);
 int             DevSpiLoop(int unit);
 int             DevSpiSend(int unit, uint8_t *ptr, int size);
 int             DevSpiRecv(int unit, uint8_t *ptr, int size);
+int             DevSpiRecvIsFinishDma(int unit);
+int             DevSpiRecvStopDma(int unit);
 void            DevSpi3Interrupt(void);
 
 
