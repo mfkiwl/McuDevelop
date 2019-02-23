@@ -31,6 +31,9 @@ void            MainTim2Intr(void);
 void            MainUsbdifIntr(void);
 void            DevCrsInterrupt(void);
 void            MainInterruptTim(void);
+void            MainInterruptDmaCh1(void);
+void            MainInterruptDmaCh2to3(void);
+void            MainInterruptDmaCh4to7(void);
 
 #ifdef _INTR_C_
 void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
@@ -43,9 +46,9 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /*   6 EXTI[3:2]                    */
   IntrException,                        /*   7 EXTI[15:4]                   */
   IntrException,                        /*   8 TSC                          */
-  IntrException,                        /*   9 DMA CH1                      */
-  IntrException,                        /*  10 DMA CH3:2                    */
-  IntrException,                        /*  11 DMA CH7:4                    */
+  MainInterruptDmaCh1,                  /*   9 DMA CH1                      */
+  MainInterruptDmaCh2to3,               /*  10 DMA CH3:2                    */
+  MainInterruptDmaCh4to7,               /*  11 DMA CH7:4                    */
   IntrException,                        /*  12 ADC COMP                     */
   IntrException,                        /*  13 LPTIM1                       */
   IntrException,                        /*  14 USART4/5                     */
