@@ -365,11 +365,15 @@ SystemDebugShowClockValue(systemClockFreq_t *p)
 }
 
 
-
+extern void *sectHeapStart;
+static void *ptrMalloc = &sectHeapStart;
 void *
 malloc(int size)
 {
-  return NULL;
+  void *p;
+  p = ptrMalloc;
+  ptrMalloc += size;
+  return p;
 }
 
 void
