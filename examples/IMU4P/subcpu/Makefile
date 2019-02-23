@@ -32,7 +32,7 @@ TARGET_BOOT		= boot/$(OBJDIR)/bootloader
 TARGET_FIRM		= firm/$(OBJDIR)/firm/firm_crc
 TEMP_FILE		= file.temp
 
-DIRECTORIES		= $(CONFIG_ROOTDIR)/lib/libaeabi-cortexm0  firm boot
+DIRECTORIES		= $(CONFIG_ROOTDIR)/lib/libaeabi-cortexm0 boot firm
 
 CONFIG_ORIG		= config
 CONFIG_H		= config.h
