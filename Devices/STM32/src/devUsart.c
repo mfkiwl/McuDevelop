@@ -311,7 +311,15 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
   if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
     FifoWriteIn(psc->dFifoTx, ptr, size);
     if(psc->param.mode & DEVUSART_MODE_BITDMA) {
-      DevUsartSendDma(psc, ptr, size);
+      uint8_t   *pFifo;
+      int       lenFifo;
+      int       re;
+      re = FifoGetReadPointer(psc->dFifoTx, &pFifo, &lenFifo);
+      if(re >= 0 && lenFifo > 0) {
+        //DevUsartSendDma(psc, ptr, size);
+        DevUsartSendDma(psc, pFifo, lenFifo);
+        FifoAddReadPointer(psc->dFifoTx, lenFifo);
+      }
     } else {
       p->CR1 |= USART_CR1_TXEIE_YES;
     }
