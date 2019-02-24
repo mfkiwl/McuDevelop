@@ -47,7 +47,7 @@ const uint8_t           strVersionText[] = CONFIG_VERSION_FIRM_TEXT;
 
 
 mainSetting_t           setting;
-static uint32_t         system1ms = 0;
+static volatile uint32_t system1ms = 0;
 
 void            MainEntry(void);
 int             _putchar(char c);
