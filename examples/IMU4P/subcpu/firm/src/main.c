@@ -194,6 +194,10 @@ MainImuLoop(void)
     __disable_irq();
     if(mainTim2Ic[i].flag & MAIN_TIM2_IC_VALID) {
       mainTim2Ic[i].flag &= ~MAIN_TIM2_IC_VALID;
+      if(mainTim2Ic[i].flag & MAIN_TIM2_IC_OVERWRITE) {
+        mainTim2Ic[i].flag &= ~MAIN_TIM2_IC_OVERWRITE;
+        puts("o\n");
+      }
       __enable_irq();
 
       mainImuSpiBusy = 1;
@@ -213,6 +217,8 @@ MainImuLoop(void)
       __enable_irq();
 
       static uint8_t       str[80];
+      SystemGpioSetUpdateLedOn();       /*  adhoc */
+
       ImuReadValue(i, &imu[i]);
       ImuBuildText(i, mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb, &imu[i], str);
 
@@ -527,8 +533,6 @@ MainInterruptDmaCh2to3(void)
 #endif
 
     mainTim2Ic[mainImuNo].flag |= MAIN_SPIRX_DONE;
-        SystemGpioSetUpdateLedOn();       /*  adhoc */
-
     /* go next imu, if TIM IC interrupt is occured */
 
     mainImuSpiBusy = 0;
