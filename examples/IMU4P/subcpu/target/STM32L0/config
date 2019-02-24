@@ -58,9 +58,6 @@ CONFIG_UPDATE_LED_PORTNUM               = 1
 CONFIG_UPDATE_LED_BITNUM                = 14
 CONFIG_POWER_LED_PORTNUM                = 1
 CONFIG_POWER_LED_BITNUM                 = 15
-CONFIG_COL1_PORTNUM                     = 1     # COL 1
-CONFIG_COL1_BITNUM                      = 4
-
 
 ### memory info
 CONFIG_MEMORY_ROM_BASE			= 0x08000000
@@ -105,9 +102,9 @@ CONFIG_MEMORY_MAINFIRM_START		= 0x08004000
 CONFIG_MEMORY_MAINFIRM_END		= 0x08027fff	# depends on the chip
 CONFIG_MEMORY_MAINFIRM_SIZE		= ((CONFIG_MEMORY_MAINFIRM_END)-(CONFIG_MEMORY_MAINFIRM_START)+1)
 
-CONFIG_MEMORY_KEYMAP                    = (CONFIG_MEMORY_ROM_EEPROM_BASE)
-
 CONFIG_MCO_ENABLE                       = 1
+
+CONFIG_SYSTEM_SWD_ENABLE                = 0
 
 
 ###############################
