@@ -200,9 +200,23 @@ Mpu9250ReadValue(int unit, imuValue_t *p)
   int           result;
   uint8_t       cmd;
   uint8_t       *buf;
+  uint16_t       *buf16;
   uint16_t      temp;
 
   if(!p) goto fail;
+
+#if 0
+  buf16 = (uint16_t)p->raw;
+  p->acc.x  = buf16[AXL/2];
+  p->acc.y  = buf16[AYL/2];
+  p->acc.z  = buf16[AZL/2];
+  p->gyro.x = buf16[GXL/2];
+  p->gyro.y = buf16[GYL/2];
+  p->gyro.z = buf16[GZL/2];
+
+  temp = buf16[TL/2];
+  p->temp4x = (23 << 2) + (temp >> 7);
+#endif
 
   buf = p->raw;
 
