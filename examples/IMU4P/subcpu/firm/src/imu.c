@@ -37,6 +37,7 @@
 #include        "bmi160.h"
 #include        "adxl345.h"
 #include        "mpu9250.h"
+#include        "lis3dhh.h"
 
 
 typedef struct {
@@ -55,6 +56,7 @@ static int     imuFuncNum[IMU_NUMOF_SENSORS] = {
 };
 const static imuFunc_t  imuFunc[] = {
   {Bmi160Probe, Bmi160Init, Bmi160RecvValue, Bmi160ReadValue, Bmi160GetSettings, Bmi160SetSettings},
+  {Lis3dhhProbe, Lis3dhhInit, Lis3dhhRecvValue, Lis3dhhReadValue, Lis3dhhGetSettings, Lis3dhhSetSettings},
   {Adxl345Probe, Adxl345Init, Adxl345RecvValue, Adxl345ReadValue, NULL, NULL},
   {Mpu9250Probe, Mpu9250Init, Mpu9250RecvValue, Mpu9250ReadValue, Mpu9250GetSettings, Mpu9250SetSettings},
   {NULL, NULL, NULL, NULL, NULL},
@@ -313,7 +315,7 @@ ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size)
 }
 
 
-uint8_t         imuHexText[] = {
+const static uint8_t         imuHexText[] = {
   '0', '1', '2', '3', '4', '5', '6', '7',
   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
 };
@@ -322,16 +324,26 @@ ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str
 {
   uint8_t       *p;
   int           n;
+  register uint16_t     val;
+  register uint32_t     val32;
 
   p = str;
 
   /* time stamps */
-  for(int i = 32; i >= 0; i -= 4) {
-    *p++ = imuHexText[(ts1 >> i) & 0xf];
-  }
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(ts0 >> i) & 0xf];
-  }
+  val32 = ts1;
+  *p++ = imuHexText[(val32 >> 28) & 0xf];
+  *p++ = imuHexText[(val32 >> 24) & 0xf];
+  *p++ = imuHexText[(val32 >> 20) & 0xf];
+  *p++ = imuHexText[(val32 >> 16) & 0xf];
+  *p++ = imuHexText[(val32 >> 12) & 0xf];
+  *p++ = imuHexText[(val32 >>  8) & 0xf];
+  *p++ = imuHexText[(val32 >>  4) & 0xf];
+  *p++ = imuHexText[(val32 >>  0) & 0xf];
+  val = ts0;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
   *p++ = ' ';
 
   /* unit */
@@ -339,45 +351,70 @@ ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str
   *p++ = ' ';
 
   /* cnt */
-  for(int i = 28; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->cnt >> i) & 0xf];
-  }
+  val32 = imu->cnt;
+  *p++ = imuHexText[(val32 >> 28) & 0xf];
+  *p++ = imuHexText[(val32 >> 24) & 0xf];
+  *p++ = imuHexText[(val32 >> 20) & 0xf];
+  *p++ = imuHexText[(val32 >> 16) & 0xf];
+  *p++ = imuHexText[(val32 >> 12) & 0xf];
+  *p++ = imuHexText[(val32 >>  8) & 0xf];
+  *p++ = imuHexText[(val32 >>  4) & 0xf];
+  *p++ = imuHexText[(val32 >>  0) & 0xf];
   *p++ = ' ';
 
   /* accel */
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->acc.x >> i) & 0xf];
-  }
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->acc.y >> i) & 0xf];
-  }
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->acc.z >> i) & 0xf];
-  }
+  val = imu->acc.x;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
+  val = imu->acc.y;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
+  val = imu->acc.z;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
   *p++ = ' ';
 
   /* gyro */
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->gyro.x >> i) & 0xf];
-  }
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->gyro.y >> i) & 0xf];
-  }
-  for(int i = 12; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->gyro.z >> i) & 0xf];
-  }
+  val = imu->gyro.x;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
+  val = imu->gyro.y;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
+  val = imu->gyro.z;
+  *p++ = imuHexText[(val >> 12) & 0xf];
+  *p++ = imuHexText[(val >>  8) & 0xf];
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
+
   *p++ = ' ';
 
   /* temp x4 */
-  for(int i = 4; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->temp4x >> i) & 0xf];
-  }
+  val = imu->temp4x;
+  *p++ = imuHexText[(val >>  4) & 0xf];
+  *p++ = imuHexText[(val >>  0) & 0xf];
   *p++ = ' ';
 
   /* timestamp in imu */
-  for(int i = 28; i >= 0; i -= 4) {
-    *p++ = imuHexText[(imu->ts >> i) & 0xf];
-  }
+  val32 = imu->ts;
+  *p++ = imuHexText[(val32 >> 28) & 0xf];
+  *p++ = imuHexText[(val32 >> 24) & 0xf];
+  *p++ = imuHexText[(val32 >> 20) & 0xf];
+  *p++ = imuHexText[(val32 >> 16) & 0xf];
+  *p++ = imuHexText[(val32 >> 12) & 0xf];
+  *p++ = imuHexText[(val32 >>  8) & 0xf];
+  *p++ = imuHexText[(val32 >>  4) & 0xf];
+  *p++ = imuHexText[(val32 >>  0) & 0xf];
   *p++ = ' ';
 
   *p++ = '\n';
