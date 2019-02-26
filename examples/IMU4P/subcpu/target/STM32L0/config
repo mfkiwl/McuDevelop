@@ -171,7 +171,7 @@ __CHECK_DEVICE_DEFINES                  = 1
 ##############################
 ### USART
 CONFIG_SYSTEM_USART_PORT                = 1
-CONFIG_SYSTEM_USART_BAUD                = 2000000
+CONFIG_SYSTEM_USART_BAUD                = 4000000
 CONFIG_CONSOLE_NUMBER                   = (CONFIG_SYSTEM_USART_PORT)
 
 

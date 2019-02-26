@@ -46,6 +46,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
   uint32_t              masterClk;
   int                   irq = 0;
   void                  (*intr)(void);
+  int                   baud;
 
   if(unit == -1) {
     memset(&usart, 0, sizeof(usart));
@@ -125,10 +126,15 @@ DevUsartInit(int unit, devUsartParam_t *param)
     }
   }
 
+  baud = param->baud;
+  if(baud > 2000000) {
+    p->CR1 |= USART_CR1_OVER8_YES;
+    baud >>= 1;
+  }
 #ifdef SPI_MODULE_FIFO_YES
-  p->CR1  = USART_CR1_UE_YES | USART_CR1_FIFOEN_YES;  /* module enable */
+  p->CR1 |= USART_CR1_UE_YES | USART_CR1_FIFOEN_YES;  /* module enable */
 #else
-  p->CR1  = USART_CR1_UE_YES;                         /* module enable */
+  p->CR1 |= USART_CR1_UE_YES;                         /* module enable */
 #endif
   p->CR2  = 0;
   p->CR3  = 0;
@@ -159,7 +165,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
     p->CR2 &= ~USART_CR2_STOP_MASK;
   }
   /*** baud */
-  p->BRR = masterClk / param->baud;
+  p->BRR = masterClk / baud;
 
 #ifdef SPI_MODULE_FIFO_YES
   //if(psc->param.mode == DEVUSART_MODE_FIFO) {
