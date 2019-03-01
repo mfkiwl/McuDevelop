@@ -331,12 +331,14 @@ ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str
 
   /* time stamps */
   val32 = ts1;
+#if 0
   *p++ = imuHexText[(val32 >> 28) & 0xf];
   *p++ = imuHexText[(val32 >> 24) & 0xf];
   *p++ = imuHexText[(val32 >> 20) & 0xf];
   *p++ = imuHexText[(val32 >> 16) & 0xf];
   *p++ = imuHexText[(val32 >> 12) & 0xf];
   *p++ = imuHexText[(val32 >>  8) & 0xf];
+#endif
   *p++ = imuHexText[(val32 >>  4) & 0xf];
   *p++ = imuHexText[(val32 >>  0) & 0xf];
   val = ts0;
@@ -349,13 +351,14 @@ ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str
   /* unit */
   *p++ = imuHexText[unit & 0xf];
   *p++ = ' ';
-
   /* cnt */
   val32 = imu->cnt;
+  /*
   *p++ = imuHexText[(val32 >> 28) & 0xf];
   *p++ = imuHexText[(val32 >> 24) & 0xf];
   *p++ = imuHexText[(val32 >> 20) & 0xf];
   *p++ = imuHexText[(val32 >> 16) & 0xf];
+  */
   *p++ = imuHexText[(val32 >> 12) & 0xf];
   *p++ = imuHexText[(val32 >>  8) & 0xf];
   *p++ = imuHexText[(val32 >>  4) & 0xf];
@@ -405,6 +408,7 @@ ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str
   *p++ = imuHexText[(val >>  0) & 0xf];
   *p++ = ' ';
 
+#if 0
   /* timestamp in imu */
   val32 = imu->ts;
   *p++ = imuHexText[(val32 >> 28) & 0xf];
@@ -416,9 +420,9 @@ ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str
   *p++ = imuHexText[(val32 >>  4) & 0xf];
   *p++ = imuHexText[(val32 >>  0) & 0xf];
   *p++ = ' ';
-
+#endif
   *p++ = '\n';
-  *p = '\0';
+  *p   = '\0';
 
   return 0;
 }

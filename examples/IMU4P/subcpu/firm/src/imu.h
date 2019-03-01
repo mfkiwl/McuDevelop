@@ -41,8 +41,8 @@ typedef struct {
 } imuAxis_t;
 
 typedef struct {
-  uint8_t       raw[64];
   uint32_t      cnt;
+  uint8_t       raw[64];
   imuAxis_t     acc;
   imuAxis_t     gyro;
   uint32_t      ts;
