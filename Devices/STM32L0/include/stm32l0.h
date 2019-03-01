@@ -234,6 +234,7 @@ typedef enum  {
  */
 
 #define PERIUART_UNIT_MAX               3
+#define USART_MODULE_COUNT              3
 
 #include        "stm32Usart.h"
 
