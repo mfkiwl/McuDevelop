@@ -96,7 +96,7 @@ DevDmaInit(int unit, int ch, devDmaParam_t *param)
   if(param->intrER) cr |= DMA_CCR_TEIE_YES;
 
   /* disable dma */
-  p->CH[ch].CCR   = 0;
+  p->CH[ch-1].CCR   = 0;
 
   /* set to registers */
   p->CSELR &= ~DMA_CSELR_DMA_MASK(ch);
@@ -106,11 +106,50 @@ DevDmaInit(int unit, int ch, devDmaParam_t *param)
   p->CH[ch-1].CNDTR = param->cnt;
   p->CH[ch-1].CCR   = cr;
 
+#if 0
   /* clear interrupt status */
   p->IFCR = DMA_ISR_ALL_CLEAR(ch);
 
   /* enable */
   p->CH[ch-1].CCR |= DMA_CCR_EN_YES;
+#endif
+
+end:
+  result = 0;
+
+  return result;
+}
+int
+DevDmaInitAddrSize(int unit, int ch, devDmaParam_t *param)
+{
+  int                   result = -1;
+  uint32_t              cr = 0;
+
+  stm32Dev_DMA          *p;
+  int                   aSize;
+  int                   ch7;
+
+  if(unit == -1) {
+    memset(&dma, 0, sizeof(dma));
+#ifdef DMA1_PTR
+    dma.sc[1].dev = DMA1_PTR;
+#endif
+#ifdef DMA2_PTR
+    dma.sc[2].dev = DMA2_PTR;
+#endif
+    result = 0;
+    goto end;
+  }
+
+  if(ch >= 8) unit = 2;
+
+  p  = dma.sc[unit].dev;
+  ch &= 0x7;
+
+  /* set to registers */
+  p->CH[ch-1].CPAR  = (uint32_t)param->b;
+  p->CH[ch-1].CMAR = (uint32_t)param->a;
+  p->CH[ch-1].CNDTR = param->cnt;
 
 end:
   result = 0;
@@ -129,8 +168,6 @@ DevDmaStart(int unit, int ch)
 
   p  = dma.sc[unit].dev;
   ch &= 7;
-  p += (ch-1);
-
 
   /* clear interrupt status */
   p->IFCR = DMA_ISR_ALL_CLEAR(ch);

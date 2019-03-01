@@ -63,6 +63,7 @@ struct _stDma {
 
 
 int             DevDmaInit(int unit, int ch, devDmaParam_t *param);
+int             DevDmaInitAddrSize(int unit, int ch, devDmaParam_t *param);
 int             DevDmaStart(int unit, int ch);
 int             DevDmaStop(int unit, int ch);
 int             DevDmaIsFinished(int unit, int ch);
