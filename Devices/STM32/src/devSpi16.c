@@ -33,6 +33,8 @@
 #include        "devSpi16.h"
 
 struct _stSpi         spi;
+static devDmaParam_t       paramDmaRx;
+const static uint8_t    devSpiRecvDmaReqTbl[]    = DMA_REQ_SPIRX_TBL;
 
 /**
   * @brief  initilize the devcie
@@ -99,6 +101,26 @@ DevSpiInit(int unit, devSpiParam_t *param)
 
   p->CR2 = cr2;
   p->CR1 = cr1;
+
+  if(param->dmaTx || param->dmaRx)  {
+    int                   chDma;
+
+    memset(&paramDmaRx, 0, sizeof(paramDmaRx));
+    paramDmaRx.req = devSpiRecvDmaReqTbl[psc->unit];
+    //paramDmaRx.a = (void *)  0;
+    //paramDmaRx.b = (void *) &p->DR;
+    //paramDmaRx.cnt = 0;
+    paramDmaRx.dirBA = 1;
+    paramDmaRx.aInc = 1;
+    paramDmaRx.aSize = DEVDMA_SIZE_8BITS;
+    paramDmaRx.bSize = DEVDMA_SIZE_8BITS;
+    paramDmaRx.intrTC = psc->param.dmaIntr;
+
+    chDma = (devSpiRecvDmaReqTbl[unit] >> 4) & 0xf;
+
+    DevDmaInit(1, chDma, &paramDmaRx);
+
+  }
 
   psc->up = 1;
 
@@ -354,7 +376,6 @@ DevSpiSendDma(devSpiSc_t *psc, uint8_t *ptr, int size)
 fail:
   return size;
 }
-const static uint8_t    devSpiRecvDmaReqTbl[]    = DMA_REQ_SPIRX_TBL;
 /**
   * @brief  recv routine DMA
   * @param  psc   pointer of internal descriptor
@@ -380,28 +401,18 @@ DevSpiRecvDma(devSpiSc_t *psc, uint8_t *ptr, int size)
   }
   p->SR;
 
-  p->CR1 |= SPI_CR1_RXONLY_YES;
-  p->CR1 |= SPI_CR1_MSTR_YES;
+  p->CR1 |= SPI_CR1_RXONLY_YES | SPI_CR1_MSTR_YES;
   p->CR2 |= SPI_CR2_RXDMAEN_YES;
 
   /* start dma */
-  {
-    devDmaParam_t       param;
+  paramDmaRx.a = (void *)  ptr;
+  paramDmaRx.b = (void *) &p->DR;
+  paramDmaRx.cnt = size;
+  paramDmaRx.intrTC = psc->param.dmaIntr;
 
-    memset(&param, 0, sizeof(param));
-    param.req = devSpiRecvDmaReqTbl[psc->unit];
-    param.a = (void *)  ptr;
-    param.b = (void *) &p->DR;
-    param.cnt = size;
-    param.dirBA = 1;
-    param.aInc = 1;
-    param.aSize = DEVDMA_SIZE_8BITS;
-    param.bSize = DEVDMA_SIZE_8BITS;
-    param.intrTC = psc->param.dmaIntr;
-
-    chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
-    DevDmaInit(1, chDma, &param);
-  }
+  chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
+  DevDmaInitAddrSize(1, chDma, &paramDmaRx);
+  DevDmaStart(1, chDma);
 
   /* start receiving */
   p->CR1 |= SPI_CR1_SPE_YES;
