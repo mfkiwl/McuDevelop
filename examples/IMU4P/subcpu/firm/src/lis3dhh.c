@@ -100,8 +100,7 @@ Lis3dhhInit(int unit)
 
   /* int1 drdy enable */
   reg = LIS3DHH_REG_INT1_CTRL;
-  val = (CTRL_REG1_NORM_MOD_EN_YES | CTRL_REG1_IF_ADD_INC_YES |
-         CTRL_REG1_DRDY_PULSE_YES | CTRL_REG1_BDU_YES);
+  val = (INT1_CTRL_DRDY_YES);
   ImuSetValueStandard(unit, reg, val);
 
   return result;
@@ -112,35 +111,50 @@ int
 Lis3dhhRecvValue(int unit, imuValue_t *p)
 {
   int           result;
-  uint8_t       cmd;
   uint8_t       *buf;
-  uint32_t      reg = 0 | LIS3DHH_READ;
-  uint16_t      temp;
 
   if(!p) goto fail;
 
   buf = p->raw;
 
-  result = ImuGetValueStandard(unit, LIS3DHH_REG_OUT_TEMP_LOW, buf, 9);
-  if(result == DEV_ERRNO_NONBLOCK) goto fail;
-
-  result = DEV_ERRNO_SUCCESS;
+#define READ_LEN  ((LIS3DHH_REG_ACC_Z_HIGH) - (LIS3DHH_REG_CTRL_REG5) + 1)
+  result = ImuGetValueStandard(unit, LIS3DHH_REG_CTRL_REG5, buf, READ_LEN);
+  if(result != DEV_ERRNO_NONBLOCK) {
+    Lis3dhhReadValue(unit, p);
+    result = DEV_ERRNO_SUCCESS;
+  }
 
 fail:
   return result;
 }
 
-
+#define TOP     LIS3DHH_REG_CTRL_REG5
+#define AXL     ((LIS3DHH_REG_ACC_X_LOW) -(TOP))
+#define AXH     ((LIS3DHH_REG_ACC_X_HIGH)-(TOP))
+#define AYL     ((LIS3DHH_REG_ACC_Y_LOW) -(TOP))
+#define AYH     ((LIS3DHH_REG_ACC_Y_HIGH)-(TOP))
+#define AZL     ((LIS3DHH_REG_ACC_Z_LOW) -(TOP))
+#define AZH     ((LIS3DHH_REG_ACC_Z_HIGH)-(TOP))
 int
 Lis3dhhReadValue(int unit, imuValue_t *p)
 {
   int           result;
-  uint8_t       *buf;
   uint16_t      temp;
+  uint8_t       *buf;
+  uint16_t      *src, *dest;
 
   if(!p) goto fail;
 
-  buf = p->raw;
+  /* the data of *src byte order must be little endian */
+  src  = (uint16_t *) &p->raw[AXL];
+  dest = (uint16_t *) &p->acc.x;
+  *dest++ = *src++;
+  *dest++ = *src++;
+  *dest++ = *src++;
+
+  temp = (buf[LIS3DHH_REG_OUT_TEMP_HIGH] << 8) |
+    buf[LIS3DHH_REG_OUT_TEMP_LOW] ;
+  p->temp4x = (25 << 2) + (temp >> 7);
 
   result = DEV_ERRNO_SUCCESS;
 
@@ -157,6 +171,11 @@ Lis3dhhGetSettings(int unit, imuSetting_t *p)
   lis3dhhSetting_t       *pSet;
 
   pSet = &setting[unit];
+
+  p->acc_fs =  250;     /* fixed PM2.5G */
+  p->freq = 1100;       /* fixed 1.1kHz */
+  p->mag_fs = -1;       /* n/a */
+
   return IMU_ERRNO_SUCCESS;
 }
 
@@ -167,7 +186,7 @@ Lis3dhhSetSettings(int unit, imuSetting_t *p)
   int                   result = IMU_ERRNO_UNKNOWN;
   lis3dhhSetting_t       *pSet;
 
-  pSet = &setting[unit];
+  /*pSet = &setting[unit];*/
 
   return IMU_ERRNO_SUCCESS;
 }

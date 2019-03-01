@@ -24,6 +24,8 @@
 #define _MPU9250_C_
 
 #include        <stdint.h>
+#include        <stdio.h>
+#include        <cmsis_gcc.h>
 
 #include        "config.h"
 #include        "devErrno.h"
@@ -34,6 +36,7 @@
 
 typedef struct {
   uint8_t  accConfig;
+  uint8_t  accConfig2;
   uint8_t  gyroConfig;
   uint8_t  sampleDiv;
 } mpu9250Setting_t;
@@ -66,7 +69,8 @@ Mpu9250Probe(int unit)
     pSet = &setting[unit];
 
     pSet->sampleDiv = 0;
-    pSet->accConfig = ACCEL_CONFIG_FS_SEL_PM2G;
+    pSet->accConfig  = ACCEL_CONFIG_FS_SEL_PM8G;
+    pSet->accConfig2 = ACCEL_CONFIG2_FCHOICEB_0 | ACCEL_CONFIG2_A_DLPFCFG_218HZ;
     pSet->gyroConfig = GYRO_CONFIG_FCHOICEB_0 | GYRO_CONFIG_GYRO_FS_SEL_250DPS;
 
     result = IMU_ERRNO_SUCCESS;
@@ -106,11 +110,12 @@ Mpu9250Init(int unit)
   /* sampling rate */
   reg = MPU9250_REG_SMPLRT;
   val = pSet->sampleDiv;
+  val = 0;
   ImuSetValueStandard(unit, reg, val);
 
   /* config */
   reg = MPU9250_REG_CONFIG;
-  val = CONFIG_DLPF_CFG_184HZ | GYRO_CONFIG_FCHOICEB_0;
+  val = CONFIG_DLPF_CFG_184HZ;
   ImuSetValueStandard(unit, reg, val);
 
   /* configuration accel */
@@ -118,7 +123,7 @@ Mpu9250Init(int unit)
   val = pSet->accConfig;
   ImuSetValueStandard(unit, reg, val);
   reg = MPU9250_REG_ACCEL_CONFIG2;
-  val = ACCEL_CONFIG2_FCHOICEB_0 | ACCEL_CONFIG2_A_DLPFCFG_218HZ;
+  val = pSet->accConfig2;
   ImuSetValueStandard(unit, reg, val);
 
   /* configuration gyro */
@@ -141,20 +146,21 @@ Mpu9250Init(int unit)
 }
 
 
-#define AXL     ((MPU9250_REG_ACCEL_XOUT_L)-(MPU9250_REG_INT_STATUS))
-#define AXH     ((MPU9250_REG_ACCEL_XOUT_H)-(MPU9250_REG_INT_STATUS))
-#define AYL     ((MPU9250_REG_ACCEL_YOUT_L)-(MPU9250_REG_INT_STATUS))
-#define AYH     ((MPU9250_REG_ACCEL_YOUT_H)-(MPU9250_REG_INT_STATUS))
-#define AZL     ((MPU9250_REG_ACCEL_ZOUT_L)-(MPU9250_REG_INT_STATUS))
-#define AZH     ((MPU9250_REG_ACCEL_ZOUT_H)-(MPU9250_REG_INT_STATUS))
-#define GXL     ((MPU9250_REG_GYRO_XOUT_L) -(MPU9250_REG_INT_STATUS))
-#define GXH     ((MPU9250_REG_GYRO_XOUT_H) -(MPU9250_REG_INT_STATUS))
-#define GYL     ((MPU9250_REG_GYRO_YOUT_L) -(MPU9250_REG_INT_STATUS))
-#define GYH     ((MPU9250_REG_GYRO_YOUT_H) -(MPU9250_REG_INT_STATUS))
-#define GZL     ((MPU9250_REG_GYRO_ZOUT_L) -(MPU9250_REG_INT_STATUS))
-#define GZH     ((MPU9250_REG_GYRO_ZOUT_H) -(MPU9250_REG_INT_STATUS))
-#define TL      ((MPU9250_REG_TEMP_OUT_L)  -(MPU9250_REG_INT_STATUS))
-#define TH      ((MPU9250_REG_TEMP_OUT_H)  -(MPU9250_REG_INT_STATUS))
+#define TOP     (MPU9250_REG_ACCEL_XOUT_H)
+#define AXH     ((MPU9250_REG_ACCEL_XOUT_H)-(TOP))
+#define AXL     ((MPU9250_REG_ACCEL_XOUT_L)-(TOP))
+#define AYH     ((MPU9250_REG_ACCEL_YOUT_H)-(TOP))
+#define AYL     ((MPU9250_REG_ACCEL_YOUT_L)-(TOP))
+#define AZH     ((MPU9250_REG_ACCEL_ZOUT_H)-(TOP))
+#define AZL     ((MPU9250_REG_ACCEL_ZOUT_L)-(TOP))
+#define TH      ((MPU9250_REG_TEMP_OUT_H)  -(TOP))
+#define TL      ((MPU9250_REG_TEMP_OUT_L)  -(TOP))
+#define GXH     ((MPU9250_REG_GYRO_XOUT_H) -(TOP))
+#define GXL     ((MPU9250_REG_GYRO_XOUT_L) -(TOP))
+#define GYH     ((MPU9250_REG_GYRO_YOUT_H) -(TOP))
+#define GYL     ((MPU9250_REG_GYRO_YOUT_L) -(TOP))
+#define GZH     ((MPU9250_REG_GYRO_ZOUT_H) -(TOP))
+#define GZL     ((MPU9250_REG_GYRO_ZOUT_L) -(TOP))
 int
 Mpu9250RecvValue(int unit, imuValue_t *p)
 {
@@ -167,29 +173,12 @@ Mpu9250RecvValue(int unit, imuValue_t *p)
 
   buf = p->raw;
 
-  result = ImuGetValueStandard(unit, MPU9250_REG_INT_STATUS, buf, 38);
-  if(result == DEV_ERRNO_NONBLOCK) goto fail;
-
-#if 0
-  memset(p, 0, sizeof(imuValue_t));
-
-  p->acc.x  = (buf[AXH] << 8) | buf[AXL];
-  p->acc.y  = (buf[AYH] << 8) | buf[AYL];
-  p->acc.z  = (buf[AZH] << 8) | buf[AZL];
-  p->gyro.x = (buf[GXH] << 8) | buf[GXL];
-  p->gyro.y = (buf[GYH] << 8) | buf[GYL];
-  p->gyro.z = (buf[GZH] << 8) | buf[GZL];
-
-  temp = (buf[TH] << 8) | buf[TL];
-  p->temp4x = (23 << 2) + (temp >> 7);
-#endif
-
-#if 0
-  p->ts = (buf[TH] << 8) | buf[TL];
-#endif
-  Mpu9250ReadValue(unit, p);
-
-  result = DEV_ERRNO_SUCCESS;
+#define READ_LEN  ((MPU9250_REG_GYRO_ZOUT_L) - (MPU9250_REG_ACCEL_XOUT_H) + 1)
+  result = ImuGetValueStandard(unit, (MPU9250_REG_ACCEL_XOUT_H), buf, READ_LEN);
+  if(result != DEV_ERRNO_NONBLOCK) {
+    Mpu9250ReadValue(unit, p);
+    result = DEV_ERRNO_SUCCESS;
+  }
 
 fail:
   return result;
@@ -198,41 +187,27 @@ int
 Mpu9250ReadValue(int unit, imuValue_t *p)
 {
   int           result;
-  uint8_t       cmd;
-  uint8_t       *buf;
-  uint16_t       *buf16;
   uint16_t      temp;
+  uint16_t      *src, *dest;
 
   if(!p) goto fail;
 
-#if 0
-  buf16 = (uint16_t)p->raw;
-  p->acc.x  = buf16[AXL/2];
-  p->acc.y  = buf16[AYL/2];
-  p->acc.z  = buf16[AZL/2];
-  p->gyro.x = buf16[GXL/2];
-  p->gyro.y = buf16[GYL/2];
-  p->gyro.z = buf16[GZL/2];
+  /* the data of *src byte order must be little endian
+   * however, *src is bigendian, so swap high and low byte
+   */
+  src  = (uint16_t *) &p->raw[AXH];
+  dest = (uint16_t *) &p->acc.x;
+  *dest++ = __REV16(*src++);
+  *dest++ = __REV16(*src++);
+  *dest++ = __REV16(*src++);
 
-  temp = buf16[TL/2];
-  p->temp4x = (23 << 2) + (temp >> 7);
-#endif
-
-  buf = p->raw;
-
-  p->acc.x  = (buf[AXH] << 8) | buf[AXL];
-  p->acc.y  = (buf[AYH] << 8) | buf[AYL];
-  p->acc.z  = (buf[AZH] << 8) | buf[AZL];
-  p->gyro.x = (buf[GXH] << 8) | buf[GXL];
-  p->gyro.y = (buf[GYH] << 8) | buf[GYL];
-  p->gyro.z = (buf[GZH] << 8) | buf[GZL];
-
-  temp = (buf[TH] << 8) | buf[TL];
+  temp    = __REV16(*src++);
   p->temp4x = (23 << 2) + (temp >> 7);
 
-#if 0
-  p->ts = (buf[TH] << 8) | buf[TL];
-#endif
+  dest = (uint16_t *) &p->gyro.x;
+  *dest++ = __REV16(*src++);
+  *dest++ = __REV16(*src++);
+  *dest++ = __REV16(*src++);
 
   result = DEV_ERRNO_SUCCESS;
 

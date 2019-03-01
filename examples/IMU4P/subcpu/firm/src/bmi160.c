@@ -24,6 +24,7 @@
 #define _BMI160_C_
 
 #include        <stdint.h>
+#include        <stdio.h>
 
 #include        "config.h"
 #include        "devErrno.h"
@@ -159,21 +160,14 @@ Bmi160Init(int unit)
   reg = 0x56;
   val = 0x80;
   ImuSetValueStandard(unit, reg, val);
-  /* step counter */
-  reg = 0x52;
-  val = 0x38;
+  /* data ready interrupt */
+  reg = 0x56;
+  val = 0x80;
   ImuSetValueStandard(unit, reg, val);
-#if 0
-  reg = 0x55;
-  val = 0x01;
-  ImuSetValueStandard(unit, reg, val);
-#endif
-#if 1
   /* enable interrupt */
   reg = 0x53;
   val = 0x0b;
   ImuSetValueStandard(unit, reg, val);
-#endif
 
   return result;
 }
@@ -192,57 +186,55 @@ Bmi160RecvValue(int unit, imuValue_t *p)
 
   buf = p->raw;
 
-  result = ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, buf, 34);
-  if(result == DEV_ERRNO_NONBLOCK) goto fail;
-
-#if 0
-  p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
-  p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
-  p->gyro.z = (buf[BMI160_REG_GYRO_Z_HIGH] << 8) | buf[BMI160_REG_GYRO_Z_LOW];
-
-  p->acc.x = (buf[BMI160_REG_ACC_X_HIGH] << 8) | buf[BMI160_REG_ACC_X_LOW];
-  p->acc.y = (buf[BMI160_REG_ACC_Y_HIGH] << 8) | buf[BMI160_REG_ACC_Y_LOW];
-  p->acc.z = (buf[BMI160_REG_ACC_Z_HIGH] << 8) | buf[BMI160_REG_ACC_Z_LOW];
-
-  p->ts = (buf[BMI160_REG_TIME_HIGH] << 16) |
-    (buf[BMI160_REG_TIME_MID] << 8) | buf[BMI160_REG_TIME_LOW];
-
-  temp = (buf[BMI160_REG_TEMP_HIGH] << 8) | buf[BMI160_REG_TEMP_LOW] ;
-  p->temp4x = (23 << 2) + (temp >> 7);
-#endif
-  Bmi160ReadValue(unit, p);
-
-  result = DEV_ERRNO_SUCCESS;
+#define READ_LEN  ((BMI160_REG_TEMP_HIGH) - (BMI160_REG_GYRO_X_LOW) + 1)
+  result = ImuGetValueStandard(unit, BMI160_REG_GYRO_X_LOW, buf, READ_LEN);
+  if(result != DEV_ERRNO_NONBLOCK) {
+    Bmi160ReadValue(unit, p);
+    result = DEV_ERRNO_SUCCESS;
+  }
 
 fail:
   return result;
 }
 
 
+#define GXL     ((BMI160_REG_GYRO_X_LOW) -(BMI160_REG_GYRO_X_LOW))
+#define GXH     ((BMI160_REG_GYRO_X_HIGH)-(BMI160_REG_GYRO_X_LOW))
+#define GYL     ((BMI160_REG_GYRO_Y_LOW) -(BMI160_REG_GYRO_X_LOW))
+#define GYH     ((BMI160_REG_GYRO_Y_HIGH)-(BMI160_REG_GYRO_X_LOW))
+#define GZL     ((BMI160_REG_GYRO_Z_LOW) -(BMI160_REG_GYRO_X_LOW))
+#define GZH     ((BMI160_REG_GYRO_Z_HIGH)-(BMI160_REG_GYRO_X_LOW))
+#define AXL     ((BMI160_REG_ACC_X_LOW)  -(BMI160_REG_GYRO_X_LOW))
+#define AXH     ((BMI160_REG_ACC_X_HIGH) -(BMI160_REG_GYRO_X_LOW))
+#define AYL     ((BMI160_REG_ACC_Y_LOW)  -(BMI160_REG_GYRO_X_LOW))
+#define AYH     ((BMI160_REG_ACC_Y_HIGH) -(BMI160_REG_GYRO_X_LOW))
+#define AZL     ((BMI160_REG_ACC_Z_LOW)  -(BMI160_REG_GYRO_X_LOW))
+#define AZH     ((BMI160_REG_ACC_Z_HIGH) -(BMI160_REG_GYRO_X_LOW))
 int
 Bmi160ReadValue(int unit, imuValue_t *p)
 {
   int           result;
-  uint8_t       *buf;
   uint16_t      temp;
+  uint16_t      *src, *dest;
 
   if(!p) goto fail;
 
-  buf = p->raw;
-
-  p->gyro.x = (buf[BMI160_REG_GYRO_X_HIGH] << 8) | buf[BMI160_REG_GYRO_X_LOW];
-  p->gyro.y = (buf[BMI160_REG_GYRO_Y_HIGH] << 8) | buf[BMI160_REG_GYRO_Y_LOW];
-  p->gyro.z = (buf[BMI160_REG_GYRO_Z_HIGH] << 8) | buf[BMI160_REG_GYRO_Z_LOW];
-
-  p->acc.x = (buf[BMI160_REG_ACC_X_HIGH] << 8) | buf[BMI160_REG_ACC_X_LOW];
-  p->acc.y = (buf[BMI160_REG_ACC_Y_HIGH] << 8) | buf[BMI160_REG_ACC_Y_LOW];
-  p->acc.z = (buf[BMI160_REG_ACC_Z_HIGH] << 8) | buf[BMI160_REG_ACC_Z_LOW];
-
-  p->ts = (buf[BMI160_REG_TIME_HIGH] << 16) |
-    (buf[BMI160_REG_TIME_MID] << 8) | buf[BMI160_REG_TIME_LOW];
-
-  temp = (buf[BMI160_REG_TEMP_HIGH] << 8) | buf[BMI160_REG_TEMP_LOW] ;
-  p->temp4x = (23 << 2) + (temp >> 7);
+  /* the data of *src byte order must be little endian */
+  src  = (uint16_t *) &p->raw[GXL];
+  dest = (uint16_t *) &p->gyro.x;
+  *dest++ = *src++;
+  *dest++ = *src++;
+  *dest++ = *src++;
+  dest = (uint16_t *) &p->acc.x;
+  *dest++ = *src++;
+  *dest++ = *src++;
+  *dest++ = *src++;
+  dest = (uint16_t *) &p->ts;
+  *dest++ = *src++;
+  *dest++ = *src++ & 0xff;
+  src += 2;
+  dest = (uint16_t *) &p->temp4x;
+  *dest = *src;
 
   result = DEV_ERRNO_SUCCESS;
 
