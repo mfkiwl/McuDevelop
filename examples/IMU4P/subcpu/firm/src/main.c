@@ -59,15 +59,15 @@ static void     MainInitSpi(void);
 
 
 
-uint32_t        tim2msb = 0;
+volatile uint32_t        tim2msb = 0;
 typedef struct {
-  uint16_t      flag;
+  volatile uint16_t      flag;
 #define       MAIN_TIM2_IC_VALID        (1<<0)
 #define       MAIN_TIM2_IC_OVERWRITE    (1<<1)
 #define       MAIN_SPIRX_DONE           (1<<2)
-  uint16_t      tLsb;
-  uint32_t      tMsb;
-  uint32_t      cnt;
+  volatile uint16_t      tLsb;
+  volatile uint32_t      tMsb;
+  volatile uint32_t      cnt;
 } mainTim2Ic_t;
 static mainTim2Ic_t     mainTim2Ic[4];
 
@@ -169,71 +169,123 @@ MainLedBlinking(void)
 }
 
 
-static int mainImuNo = 0;
+volatile static int mainImuNo = 0;
 #define MAIN_IMU_SEQ_IDLE       0
 #define MAIN_IMU_SEQ_SPIRX      1
 #define MAIN_IMU_SEQ_CONVERT    2
 #define MAIN_IMU_SEQ_DONE       3
-static uint8_t  mainImuSeq = MAIN_IMU_SEQ_IDLE;
-static uint8_t  mainImuSpiBusy = 0;
+volatile static uint8_t  mainImuSeq = MAIN_IMU_SEQ_IDLE;
+volatile static uint8_t  mainImuSpiBusy = 0;
 imuValue_t    imu[4];
 
 
+static uint8_t       str[4][80];
 void
 MainImuLoop(void)
 {
-  int           i;
+  int           j, i;
 
+
+  /* the sensor data will be received, if the TIM IC interrupt is come */
+  __disable_irq();
   if(!mainImuSpiBusy) {
-    __disable_irq();
-    mainImuNo++;
-    if(mainImuNo >= CONFIG_NUM_OF_IMUS) mainImuNo = 0;
-    i = mainImuNo;
-    __enable_irq();
-
-    __disable_irq();
-    if(mainTim2Ic[i].flag & MAIN_TIM2_IC_VALID) {
-      mainTim2Ic[i].flag &= ~MAIN_TIM2_IC_VALID;
-      if(mainTim2Ic[i].flag & MAIN_TIM2_IC_OVERWRITE) {
-        mainTim2Ic[i].flag &= ~MAIN_TIM2_IC_OVERWRITE;
-        puts("o\n");
-      }
-      __enable_irq();
-
-      mainImuSpiBusy = 1;
-      ImuRecvValue(i, &imu[i]);
-      imu[i].cnt = mainTim2Ic[i].cnt;
-
-      __disable_irq();
-    }
-    __enable_irq();
+    MainSearchImuIntr();
   }
+  __enable_irq();
 
-
+  /* the received data is converted output data, then send*/
   for(i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
-    __disable_irq();
     if(mainTim2Ic[i].flag & MAIN_SPIRX_DONE) {
+      __disable_irq();
       mainTim2Ic[i].flag &= ~MAIN_SPIRX_DONE;
       __enable_irq();
 
-      static uint8_t       str[80];
-      SystemGpioSetUpdateLedOn();       /*  adhoc */
-
       ImuReadValue(i, &imu[i]);
-      ImuBuildText(i, mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb, &imu[i], str);
+      ImuBuildText(i, mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb, &imu[i], &str[i][0]);
 
-      //puts(str);
-      SystemGpioSetUpdateLedOff();       /*  adhoc */
+      MainQueueImu(i);
+      if(!DevUsartIsSendingDma(1)) {
+        __disable_irq();
+        MainSendImu();
+        __enable_irq();
+      }
 
       __disable_irq();
     }
-    __enable_irq();
   }
 
   return;
 }
 
 
+static void
+MainSearchImuIntr(void)
+{
+  int           i;
+  int           no;
+
+  for(i = 0; i < (CONFIG_NUM_OF_IMUS-1); i++) {
+    mainImuNo++;
+    if(mainImuNo >= CONFIG_NUM_OF_IMUS) mainImuNo = 0;
+    no = mainImuNo;
+
+    if(mainTim2Ic[no].flag & MAIN_TIM2_IC_VALID) {
+      if(mainTim2Ic[no].flag & MAIN_TIM2_IC_OVERWRITE) {
+        imu[no].flag |= IMU_FLAG_OVERWRITE;
+      }
+      mainTim2Ic[no].flag &= ~(MAIN_TIM2_IC_OVERWRITE | MAIN_TIM2_IC_VALID);
+
+      mainImuSpiBusy = 1;
+      ImuRecvValue(no, &imu[no]);
+      imu[no].cnt = mainTim2Ic[no].cnt;
+
+      break;
+    }
+  }
+
+  return;
+}
+
+
+#define IMUBUF_SIZE     8
+static uint8_t          mainQueueImuBuf[IMUBUF_SIZE] = {-1};
+volatile static uint8_t          mainQueueImuStart = 0;
+volatile static uint8_t          mainQueueImuEnd = 0;
+
+static void
+MainQueueImu(int no)
+{
+
+  if(((mainQueueImuStart+1) & (IMUBUF_SIZE-1)) == mainQueueImuEnd) {
+    /* flush */
+    __disable_irq();
+    mainQueueImuEnd++;
+    mainQueueImuEnd &= (IMUBUF_SIZE-1);
+    __enable_irq();
+  }
+
+  mainQueueImuBuf[mainQueueImuStart] = no;
+  mainQueueImuStart++;
+  mainQueueImuStart &= (IMUBUF_SIZE-1);
+
+  return;
+}
+static void
+MainSendImu(void)
+{
+  int           n;
+
+  if(mainQueueImuStart != mainQueueImuEnd) {
+    n = mainQueueImuBuf[mainQueueImuEnd];
+
+    puts(&str[n][0]);
+
+    mainQueueImuEnd++;
+    mainQueueImuEnd &= (IMUBUF_SIZE-1);
+  }
+
+  return;
+}
 
 void main(void) {
   MainEntry();
@@ -261,13 +313,6 @@ MainEntry(void)
     SysTick_Config((clk.systick<<2)/1000);      /* adhoc */
   }
 
-#if 0
-  /* init the systick counter */
-  IntrSetEntry(0, SysTick_IRQn, (void *)RtosSysTickEntry);
-  NVIC_SetPriority(SysTick_IRQn, 15);
-  NVIC_EnableIRQ(SysTick_IRQn);
-#endif
-
   /* other interrupt */
   NVIC_SetPriority(MemoryManagement_IRQn, 0);
   NVIC_SetPriority(BusFault_IRQn, 0);
@@ -281,12 +326,14 @@ MainEntry(void)
   MainInitTim();
   MainInitSpi();
 
+#if 0
   puts("\n\n\n\n\n\n\n\n\n\n#-----\n");
   puts("# IMU4P was started\n");
 
   systemClockFreq_t   clk;
   SystemGetClockValue(&clk);
   SystemDebugShowClockValue(&clk);
+#endif
 
   NVIC_SetPriority(DMA1_CH1_IRQn, 5);
   NVIC_EnableIRQ(DMA1_CH1_IRQn);
@@ -343,19 +390,12 @@ MainInitUsart(void)
   param.baud = CONFIG_SYSTEM_USART_BAUD;
   param.bit = DEVUSART_BIT_8;
   param.stop = DEVUSART_STOP_1;
-  param.mode = DEVUSART_MODE_DMA_FIFO;
+  param.mode = DEVUSART_MODE_DMA;
   param.parity = DEVUSART_PARITY_NONE;
   param.szFifoTx = 7;
   param.szFifoRx = 4;
+  param.intrDma = 1;
   DevUsartInit(CONFIG_SYSTEM_USART_PORT, &param);
-
-#if 0
-  __NVIC_SetPriority(DMA1_Stream0_IRQn, 5);
-  __NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-  /* DMA1_Stream1_IRQn interrupt configuration */
-  __NVIC_SetPriority(DMA1_Stream1_IRQn, 5);
-  __NVIC_EnableIRQ(DMA1_Stream1_IRQn);
-#endif
 
   return;
 }
@@ -395,8 +435,8 @@ MainInitTim(void)
   param.ch.intr = 1;
   DevCounterInit(TIM2_NUM, &param);
 
-  __NVIC_SetPriority(TIM2_IRQn, 0);
-  __NVIC_EnableIRQ(TIM2_IRQn);
+  NVIC_SetPriority(TIM2_IRQn, 0);
+  NVIC_EnableIRQ(TIM2_IRQn);
 
   return;
 }
@@ -496,13 +536,12 @@ MainInitSpi(void)
   DevSpiInit(-1, NULL);
 
   memset(&param, 0, sizeof(param));
-  //param.clkmode = SPI_CR1_CPOL_NO | SPI_CR1_CPHA_NO;
   param.clkmode = SPI_CR1_CPOL_YES | SPI_CR1_CPHA_YES;
   param.bit = 8;
 
   /* IMU control */
   //param.speed = 40000000;     /* speed: don't care */
-  param.prescaler = 1;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
+  param.prescaler = 0;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
   param.dmaTx = 0;
   param.dmaRx = 1;
   param.dmaIntr = 1;
@@ -530,21 +569,32 @@ MainInterruptDmaCh2to3(void)
 
 #if CONFIG_IMU_SPI_NONBLOCK
     ImuReadValueNonblockEnd(mainImuNo);
+    mainImuSpiBusy = 0;
 #endif
 
     mainTim2Ic[mainImuNo].flag |= MAIN_SPIRX_DONE;
-    /* go next imu, if TIM IC interrupt is occured */
 
-    mainImuSpiBusy = 0;
+    //MainSearchImuIntr();      /* imu2,3 can not be received, if enable */
   }
+#if 0
   if(sr & DMA_ISR_GIF_MASK(DMA_CH3)) {
     DevDmaClearIntr(1, DMA_CH3);
   }
+#endif
   return;
 }
 void
 MainInterruptDmaCh4to7(void)
 {
+  uint32_t       sr;
+  sr = DMA1_PTR->ISR;
+  if(sr & DMA_ISR_GIF_MASK(DMA_CH4)) {
+    DevDmaClearIntr(1, DMA_CH4);
+
+    DevUsartSendStopDma(1);
+    MainSendImu();
+  }
+
   return;
 }
 

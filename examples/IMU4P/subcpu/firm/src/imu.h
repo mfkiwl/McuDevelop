@@ -47,6 +47,8 @@ typedef struct {
   imuAxis_t     gyro;
   uint32_t      ts;
   uint16_t      temp4x;
+  uint16_t      flag;
+#define       IMU_FLAG_OVERWRITE      (1<<0)
 } imuValue_t;
 
 

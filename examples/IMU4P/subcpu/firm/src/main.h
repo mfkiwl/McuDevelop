@@ -66,6 +66,11 @@ static void             MainInitSpi(void);
 static void             MainInitAdc(void);
 static void             MainInitDac(void);
 static void             MainInitUsb(void);
+
+static void             MainQueueImu(int no);
+static void             MainSendImu(void);
+static void             MainSearchImuIntr(void);
+
 #endif
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)      /* adhoc */
