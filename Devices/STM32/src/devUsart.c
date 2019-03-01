@@ -295,6 +295,7 @@ DevUsart3Interrupt(void)
 int
 DevUsartSend(int unit, uint8_t *ptr, int size)
 {
+  int                   result = 0;
   stm32Dev_USART        *p;
   devUsartSc_t          *psc;
 
@@ -331,14 +332,14 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
     }
   } else {
     if(psc->param.mode & DEVUSART_MODE_BITDMA) {
-      DevUsartSendDma(psc, ptr, size);
+      result = DevUsartSendDma(psc, ptr, size);
     } else {
-      DevUsartSendPio(psc, ptr, size);
+      result = DevUsartSendPio(psc, ptr, size);
     }
   }
 
 fail:
-  return 0;
+  return result;
 }
 int
 DevUsartRecv(int unit, uint8_t *ptr, int size)
@@ -443,39 +444,31 @@ const static uint8_t    devUsartSendDmaReqTbl[]    = DMA_REQ_USARTTX_TBL;
 static int
 DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size)
 {
+  int                   result = -1;
   stm32Dev_USART        *p;
   int                   chDma;
+  devDmaParam_t       param;
 
   p = psc->dev;
 
-  if(p->CR3 & USART_CR3_DMAT_MASK) {
-    chDma = (devUsartSendDmaReqTbl[psc->unit] >> 4) & 0xf;
-    while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
-    DevDmaStop(1, chDma);
-
-    p->CR3 &= ~USART_CR3_DMAT_MASK;
-  }
-
-
   /* start dma */
-  {
-    devDmaParam_t       param;
+  memset(&param, 0, sizeof(param));
+  param.req = devUsartSendDmaReqTbl[psc->unit];
+  param.a = (void *)  ptr;
+  param.b = (void *) &p->TDR;
+  param.cnt = size;
+  param.dirBA = 0;
+  param.aInc = 1;
+  param.aSize = DEVDMA_SIZE_8BITS;
+  param.bSize = DEVDMA_SIZE_8BITS;
+  param.intrTC = psc->param.intrDma? 1: 0;
 
-    memset(&param, 0, sizeof(param));
-    param.req = devUsartSendDmaReqTbl[psc->unit];
-    param.a = (void *)  ptr;
-    param.b = (void *) &p->TDR;
-    param.cnt = size;
-    param.dirBA = 0;
-    param.aInc = 1;
-    param.aSize = DEVDMA_SIZE_8BITS;
-    param.bSize = DEVDMA_SIZE_8BITS;
-
-    chDma = (devUsartSendDmaReqTbl[psc->unit] >> 4) & 0xf;
-    DevDmaInit(1, chDma, &param);
-  }
+  chDma = (devUsartSendDmaReqTbl[psc->unit] >> 4) & 0xf;
+  DevDmaInit(1, chDma, &param);
+  DevDmaStart(1, chDma);
 
   p->CR3 |= USART_CR3_DMAT_YES;
+
 #if 0
   while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
   DevDmaStop(1, chDma);
@@ -483,6 +476,66 @@ DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size)
   p->CR3 &= ~USART_CR3_DMAT_MASK;
 #endif
 
+  result = 0;
 fail:
-  return 0;
+  return result;
+}
+
+
+int
+DevUsartIsSendingDma(int unit)
+{
+  int                   result = DEV_ERRNO_UNKNOWN;
+
+  devUsartSc_t          *psc;
+  stm32Dev_USART        *p;
+  int                   chDma;
+
+#if 0
+  if(unit > USART_MODULE_COUNT) goto fail;
+  psc = &usart.sc[unit];
+  if(!psc->up) goto fail;
+#else
+  psc = &usart.sc[unit];
+#endif
+
+  p = psc->dev;
+
+  if(!(p->CR3 & USART_CR3_DMAT_MASK)) {
+    result = DEV_ERRNO_SUCCESS;
+  }
+
+fail:
+  return result;
+}
+int
+DevUsartSendStopDma(int unit)
+{
+  int                   result = -1;
+
+  devUsartSc_t          *psc;
+  stm32Dev_USART        *p;
+
+  int                   chDma;
+
+#if 0
+  if(unit > USART_MODULE_COUNT) goto fail;
+  psc = &usart.sc[unit];
+  if(!psc->up) goto fail;
+#else
+  psc = &usart.sc[unit];
+#endif
+
+  p = psc->dev;
+
+  chDma = (devUsartSendDmaReqTbl[unit] >> 4) & 0xf;
+  DevDmaStop(1, chDma);
+  DevDmaStop(1, 4);
+
+  p->CR3 &= ~USART_CR3_DMAT_MASK;
+
+  result = 0;
+
+fail:
+  return result;
 }

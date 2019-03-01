@@ -27,6 +27,9 @@
 
 typedef struct {
   uint32_t              baud;
+
+  uint8_t               intrDma: 1;
+
   uint8_t               bit;
 #define DEVUSART_BIT_7          7
 #define DEVUSART_BIT_8          8
@@ -92,6 +95,8 @@ void            DevUsart1Interrupt(void);
 void            DevUsart2Interrupt(void);
 void            DevUsart3Interrupt(void);
 
+int             DevUsartIsSendingDma(int unit);
+int             DevUsartSendStopDma(int unit);
 
 #ifdef  _DEV_USART_C_
 static int      DevUsartSendPio(devUsartSc_t *psc, uint8_t *ptr, int size);
