@@ -178,7 +178,7 @@ CONFIG_CONSOLE_NUMBER                   = (CONFIG_SYSTEM_USART_PORT)
 ###############################
 ### IMU
 CONFIG_IMU_DEBUG_PROBE                  = 0
-CONFIG_IMU_WAIT_DMA_NONBLOCK            = 0
+CONFIG_IMU_WAIT_DMA_NONBLOCK            = 1
 
 CONFIG_IMU_RATE_100HZ                   = 0
 CONFIG_IMU_RATE_200HZ                   = 1
