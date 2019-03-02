@@ -24,6 +24,7 @@
 #define _BMI160_C_
 
 #include        <stdint.h>
+#include        <stdlib.h>
 #include        <stdio.h>
 
 #include        "config.h"
@@ -40,19 +41,20 @@ typedef struct {
   uint8_t       gyroOdr;
 } bmi160Setting_t;
 
-static bmi160Setting_t setting[CONFIG_NUM_OF_IMUS];
-
 
 /************************************************************
  * Bmi160Probe()
  */
 int
-Bmi160Probe(int unit)
+Bmi160Probe(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   int           re;
   uint8_t       c;
   bmi160Setting_t       *pSet;
+  int           unit;
+
+  unit = ph->unit;
 
   re = ImuGetValueStandard(unit, BMI160_REG_CHIP_ID, &c, 1);
 #if CONFIG_IMU_WAIT_DMA_NONBLOCK
@@ -66,7 +68,10 @@ Bmi160Probe(int unit)
     printf("# imu probed unit: %d BMI160\n", unit);
 #endif
 
-    pSet = &setting[unit];
+    if((ph->pConfig = malloc(sizeof(bmi160Setting_t))) == NULL) {
+      goto fail;
+    }
+    pSet = ph->pConfig;
 
     pSet->accOdr    = 0x20 | ACC_CONF_ODR_1600HZ;
     pSet->accRange  = 3;
@@ -76,6 +81,7 @@ Bmi160Probe(int unit)
     result = IMU_ERRNO_SUCCESS;
   }
 
+fail:
   return result;
 }
 
@@ -84,13 +90,16 @@ Bmi160Probe(int unit)
  * Bmi160Init()
  */
 int
-Bmi160Init(int unit)
+Bmi160Init(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
   bmi160Setting_t       *pSet;
+  int           unit;
 
-  pSet = &setting[unit];
+  unit = ph->unit;
+
+  pSet = ph->pConfig;
 
   /* reset and wait */
   reg = BMI160_REG_CMD;
@@ -174,22 +183,25 @@ Bmi160Init(int unit)
 
 
 int
-Bmi160RecvValue(int unit, imuValue_t *p)
+Bmi160RecvValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint8_t       cmd;
   uint8_t       *buf;
   uint32_t      reg = 0 | BMI160_READ;
   uint16_t      temp;
+  bmi160Setting_t       *pSet;
+  int           unit;
 
   if(!p) goto fail;
 
+  unit = ph->unit;
   buf = p->raw;
 
 #define READ_LEN  ((BMI160_REG_TEMP_HIGH) - (BMI160_REG_GYRO_X_LOW) + 1)
   result = ImuGetValueStandard(unit, BMI160_REG_GYRO_X_LOW, buf, READ_LEN);
   if(result != DEV_ERRNO_NONBLOCK) {
-    Bmi160ReadValue(unit, p);
+    Bmi160ReadValue(ph, p);
     result = DEV_ERRNO_SUCCESS;
   }
 
@@ -211,7 +223,7 @@ fail:
 #define AZL     ((BMI160_REG_ACC_Z_LOW)  -(BMI160_REG_GYRO_X_LOW))
 #define AZH     ((BMI160_REG_ACC_Z_HIGH) -(BMI160_REG_GYRO_X_LOW))
 int
-Bmi160ReadValue(int unit, imuValue_t *p)
+Bmi160ReadValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint16_t      temp;
@@ -244,13 +256,16 @@ fail:
 
 
 int
-Bmi160GetSettings(int unit, imuSetting_t *p)
+Bmi160GetSettings(imuHandler_t *ph, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   int                   freqVal;
   bmi160Setting_t       *pSet;
+  int           unit;
 
-  pSet = &setting[unit];
+  unit = ph->unit;
+
+  pSet = ph->pConfig;
 
   switch(pSet->accRange & ACC_CONF_RANGE_MASK) {
   case ACC_CONF_RANGE_PM4G:  p->acc_fs =  400; break;
@@ -274,12 +289,12 @@ Bmi160GetSettings(int unit, imuSetting_t *p)
 
 
 int
-Bmi160SetSettings(int unit, imuSetting_t *p)
+Bmi160SetSettings(imuHandler_t *ph, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   bmi160Setting_t       *pSet;
 
-  pSet = &setting[unit];
+  pSet = ph->pConfig;
 
   if(p->acc_fs != IMU_SETTING_INVALID) {
     pSet->accRange &= ~ACC_CONF_RANGE_MASK;

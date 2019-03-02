@@ -172,12 +172,12 @@
 #define MPU9250_REG_ZA_OFFSET_H         0x7b
 #define MPU9250_REG_ZA_OFFSET_L         0x7c
 
-int     Mpu9250Probe(int unit);
-int     Mpu9250Init(int unit);
-int     Mpu9250RecvValue(int unit, imuValue_t *p);
-int     Mpu9250ReadValue(int unit, imuValue_t *p);
-int     Mpu9250GetSettings(int unit, imuSetting_t *p);
-int     Mpu9250SetSettings(int unit, imuSetting_t *p);
+int     Mpu9250Probe(imuHandler_t *ph);
+int     Mpu9250Init(imuHandler_t *ph);
+int     Mpu9250RecvValue(imuHandler_t *ph, imuValue_t *p);
+int     Mpu9250ReadValue(imuHandler_t *ph, imuValue_t *p);
+int     Mpu9250GetSettings(imuHandler_t *ph, imuSetting_t *p);
+int     Mpu9250SetSettings(imuHandler_t *ph, imuSetting_t *p);
 
 #ifdef  _MPU9250_H_
 #endif

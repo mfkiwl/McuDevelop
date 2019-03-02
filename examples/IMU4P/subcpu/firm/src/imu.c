@@ -41,19 +41,18 @@
 
 
 typedef struct {
-  int           (*probe)(int unit);
-  int           (*init)(int unit);
-  int           (*recv)(int unit, imuValue_t *p);
-  int           (*read)(int unit, imuValue_t *p);
-  int           (*get)(int unit, imuSetting_t *p);
-  int           (*set)(int unit, imuSetting_t *p);
+  int           (*probe)(imuHandler_t *ph);
+  int           (*init)(imuHandler_t *ph);
+  int           (*recv)(imuHandler_t *ph, imuValue_t *p);
+  int           (*read)(imuHandler_t *ph, imuValue_t *p);
+  int           (*get)(imuHandler_t *ph, imuSetting_t *p);
+  int           (*set)(imuHandler_t *ph, imuSetting_t *p);
 } imuFunc_t;
 
 
+imuHandler_t    h[CONFIG_NUM_OF_IMUS];
+
 #define IMU_NUMOF_SENSORS       (CONFIG_NUM_OF_IMUS)
-static int     imuFuncNum[IMU_NUMOF_SENSORS] = {
-  -1
-};
 const static imuFunc_t  imuFunc[] = {
   {Bmi160Probe, Bmi160Init, Bmi160RecvValue, Bmi160ReadValue, Bmi160GetSettings, Bmi160SetSettings},
   {Lis3dhhProbe, Lis3dhhInit, Lis3dhhRecvValue, Lis3dhhReadValue, Lis3dhhGetSettings, Lis3dhhSetSettings},
@@ -70,19 +69,21 @@ ImuProbe(int unit)
   int                   re;
   const imuFunc_t       *pFunc = imuFunc;
   int                   i = 0;
-  int                   (*cb)(int unit, imuSetting_t *p);
+  int                   (*cb)(imuHandler_t *ph, imuSetting_t *p);
+
+  h[unit].unit = unit;
 
   while(pFunc->probe) {
-    if(pFunc->probe(unit) == IMU_ERRNO_SUCCESS) {
-      //pFunc->init(unit);
-      imuFuncNum[unit] = i;
+    if(pFunc->probe(&h[unit]) == IMU_ERRNO_SUCCESS) {
+      h[unit].noFunc = i;
       result = IMU_ERRNO_SUCCESS;
-      break;
+      goto end;
     }
     pFunc++;
     i++;
   }
 
+end:
   return result;
 }
 
@@ -92,12 +93,28 @@ ImuInit(int unit)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   const imuFunc_t       *pFunc;
+  int                   no;
+  imuHandler_t          *ph;
 
-  if(imuFuncNum[unit] >= 0) {
-    pFunc = &imuFunc[imuFuncNum[unit]];
-    result = pFunc->init(unit);
+  /* initialize variables */
+  if(unit < 0) {
+    ph = &h[0];
+    for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
+      ph->noFunc = -1;
+      ph++;
+    }
+    goto end;
   }
 
+  ph = &h[unit];
+  no = h[unit].noFunc;
+
+  if(no >= 0) {
+    pFunc = &imuFunc[no];
+    result = pFunc->init(ph);
+  }
+
+end:
   return result;
 }
 
@@ -107,16 +124,21 @@ ImuRecvValue(int unit, imuValue_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   const imuFunc_t       *pFunc = imuFunc;
-  int                   (*cb)(int unit, imuValue_t *p);
+  int                   (*cb)(imuHandler_t *ph, imuValue_t *p);
+  int                   no;
+  imuHandler_t          *ph;
 
   if(unit < 0 ||  unit >= IMU_NUMOF_SENSORS) {
     result = IMU_ERRNO_UNIT;
     goto fail;
   }
 
-  if(imuFuncNum[unit] >= 0) {
-    cb = pFunc[imuFuncNum[unit]].recv;
-    if(cb) result = cb(unit, p);
+  ph = &h[unit];
+  no = h[unit].noFunc;
+
+  if(no >= 0) {
+    cb = pFunc[no].recv;
+    if(cb) result = cb(ph, p);
   }
 
 fail:
@@ -129,16 +151,22 @@ ImuReadValue(int unit, imuValue_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   const imuFunc_t       *pFunc = imuFunc;
-  int                   (*cb)(int unit, imuValue_t *p);
+  int                   (*cb)(imuHandler_t *ph, imuValue_t *p);
+
+  int                   no;
+  imuHandler_t          *ph;
 
   if(unit < 0 ||  unit >= IMU_NUMOF_SENSORS) {
     result = IMU_ERRNO_UNIT;
     goto fail;
   }
 
-  if(imuFuncNum[unit] >= 0) {
-    cb = pFunc[imuFuncNum[unit]].read;
-    if(cb) result = cb(unit, p);
+  ph = &h[unit];
+  no = ph->noFunc;
+
+  if(no >= 0) {
+    cb = pFunc[no].read;
+    if(cb) result = cb(ph, p);
   }
 
 fail:
@@ -151,16 +179,22 @@ ImuGetSettings(int unit, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   const imuFunc_t       *pFunc = imuFunc;
-  int                   (*cb)(int unit, imuSetting_t *p);
+  int                   (*cb)(imuHandler_t *ph, imuSetting_t *p);
+
+  int                   no;
+  imuHandler_t          *ph;
 
   if(unit < 0 ||  unit >= IMU_NUMOF_SENSORS) {
     result = IMU_ERRNO_UNIT;
     goto fail;
   }
 
-  if(imuFuncNum[unit] >= 0) {
-    cb = pFunc[imuFuncNum[unit]].get;
-    if(cb) result = cb(unit, p);
+  ph = &h[unit];
+  no = ph->noFunc;
+
+  if(no >= 0) {
+    cb = pFunc[no].get;
+    if(cb) result = cb(ph, p);
   }
 
 fail:
@@ -173,16 +207,22 @@ ImuSetSettings(int unit, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   const imuFunc_t       *pFunc = imuFunc;
-  int                   (*cb)(int unit, imuSetting_t *p);
+  int                   (*cb)(imuHandler_t *ph, imuSetting_t *p);
+
+  int                   no;
+  imuHandler_t          *ph;
 
   if(unit < 0 ||  unit >= IMU_NUMOF_SENSORS) {
     result = IMU_ERRNO_UNIT;
     goto fail;
   }
 
-  if(imuFuncNum[unit] >= 0) {
-    cb = pFunc[imuFuncNum[unit]].set;
-    if(cb) result = cb(unit, p);
+  ph = &h[unit];
+  no = h[unit].noFunc;
+
+  if(no >= 0) {
+    cb = pFunc[no].set;
+    if(cb) result = cb(ph, p);
   }
 
 fail:
@@ -273,13 +313,15 @@ ImuGetValue(int unit, int reg, uint8_t *ptr, int size)
 
   return re;
 }
-void
+int
 ImuReadValueNonblockEnd(int unit)
 {
-  DevSpiRecvStopDma(1);
+  int   result;
+
+  result = DevSpiRecvStopDma(1);
   ImuDisableCs(unit);
 
-  return;
+  return result;
 }
 int
 ImuIsFinishReceiving(int unit)

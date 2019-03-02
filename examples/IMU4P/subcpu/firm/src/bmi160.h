@@ -106,12 +106,12 @@
 #define         CMD_SOFTRESET           0xb6
 
 
-int     Bmi160Probe(int unit);
-int     Bmi160Init(int unit);
-int     Bmi160RecvValue(int unit, imuValue_t *p);
-int     Bmi160ReadValue(int unit, imuValue_t *p);
-int     Bmi160GetSettings(int unit, imuSetting_t *p);
-int     Bmi160SetSettings(int unit, imuSetting_t *p);
+int     Bmi160Probe(imuHandler_t *ph);
+int     Bmi160Init(imuHandler_t *ph);
+int     Bmi160RecvValue(imuHandler_t *ph, imuValue_t *p);
+int     Bmi160ReadValue(imuHandler_t *ph, imuValue_t *p);
+int     Bmi160GetSettings(imuHandler_t *ph, imuSetting_t *p);
+int     Bmi160SetSettings(imuHandler_t *ph, imuSetting_t *p);
 
 
 #ifdef  _BMI160_H_

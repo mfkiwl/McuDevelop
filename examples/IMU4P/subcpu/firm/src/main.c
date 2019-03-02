@@ -344,6 +344,12 @@ MainEntry(void)
 
   __enable_irq();
 
+  /*******************************************
+   * imu probe and initialize
+   */
+  /* initialize the internal variables */
+  ImuInit(-1);
+
   /* CS pin is generated low and high */
   for(int j = 0; j < 1000; j++) {
     for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {

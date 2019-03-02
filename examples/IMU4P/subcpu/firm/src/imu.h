@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 zhtlab
+ * Copyright (c) 2018,2019 zhtlab
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -52,6 +52,14 @@ typedef struct {
 } imuValue_t;
 
 
+typedef struct {
+  int8_t        unit;           /* unit number */
+  int8_t        noFunc;         /* function number */
+
+  void          *pConfig;       /* pointer of the device setting */
+} imuHandler_t;
+
+
 /* full scale range */
 typedef struct {
 #define IMU_SETTING_INVALID     (0xffff)
@@ -66,6 +74,7 @@ typedef struct {
 int             ImuProbe(int unit);
 int             ImuInit(int unit);
 int             ImuRecvValue(int unit, imuValue_t *p);
+int             ImuReadValueNonblockEnd(int unit);
 int             ImuIsFinishReceiving(int unit);
 int             ImuReadValue(int unit, imuValue_t *p);
 int             ImuGetSettings(int unit, imuSetting_t *p);

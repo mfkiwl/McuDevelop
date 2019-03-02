@@ -25,7 +25,7 @@
 /* Entry Point */
 ENTRY(Reset_Handler)
 
-HEAP_SIZE  = 0x100;
+HEAP_SIZE  = 0x200;
 STACK_SIZE = 0x200;
 VECTOR_RAM_SIZE = 0x400;
 

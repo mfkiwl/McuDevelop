@@ -116,12 +116,12 @@
 #define LIS3DHH_REG_FIFO_SRC    0x2f
 
 
-int     Lis3dhhProbe(int unit);
-int     Lis3dhhInit(int unit);
-int     Lis3dhhRecvValue(int unit, imuValue_t *p);
-int     Lis3dhhReadValue(int unit, imuValue_t *p);
-int     Lis3dhhGetSettings(int unit, imuSetting_t *p);
-int     Lis3dhhSetSettings(int unit, imuSetting_t *p);
+int     Lis3dhhProbe(imuHandler_t *ph);
+int     Lis3dhhInit(imuHandler_t *ph);
+int     Lis3dhhRecvValue(imuHandler_t *ph, imuValue_t *p);
+int     Lis3dhhReadValue(imuHandler_t *ph, imuValue_t *p);
+int     Lis3dhhGetSettings(imuHandler_t *ph, imuSetting_t *p);
+int     Lis3dhhSetSettings(imuHandler_t *ph, imuSetting_t *p);
 
 
 #ifdef  _LIS3DHH_H_

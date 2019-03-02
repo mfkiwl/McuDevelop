@@ -24,6 +24,7 @@
 #define _MPU9250_C_
 
 #include        <stdint.h>
+#include        <stdlib.h>
 #include        <stdio.h>
 #include        <cmsis_gcc.h>
 
@@ -41,19 +42,20 @@ typedef struct {
   uint8_t  sampleDiv;
 } mpu9250Setting_t;
 
-static mpu9250Setting_t setting[CONFIG_NUM_OF_IMUS];
-
 
 /************************************************************
  * Mpu9250Probe()
  */
 int
-Mpu9250Probe(int unit)
+Mpu9250Probe(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   int           re;
   uint8_t       c;
   mpu9250Setting_t       *pSet;
+  int           unit;
+
+  unit = ph->unit;
 
   re = ImuGetValueStandard(unit, MPU9250_REG_WHOAMI, &c, 1);
 #if CONFIG_IMU_WAIT_DMA_NONBLOCK
@@ -66,7 +68,11 @@ Mpu9250Probe(int unit)
 #if CONFIG_IMU_DEBUG_PROBE
     printf("# imu probed unit: %d MPU8250\n", unit);
 #endif
-    pSet = &setting[unit];
+
+    if((ph->pConfig = malloc(sizeof(mpu9250Setting_t))) == NULL) {
+      goto fail;
+    }
+    pSet = ph->pConfig;
 
     pSet->sampleDiv = 0;
     pSet->accConfig  = ACCEL_CONFIG_FS_SEL_PM8G;
@@ -76,6 +82,7 @@ Mpu9250Probe(int unit)
     result = IMU_ERRNO_SUCCESS;
   }
 
+fail:
   return result;
 }
 
@@ -84,13 +91,16 @@ Mpu9250Probe(int unit)
  * Mpu9250Init()
  */
 int
-Mpu9250Init(int unit)
+Mpu9250Init(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
   mpu9250Setting_t       *pSet;
+  int           unit;
 
-  pSet = &setting[unit];
+  unit = ph->unit;
+
+  pSet = ph->pConfig;
 
   /* reset first */
   reg = MPU9250_REG_PWR_MGMT1;
@@ -162,21 +172,23 @@ Mpu9250Init(int unit)
 #define GZH     ((MPU9250_REG_GYRO_ZOUT_H) -(TOP))
 #define GZL     ((MPU9250_REG_GYRO_ZOUT_L) -(TOP))
 int
-Mpu9250RecvValue(int unit, imuValue_t *p)
+Mpu9250RecvValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint8_t       cmd;
   uint8_t       *buf;
   uint16_t      temp;
+  int           unit;
 
   if(!p) goto fail;
 
+  unit = ph->unit;
   buf = p->raw;
 
 #define READ_LEN  ((MPU9250_REG_GYRO_ZOUT_L) - (MPU9250_REG_ACCEL_XOUT_H) + 1)
   result = ImuGetValueStandard(unit, (MPU9250_REG_ACCEL_XOUT_H), buf, READ_LEN);
   if(result != DEV_ERRNO_NONBLOCK) {
-    Mpu9250ReadValue(unit, p);
+    Mpu9250ReadValue(ph, p);
     result = DEV_ERRNO_SUCCESS;
   }
 
@@ -184,7 +196,7 @@ fail:
   return result;
 }
 int
-Mpu9250ReadValue(int unit, imuValue_t *p)
+Mpu9250ReadValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint16_t      temp;
@@ -217,13 +229,12 @@ fail:
 
 
 int
-Mpu9250GetSettings(int unit, imuSetting_t *p)
+Mpu9250GetSettings(imuHandler_t *ph, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   mpu9250Setting_t       *pSet;
 
-  pSet = &setting[unit];
-
+  pSet = ph->pConfig;
 
   switch(pSet->accConfig & ACCEL_CONFIG_FS_SEL_MASK) {
   case ACCEL_CONFIG_FS_SEL_PM4G:  p->acc_fs =  400; break;
@@ -247,12 +258,12 @@ Mpu9250GetSettings(int unit, imuSetting_t *p)
 
 
 int
-Mpu9250SetSettings(int unit, imuSetting_t *p)
+Mpu9250SetSettings(imuHandler_t *ph, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   mpu9250Setting_t       *pSet;
 
-  pSet = &setting[unit];
+  pSet = ph->pConfig;
 
   if(p->acc_fs != IMU_SETTING_INVALID) {
     pSet->accConfig &= ~ACCEL_CONFIG_FS_SEL_MASK;

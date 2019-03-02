@@ -24,6 +24,8 @@
 #define _LIS3DHH_C_
 
 #include        <stdint.h>
+#include        <stdlib.h>
+#include        <stdio.h>
 
 #include        "config.h"
 #include        "devErrno.h"
@@ -37,18 +39,20 @@ typedef struct {
   uint8_t       accOdr;
 } lis3dhhSetting_t;
 
-static lis3dhhSetting_t setting[CONFIG_NUM_OF_IMUS];
 
 /************************************************************
  * Lis3dhhProbe()
  */
 int
-Lis3dhhProbe(int unit)
+Lis3dhhProbe(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   int           re;
   uint8_t       c;
   lis3dhhSetting_t       *pSet;
+  int           unit;
+
+  unit = ph->unit;
 
   re = ImuGetValueStandard(unit, LIS3DHH_REG_WHO_AM_I, &c, 1);
 #if CONFIG_IMU_WAIT_DMA_NONBLOCK
@@ -62,11 +66,15 @@ Lis3dhhProbe(int unit)
     printf("# imu probed unit: %d LIS3DHH\n", unit);
 #endif
 
-    pSet = &setting[unit];
+    if((ph->pConfig = malloc(sizeof(lis3dhhSetting_t))) == NULL) {
+      goto fail;
+    }
+    pSet = ph->pConfig;
 
     result = IMU_ERRNO_SUCCESS;
   }
 
+fail:
   return result;
 }
 
@@ -75,13 +83,16 @@ Lis3dhhProbe(int unit)
  * Lis3dhhInit()
  */
 int
-Lis3dhhInit(int unit)
+Lis3dhhInit(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
   lis3dhhSetting_t       *pSet;
+  int           unit;
 
-  pSet = &setting[unit];
+  unit = ph->unit;
+
+  pSet = ph->pConfig;
 
   /* reset and wait */
   reg = LIS3DHH_REG_CTRL_REG1;
@@ -108,19 +119,21 @@ Lis3dhhInit(int unit)
 
 
 int
-Lis3dhhRecvValue(int unit, imuValue_t *p)
+Lis3dhhRecvValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint8_t       *buf;
+  int           unit;
 
   if(!p) goto fail;
 
+  unit = ph->unit;
   buf = p->raw;
 
 #define READ_LEN  ((LIS3DHH_REG_ACC_Z_HIGH) - (LIS3DHH_REG_CTRL_REG5) + 1)
-  result = ImuGetValueStandard(unit, LIS3DHH_REG_CTRL_REG5, buf, READ_LEN);
+  result = ImuGetValueStandard(ph->unit, LIS3DHH_REG_CTRL_REG5, buf, READ_LEN);
   if(result != DEV_ERRNO_NONBLOCK) {
-    Lis3dhhReadValue(unit, p);
+    Lis3dhhReadValue(ph, p);
     result = DEV_ERRNO_SUCCESS;
   }
 
@@ -136,7 +149,7 @@ fail:
 #define AZL     ((LIS3DHH_REG_ACC_Z_LOW) -(TOP))
 #define AZH     ((LIS3DHH_REG_ACC_Z_HIGH)-(TOP))
 int
-Lis3dhhReadValue(int unit, imuValue_t *p)
+Lis3dhhReadValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint16_t      temp;
@@ -164,13 +177,13 @@ fail:
 
 
 int
-Lis3dhhGetSettings(int unit, imuSetting_t *p)
+Lis3dhhGetSettings(imuHandler_t *ph, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   int                   freqVal;
   lis3dhhSetting_t       *pSet;
 
-  pSet = &setting[unit];
+  pSet = ph->pConfig;
 
   p->acc_fs =  250;     /* fixed PM2.5G */
   p->freq = 1100;       /* fixed 1.1kHz */
@@ -181,7 +194,7 @@ Lis3dhhGetSettings(int unit, imuSetting_t *p)
 
 
 int
-Lis3dhhSetSettings(int unit, imuSetting_t *p)
+Lis3dhhSetSettings(imuHandler_t *ph, imuSetting_t *p)
 {
   int                   result = IMU_ERRNO_UNKNOWN;
   lis3dhhSetting_t       *pSet;

@@ -84,10 +84,10 @@
 #define ADXL345_REG_DATAZ_HIGH       0x37
 
 
-int     Adxl345Probe(int unit);
-int     Adxl345Init(int unit);
-int     Adxl345RecvValue(int unit, imuValue_t *p);
-int     Adxl345ReadValue(int unit, imuValue_t *p);
+int     Adxl345Probe(imuHandler_t *ph);
+int     Adxl345Init(imuHandler_t *ph);
+int     Adxl345RecvValue(imuHandler_t *ph, imuValue_t *p);
+int     Adxl345ReadValue(imuHandler_t *ph, imuValue_t *p);
 void    Adxl345SetValue(int unit, int reg, uint8_t val);
 void    Adxl345GetValue(int unit, int reg, uint8_t *ptr, int size);
 

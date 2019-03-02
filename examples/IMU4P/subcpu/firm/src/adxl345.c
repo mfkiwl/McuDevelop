@@ -24,6 +24,8 @@
 #define _ADXL345_C_
 
 #include        <stdint.h>
+#include        <stdlib.h>
+#include        <stdio.h>
 
 #include        "config.h"
 #include        "devErrno.h"
@@ -33,15 +35,23 @@
 #include        "adxl345.h"
 
 
+typedef struct {
+  uint8_t       dummy;
+} adxl345Setting_t;
+
+
 /************************************************************
  * Adxl345Probe()
  */
 int
-Adxl345Probe(int unit)
+Adxl345Probe(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   int           re;
   uint8_t       c;
+  int           unit;
+
+  unit = ph->unit;
 
   re = ImuGetValueStandard(unit, ADXL345_REG_DEVID, &c, 1);
 #if CONFIG_IMU_WAIT_DMA_NONBLOCK
@@ -54,9 +64,15 @@ Adxl345Probe(int unit)
 #if CONFIG_IMU_DEBUG_PROBE
     printf("# imu probed unit: %d ADXL345\n", unit);
 #endif
+
+    if((ph->pConfig = malloc(sizeof(adxl345Setting_t))) == NULL) {
+      goto fail;
+    }
+
     result = IMU_ERRNO_SUCCESS;
   }
 
+fail:
   return result;
 }
 
@@ -65,11 +81,14 @@ Adxl345Probe(int unit)
  * Adxl345Init()
  */
 int
-Adxl345Init(int unit)
+Adxl345Init(imuHandler_t *ph)
 {
   int           result = IMU_ERRNO_UNKNOWN;
   uint8_t       reg, val;
   imuValue_t    imu;
+  int           unit;
+
+  unit = ph->unit;
 
   /* disable interrupt */
   reg = ADXL345_REG_INT_ENABLE;
@@ -82,7 +101,7 @@ Adxl345Init(int unit)
   ImuSetValueStandard(unit, reg, val);
 
   /* dummy read for clear the interrupt */
-  Adxl345ReadValue(unit, &imu);
+  Adxl345ReadValue(ph, &imu);
 
   SystemWaitCounter(2);
 
@@ -122,34 +141,24 @@ Adxl345Init(int unit)
 #define ZL      ((ADXL345_REG_DATAZ_LOW )-(ADXL345_REG_DATAX_LOW))
 #define ZH      ((ADXL345_REG_DATAZ_HIGH)-(ADXL345_REG_DATAX_LOW))
 int
-Adxl345RecvValue(int unit, imuValue_t *p)
+Adxl345RecvValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint8_t       cmd;
   uint8_t       *buf;
   uint16_t      temp;
+  int           unit;
 
   if(!p) goto fail;
 
+  unit = ph->unit;
   buf = p->raw;
 
   result = ImuGetValueStandard(unit, ADXL345_MB | ADXL345_REG_DATAX_LOW, buf, 6);
-  if(result == DEV_ERRNO_NONBLOCK) goto fail;
-
-#if 0
-  p->acc.x = (buf[XH] << 8) | buf[XL];
-  p->acc.y = (buf[YH] << 8) | buf[YL];
-  p->acc.z = (buf[ZH] << 8) | buf[ZL];
-  p->gyro.x = 0;
-  p->gyro.y = 0;
-  p->gyro.z = 0;
-
-  p->ts = 0;
-  p->temp4x = 0;
-#endif
-  Adxl345ReadValue(unit, p);
-
-  result = DEV_ERRNO_SUCCESS;
+  if(result != DEV_ERRNO_NONBLOCK) {
+    Adxl345ReadValue(ph, p);
+    result = DEV_ERRNO_SUCCESS;
+  }
 
 fail:
   return 0;
@@ -157,7 +166,7 @@ fail:
 
 
 int
-Adxl345ReadValue(int unit, imuValue_t *p)
+Adxl345ReadValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint8_t       cmd;
@@ -167,9 +176,6 @@ Adxl345ReadValue(int unit, imuValue_t *p)
   if(!p) goto fail;
 
   buf = p->raw;
-
-  result = ImuGetValueStandard(unit, ADXL345_MB | ADXL345_REG_DATAX_LOW, buf, 6);
-  if(result == DEV_ERRNO_NONBLOCK) goto fail;
 
   p->acc.x = (buf[XH] << 8) | buf[XL];
   p->acc.y = (buf[YH] << 8) | buf[YL];
