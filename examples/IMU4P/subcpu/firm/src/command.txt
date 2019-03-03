@@ -4,6 +4,9 @@ stop                    stop  sending the imu data
 init                    initialize the imu.
                         the parameters which is set by "imu [num] set" command is used
                         are updated
+format [num]            UART output format is changed
+                           0: text out
+                           1: hamming encoding
 
 imu [num] set [freq] [acc] [gyro] [mag]
                          the max ranges are set to accel, gyro, and

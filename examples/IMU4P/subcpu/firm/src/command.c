@@ -39,6 +39,7 @@
 
 
 extern mainSetting_t            setting;
+
 #define COMMAND_WORDS_MAX       16
 int             commandArgc;
 uint8_t         *commandArgv[COMMAND_WORDS_MAX];
@@ -80,6 +81,9 @@ CommandExec(int ac, uint8_t *av[])
     for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
       ImuInit(i);
     }
+
+  } else if(!strncmp(av[0], "format", 4)) {
+    setting.format = strtoul(av[1], NULL, 10);
 
   } else if(!strncmp(av[0], "imu", 3)) {
     int         unit;
