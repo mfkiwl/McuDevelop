@@ -29,6 +29,9 @@
 
 typedef struct {
   uint8_t       id[MAIN_SETTING_ID_LEN];
+  uint8_t       format;         /* UART output format */
+#define       MAIN_OUTPUT_FORMAT_TEXT           0
+#define       MAIN_OUTPUT_FORMAT_HAMING_CODE    1
 } mainSetting_t;
 
 

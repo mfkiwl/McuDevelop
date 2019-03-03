@@ -61,13 +61,16 @@ static void     MainInitSpi(void);
 
 volatile uint32_t        tim2msb = 0;
 typedef struct {
+  volatile uint64_t      t;
+  volatile uint32_t      cnt;
   volatile uint16_t      flag;
 #define       MAIN_TIM2_IC_VALID        (1<<0)
 #define       MAIN_TIM2_IC_OVERWRITE    (1<<1)
 #define       MAIN_SPIRX_DONE           (1<<2)
+#if 0
   volatile uint16_t      tLsb;
   volatile uint32_t      tMsb;
-  volatile uint32_t      cnt;
+#endif
 } mainTim2Ic_t;
 static mainTim2Ic_t     mainTim2Ic[4];
 
@@ -180,11 +183,12 @@ imuValue_t    imu[4];
 
 
 static uint8_t       str[4][80];
+static int           lenStr[4];
 void
 MainImuLoop(void)
 {
   int           j, i;
-
+  int           len;
 
   /* the sensor data will be received, if the TIM IC interrupt is come */
   __disable_irq();
@@ -201,9 +205,20 @@ MainImuLoop(void)
       __enable_irq();
 
       ImuReadValue(i, &imu[i]);
-      ImuBuildText(i, mainTim2Ic[i].tMsb, mainTim2Ic[i].tLsb, &imu[i], &str[i][0]);
 
-      MainQueueImu(i);
+      switch(setting.format) {
+      case    MAIN_OUTPUT_FORMAT_TEXT:
+        imu[i].t = mainTim2Ic[i].t;
+        lenStr[i] = ImuBuildText(i, &imu[i], &str[i][0], setting.format);
+        MainQueueImu(i);
+        break;
+      case    MAIN_OUTPUT_FORMAT_HAMING_CODE:
+        imu[i].t = mainTim2Ic[i].t;
+        lenStr[i] = ImuBuildHamming(i, &imu[i], &str[i][0], setting.format);
+        MainQueueImu(i);
+        break;
+      }
+
       if(!DevUsartIsSendingDma(1)) {
         __disable_irq();
         MainSendImu();
@@ -278,7 +293,8 @@ MainSendImu(void)
   if(mainQueueImuStart != mainQueueImuEnd) {
     n = mainQueueImuBuf[mainQueueImuEnd];
 
-    puts(&str[n][0]);
+    //puts(&str[n][0]);
+    DevUsartSend(CONFIG_CONSOLE_NUMBER, &str[n][0], lenStr[n]);
 
     mainQueueImuEnd++;
     mainQueueImuEnd &= (IMUBUF_SIZE-1);
@@ -504,8 +520,13 @@ MainInterruptTim(void)
         mainTim2Ic[i].flag |= MAIN_TIM2_IC_OVERWRITE;
       }
       mainTim2Ic[i].flag |= MAIN_TIM2_IC_VALID;
+#if 0
       mainTim2Ic[i].tLsb = val;
       mainTim2Ic[i].tMsb = tim2msb;
+#endif
+      mainTim2Ic[i].t    = tim2msb << 16;
+      mainTim2Ic[i].t   |= val;
+
       mainTim2Ic[i].cnt++;
     }
     mask <<= 1;

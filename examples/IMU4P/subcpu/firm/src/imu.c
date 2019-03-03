@@ -361,110 +361,246 @@ const static uint8_t         imuHexText[] = {
   '0', '1', '2', '3', '4', '5', '6', '7',
   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
 };
+const static uint8_t         imuHamming[] = {
+  /* [5:4]: check bit [3:0]: information */
+  0x00, 0x61, 0x52, 0x33, 0x34, 0x55, 0x66, 0x07,
+  0x78, 0x19, 0x2a, 0x4b, 0x4c, 0x2d, 0x1e, 0x7f,
+};
 int
-ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str)
+ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
 {
   uint8_t       *p;
   int           n;
   register uint16_t     val;
   register uint32_t     val32;
+  register uint64_t     val64;
+
+  const static uint8_t  *pTbl;
+
+  uint8_t               msb = 0;
 
   p = str;
 
+  if(format == MAIN_OUTPUT_FORMAT_HAMING_CODE) {
+    pTbl = &imuHamming[0];
+    msb = 0x80;
+  } else {
+    pTbl = &imuHexText[0];
+  }
+
   /* time stamps */
-  val32 = ts1;
-#if 0
-  *p++ = imuHexText[(val32 >> 28) & 0xf];
-  *p++ = imuHexText[(val32 >> 24) & 0xf];
-  *p++ = imuHexText[(val32 >> 20) & 0xf];
-  *p++ = imuHexText[(val32 >> 16) & 0xf];
-  *p++ = imuHexText[(val32 >> 12) & 0xf];
-  *p++ = imuHexText[(val32 >>  8) & 0xf];
-#endif
-  *p++ = imuHexText[(val32 >>  4) & 0xf];
-  *p++ = imuHexText[(val32 >>  0) & 0xf];
-  val = ts0;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  val64 = imu->t;
+  *p++ = pTbl[(val64 >> 20) & 0xf] | msb;
+  *p++ = pTbl[(val64 >> 16) & 0xf];
+  *p++ = pTbl[(val64 >> 12) & 0xf];
+  *p++ = pTbl[(val64 >>  8) & 0xf];
+  *p++ = pTbl[(val64 >>  4) & 0xf];
+  *p++ = pTbl[(val64 >>  0) & 0xf];
   *p++ = ' ';
 
   /* unit */
-  *p++ = imuHexText[unit & 0xf];
+  *p++ = pTbl[unit & 0xf];
   *p++ = ' ';
   /* cnt */
   val32 = imu->cnt;
   /*
-  *p++ = imuHexText[(val32 >> 28) & 0xf];
-  *p++ = imuHexText[(val32 >> 24) & 0xf];
-  *p++ = imuHexText[(val32 >> 20) & 0xf];
-  *p++ = imuHexText[(val32 >> 16) & 0xf];
+  *p++ = pTbl[(val32 >> 28) & 0xf];
+  *p++ = pTbl[(val32 >> 24) & 0xf];
+  *p++ = pTbl[(val32 >> 20) & 0xf];
+  *p++ = pTbl[(val32 >> 16) & 0xf];
   */
-  *p++ = imuHexText[(val32 >> 12) & 0xf];
-  *p++ = imuHexText[(val32 >>  8) & 0xf];
-  *p++ = imuHexText[(val32 >>  4) & 0xf];
-  *p++ = imuHexText[(val32 >>  0) & 0xf];
+  *p++ = pTbl[(val32 >> 12) & 0xf];
+  *p++ = pTbl[(val32 >>  8) & 0xf];
+  *p++ = pTbl[(val32 >>  4) & 0xf];
+  *p++ = pTbl[(val32 >>  0) & 0xf];
   *p++ = ' ';
 
   /* accel */
   val = imu->acc.x;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
   val = imu->acc.y;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
   val = imu->acc.z;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
   *p++ = ' ';
 
   /* gyro */
   val = imu->gyro.x;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
   val = imu->gyro.y;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
   val = imu->gyro.z;
-  *p++ = imuHexText[(val >> 12) & 0xf];
-  *p++ = imuHexText[(val >>  8) & 0xf];
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
 
   *p++ = ' ';
 
   /* temp x4 */
   val = imu->temp4x;
-  *p++ = imuHexText[(val >>  4) & 0xf];
-  *p++ = imuHexText[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
   *p++ = ' ';
 
 #if 0
   /* timestamp in imu */
   val32 = imu->ts;
-  *p++ = imuHexText[(val32 >> 28) & 0xf];
-  *p++ = imuHexText[(val32 >> 24) & 0xf];
-  *p++ = imuHexText[(val32 >> 20) & 0xf];
-  *p++ = imuHexText[(val32 >> 16) & 0xf];
-  *p++ = imuHexText[(val32 >> 12) & 0xf];
-  *p++ = imuHexText[(val32 >>  8) & 0xf];
-  *p++ = imuHexText[(val32 >>  4) & 0xf];
-  *p++ = imuHexText[(val32 >>  0) & 0xf];
+  *p++ = pTbl[(val32 >> 28) & 0xf];
+  *p++ = pTbl[(val32 >> 24) & 0xf];
+  *p++ = pTbl[(val32 >> 20) & 0xf];
+  *p++ = pTbl[(val32 >> 16) & 0xf];
+  *p++ = pTbl[(val32 >> 12) & 0xf];
+  *p++ = pTbl[(val32 >>  8) & 0xf];
+  *p++ = pTbl[(val32 >>  4) & 0xf];
+  *p++ = pTbl[(val32 >>  0) & 0xf];
   *p++ = ' ';
 #endif
   *p++ = '\n';
-  *p   = '\0';
+  *p++ = '\0';
 
-  return 0;
+  return p - str;
+}
+int
+ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
+{
+  uint8_t       *p;
+  int           n;
+  register uint16_t     val;
+  register uint32_t     val32;
+  register uint64_t     val64;
+
+  const static uint8_t  *pTbl;
+
+  uint8_t               msb = 0;
+  uint32_t              sum = 0;
+
+  p = str;
+
+  pTbl = &imuHamming[0];
+  msb = 0x80;
+
+  /* time stamps */
+  val64 = imu->t;
+  *p++ = pTbl[(val64 >>  0) & 0xf] | msb;
+  *p++ = pTbl[(val64 >>  4) & 0xf];
+  *p++ = pTbl[(val64 >>  8) & 0xf];
+  *p++ = pTbl[(val64 >> 12) & 0xf];
+  *p++ = pTbl[(val64 >> 16) & 0xf];
+  *p++ = pTbl[(val64 >> 20) & 0xf];
+  sum ^=  val64 >> 16;
+  sum ^=  val64 >>  8;
+  sum ^=  val64 >>  0;
+
+  /* unit */
+  *p++ = pTbl[unit & 0xf];
+  sum ^= unit;
+
+  /* cnt */
+  val32 = imu->cnt;
+  *p++ = pTbl[(val32 >>  0) & 0xf];
+  *p++ = pTbl[(val32 >>  4) & 0xf];
+  *p++ = pTbl[(val32 >>  8) & 0xf];
+  *p++ = pTbl[(val32 >> 12) & 0xf];
+  /*
+  *p++ = pTbl[(val32 >> 16) & 0xf];
+  *p++ = pTbl[(val32 >> 20) & 0xf];
+  *p++ = pTbl[(val32 >> 24) & 0xf];
+  *p++ = pTbl[(val32 >> 28) & 0xf];
+  sum ^= val32 >>24;
+  sum ^= val32 >>16;
+  */
+  sum ^= val32 >> 8;
+  sum ^= val32 >> 0;
+
+  /* accel */
+  val = imu->acc.x;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  sum ^= val >> 8;
+  sum ^= val >> 0;
+  val = imu->acc.y;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  sum ^= val >> 8;
+  sum ^= val >> 0;
+  val = imu->acc.z;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  sum ^= val >> 8;
+  sum ^= val >> 0;
+
+  /* gyro */
+  val = imu->gyro.x;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  sum ^= val >> 8;
+  sum ^= val >> 0;
+  val = imu->gyro.y;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  sum ^= val >> 8;
+  sum ^= val >> 0;
+  val = imu->gyro.z;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >> 12) & 0xf];
+  sum ^= val >> 8;
+  sum ^= val >> 0;
+
+  /* temp x4 */
+  val = imu->temp4x;
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  sum ^= val >> 0;
+
+#if 0
+  /* timestamp in imu */
+  val32 = imu->ts;
+  *p++ = pTbl[(val32 >>  0) & 0xf];
+  *p++ = pTbl[(val32 >>  4) & 0xf];
+  *p++ = pTbl[(val32 >>  8) & 0xf];
+  *p++ = pTbl[(val32 >> 12) & 0xf];
+  *p++ = pTbl[(val32 >> 16) & 0xf];
+  *p++ = pTbl[(val32 >> 20) & 0xf];
+  *p++ = pTbl[(val32 >> 24) & 0xf];
+  *p++ = pTbl[(val32 >> 28) & 0xf];
+  sum ^= val32 >> 24;
+  sum ^= val32 >> 16;
+  sum ^= val32 >>  8;
+  sum ^= val32 >>  0;
+#endif
+
+  /* sum */
+  val32 = sum;
+  *p++ = pTbl[(val32 >>  0) & 0xf];
+  *p++ = pTbl[(val32 >>  4) & 0xf];
+
+  return p - str;
 }

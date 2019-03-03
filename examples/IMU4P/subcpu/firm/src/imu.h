@@ -41,11 +41,12 @@ typedef struct {
 } imuAxis_t;
 
 typedef struct {
+  uint64_t      t;              /* timestamp of TIM IC */
   uint32_t      cnt;
   uint8_t       raw[64];
   imuAxis_t     acc;
   imuAxis_t     gyro;
-  uint32_t      ts;
+  uint32_t      ts;             /* timestamp of sensor */
   uint16_t      temp4x;
   uint16_t      flag;
 #define       IMU_FLAG_OVERWRITE      (1<<0)
@@ -88,7 +89,8 @@ int             ImuGetValue(int unit, int reg, uint8_t *ptr, int size);
 void            ImuGetValueNonblockEnd(int unit);
 void            ImuSetValueStandard(int unit, int reg, uint8_t val);
 int             ImuGetValueStandard(int unit, int reg, uint8_t *ptr, int size);
-int             ImuBuildText(int unit, uint64_t ts1, uint32_t ts0, imuValue_t *imu, uint8_t *str);
+int             ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format);
+int             ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format);
 
 void            ImuDmaInterrupt(void);
 
