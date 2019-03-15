@@ -100,8 +100,9 @@ SystemInit(void)
   PWR_PTR->CR2 |= PWR_CR2_USV_YES;
 #endif
 
-  /* flash control */
+  /* flash control, crc */
   RCC_PTR->AHB1ENR = RCC_AHB1ENR_FLASHEN_YES;
+  RCC_PTR->AHB1ENR = RCC_AHB1ENR_CRCEN_YES;
 
   /* dma */
   RCC_PTR->AHB1ENR |= (RCC_AHB1ENR_DMA1EN_YES);
@@ -224,8 +225,15 @@ SystemChangeClockHigher(void)
   while(!(RCC_PTR->CSR & RCC_CSR_LSIRDY_MASK));
 
 #if CONFIG_MCO_ENABLE
+#if 0           /* LSI 37kHz */
   RCC_PTR->CFGR &= ~(RCC_CFGR_MCOPRE_MASK | RCC_CFGR_MCOSEL_MASK);
   RCC_PTR->CFGR |= (RCC_CFGR_MCOPRE_DIV1 | RCC_CFGR_MCOSEL_LSI);
+#endif
+#if 1
+  /* HSI / 16 = 1MHz */
+  RCC_PTR->CFGR &= ~(RCC_CFGR_MCOPRE_MASK | RCC_CFGR_MCOSEL_MASK);
+  RCC_PTR->CFGR |= (RCC_CFGR_MCOPRE_DIV16 | RCC_CFGR_MCOSEL_HSI16);
+#endif
 #endif
 
   return;
