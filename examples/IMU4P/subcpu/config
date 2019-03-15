@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 zhtlab
+# Copyright (c) 2018,2019 zhtlab
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files
@@ -25,7 +25,7 @@
 
 CONFIG_PRODUCT_NAME_TEXT	= "IMU4P"
 
-CONFIG_VERSION_FIRM_TEXT	= "0.01.00.201902050"
+CONFIG_VERSION_FIRM_TEXT	= "0.01.00.201903150"
 
 CONFIG_VERSION_BOOT		= 0x19020200
 CONFIG_VERSION_BOOT_TEXT	= "0.01.00.201902020"
