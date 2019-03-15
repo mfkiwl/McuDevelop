@@ -353,17 +353,28 @@ DevUsartRecv(int unit, uint8_t *ptr, int size)
   if(!psc->up) goto fail;
   p = psc->dev;
 
-  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
-    sz = FifoReadOut(psc->dFifoRx, ptr, size);
 
-  } else /*if(psc->param.mode == DEVUSART_MODE_PIO ||
-           psc->param.mode == DEVUSART_MODE_DMA)*/ {
-    uint32_t    flag;
-    if(p->ISR & USART_ISR_RXNE_MASK) {
-      *ptr = p->RDR;
-      sz = 1;
+  if(p->ISR & USART_ISR_RXNE_MASK) {
+    *ptr = p->RDR;
+    sz = 1;
+  }
+
+#if 0
+  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
+    /* not support yet */
+
+  } else {
+    if(psc->param.mode & DEVUSART_MODE_BITDMA) {
+    } else {
+      if(p->ISR & USART_ISR_RXNE_MASK) {
+      SystemGpioSetUpdateLedOn();
+        *ptr = p->RDR;
+        sz = 1;
+      SystemGpioSetUpdateLedOff();
+      }
     }
   }
+#endif
 
 fail:
   return sz;
