@@ -248,6 +248,10 @@ Bmi160ReadValue(imuHandler_t *ph, imuValue_t *p)
   dest = (uint16_t *) &p->temp4x;
   *dest = *src;
 
+  p->capability = (IMU_CAP_TEMPERATURE |
+                   IMU_CAP_GYRO | IMU_CAP_ACCEL);
+
+
   result = DEV_ERRNO_SUCCESS;
 
 fail:

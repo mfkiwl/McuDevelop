@@ -169,6 +169,9 @@ Lis3dhhReadValue(imuHandler_t *ph, imuValue_t *p)
     buf[LIS3DHH_REG_OUT_TEMP_LOW] ;
   p->temp4x = (25 << 2) + (temp >> 7);
 
+  p->capability = (IMU_CAP_TEMPERATURE | IMU_CAP_ACCEL);
+
+
   result = DEV_ERRNO_SUCCESS;
 
 fail:

@@ -187,6 +187,8 @@ Adxl345ReadValue(imuHandler_t *ph, imuValue_t *p)
   p->ts = 0;
   p->temp4x = 0;
 
+  p->capability = (IMU_CAP_ACCEL);
+
   result = DEV_ERRNO_SUCCESS;
 
 fail:

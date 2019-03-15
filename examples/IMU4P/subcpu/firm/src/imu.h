@@ -44,6 +44,14 @@ typedef struct {
   uint64_t      t;              /* timestamp of TIM IC */
   uint32_t      cnt;
   uint8_t       raw[64];
+  uint16_t      capability;
+#define IMU_CAP_EXTENSION    (1<<15)
+#define IMU_CAP_CRC32_8      (1<<14)
+#define IMU_CAP_CRC32        (1<<13)
+#define IMU_CAP_TEMPERATURE  (1<< 3)
+#define IMU_CAP_MAGNETIC     (1<< 2)
+#define IMU_CAP_GYRO         (1<< 1)
+#define IMU_CAP_ACCEL        (1<< 0)
   imuAxis_t     acc;
   imuAxis_t     gyro;
   uint32_t      ts;             /* timestamp of sensor */
