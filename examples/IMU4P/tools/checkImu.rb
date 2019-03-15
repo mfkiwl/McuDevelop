@@ -3,6 +3,13 @@
 # stty -F /dev/ttyUSB0; cat /dev/ttyUSB0 | ./checkImu.rb
 #
 
+require	"zlib"
+require	"rubygems"
+gem 'serialport','>=1.0.4'
+require	"serialport"
+
+$tty = "/dev/ttyUSB0"
+
 $cntRecv  = [0, 0, 0, 0]
 $cntError = [0, 0, 0, 0]
 $tsPrev   = [-1, -1, -1, -1]
@@ -41,13 +48,19 @@ def textout
 end
 
 
-def ShowImu(pos, ts, no, cnt, accx, accy, accz, gyrox, gyroy, gyroz, temp, sum)
-          printf("len: %2d, ts: %6x, no: %x, cnt: %4x, ", pos, ts, no, cnt)
-          printf("acc: %4x %4x %4x ", accx, accy, accz)
-          printf("gyro: %4x %4x %4x ", gyrox, gyroy, gyroz)
-          printf("temp: %2x ", temp)
-          printf("sum: %2x ", sum)
-          print "\n"
+def ShowImu(pos, ts, no, cnt, capability, accx, accy, accz, gyrox, gyroy, gyroz, temp, sum, crcrx)
+  printf("len: %2d ts: %7x no: %x cnt: %2x capability: %4x ", pos, ts, no, cnt, capability)
+  if((capability & (1<<0)) != 0) then
+    printf("acc: %4x %4x %4x ", accx, accy, accz)
+  end
+  if((capability & (1<<1)) != 0) then
+    printf("gyro: %4x %4x %4x ", gyrox, gyroy, gyroz)
+  end
+  if((capability & (1<<3)) != 0) then
+    printf("temp: %2x ", temp)
+  end
+  printf("sum: %8x crcrx: %8x ", sum, crcrx)
+  print "\n"
 end
 
 def mainText
@@ -84,123 +97,276 @@ def mainHamming
   mask = 0xffff
   buf = Array.new
   pos = 0
+  tIdle = 0;
 
   $tStart = Time.now
   $tPrev = $tStart
 
   srand(Time.now.to_i)
 
-  STDIN.each_byte do |c|
-    if(c != nil) then
+  #
+  # 1.  gem install serialport
+  # 2.  edit the higher baud rate code in
+  #         /var/lib/gems/2.3.0/gems/serialport-1.3.1/ext/native/posix_serialport_impl.c
+  #
+  #       #ifdef B2000000
+  #           case 2000000: data_rate = B2000000; break;
+  #       #endif
+  #       #ifdef B4000000
+  #           case 4000000: data_rate = B4000000; break;
+  #       #endif
+  #
+  # 3.  cd /var/lib/gems/2.3.0/gems/serialport-1.3.1/ext/native/posix_serialport_impl.c
+  # 4.  sudo make
+  # 5.  cp serialport.so  ../../lib/serialport/.
+  #
+  dSerial = SerialPort.open($tty, 4000000, 8, 1, 0)
+  dSerial.binmode()
 
-      if((c & 0x80) == 0x80 && pos >= 39) then
-        sumcalc = 0;
+  tIdle = Time.now
+  fIdle = 0
+  ret = 1
 
-        ### time stamp
-        ts  = (buf[0]) <<  0
-        ts |= (buf[1]) <<  4
-        ts |= (buf[2]) <<  8
-        ts |= (buf[3]) << 12
-        ts |= (buf[4]) << 16
-        ts |= (buf[5]) << 20
-        sumcalc ^= ts >> 16;
-        sumcalc ^= ts >>  8;
-        sumcalc ^= ts >>  0;
+  pos = 0
+  ts = 0
+  no = 0
+  cnt = 0
+  capability = 0
+  accx = 0
+  accy = 0
+  accz = 0
+  gyrox = 0
+  gyroy = 0
+  gyroz = 0
+  temp = 0
+  sum = 0;
+  crcrx = 0
 
-        ### unit number
-        no = buf[6];
-        sumcalc ^= no;
+#  dSerial.each_byte do |c|
 
-        ### count
-        cnt  = (buf[ 7] & 0xf) <<  0
-        cnt |= (buf[ 8] & 0xf) <<  4
-        cnt |= (buf[ 9] & 0xf) <<  8
-        cnt |= (buf[10] & 0xf) << 12
-        sumcalc ^= cnt >> 8;
-        sumcalc ^= cnt >> 0;
+  while true do
+    ret = IO.select([dSerial], nil, nil, 0)
 
-        ### accel
-        accx  = (buf[11] & 0xf) <<  0
-        accx |= (buf[12] & 0xf) <<  4
-        accx |= (buf[13] & 0xf) <<  8
-        accx |= (buf[14] & 0xf) << 12
-        sumcalc ^= accx >> 8;
-        sumcalc ^= accx >> 0;
-        accy  = (buf[15] & 0xf) <<  0
-        accy |= (buf[16] & 0xf) <<  4
-        accy |= (buf[17] & 0xf) <<  8
-        accy |= (buf[18] & 0xf) << 12
-        sumcalc ^= accy >> 8;
-        sumcalc ^= accy >> 0;
-        accz  = (buf[19] & 0xf) <<  0
-        accz |= (buf[20] & 0xf) <<  4
-        accz |= (buf[21] & 0xf) <<  8
-        accz |= (buf[22] & 0xf) << 12
-        sumcalc ^= accz >> 8;
-        sumcalc ^= accz >> 0;
-
-        ### gyro
-        gyrox  = (buf[23] & 0xf) <<  0
-        gyrox |= (buf[24] & 0xf) <<  4
-        gyrox |= (buf[25] & 0xf) <<  8
-        gyrox |= (buf[26] & 0xf) << 12
-        sumcalc ^= gyrox >> 8;
-        sumcalc ^= gyrox >> 0;
-        gyroy  = (buf[27] & 0xf) <<  0
-        gyroy |= (buf[28] & 0xf) <<  4
-        gyroy |= (buf[29] & 0xf) <<  8
-        gyroy |= (buf[30] & 0xf) << 12
-        sumcalc ^= gyroy >> 8;
-        sumcalc ^= gyroy >> 0;
-        gyroz  = (buf[31] & 0xf) <<  0
-        gyroz |= (buf[32] & 0xf) <<  4
-        gyroz |= (buf[33] & 0xf) <<  8
-        gyroz |= (buf[34] & 0xf) << 12
-        sumcalc ^= gyroz >> 8;
-        sumcalc ^= gyroz >> 0;
-
-        temp   = (buf[35] & 0xf) <<  0
-        temp  |= (buf[36] & 0xf) <<  4
-        sumcalc ^= temp;
-
-        sum    = (buf[37] & 0xf) <<  0
-        sum   |= (buf[38] & 0xf) <<  4
-        sumcalc ^= sum
-        sumcalc &= 0xff
-
-        if(sumcalc == 0) then
-          if(no < 4) then
-#            ShowImu(pos, ts, no, cnt, accx, accy, accz, gyrox, gyroy, gyroz, temp, sum)
-
-            if($cntPrev[no] != -1 && (($cntPrev[no]+1)&mask) != cnt) then
-              print "#{no} #{cnt} #{$cntPrev[no]}\n"
-              $cntError[no] += 1
-            else
-              $cntRecv[no] += 1
-            end
-            $cntPrev[no] = cnt;
-
-            textout()
-          end
+      if((Time.now - tIdle) >= 2) then
+        tIdle = Time.now
+        if(fIdle == 1) then
+#          dSerial.write("start\n")
+          fIdle = 0;
         else
-          textout()
-          printf("checksum error %x\n", sumcalc)
+#          dSerial.write("stop\n")
+          fIdle = 1;
         end
-
-        pos = 0;
       end
 
-      ### error generation
-      error = c ^ (1 << rand(7))
+    if(ret != nil) then
+      c = dSerial.read(1).ord
 
-      ### error correction
-      correction = $tblCorrection[error & 0x7f]
 
-#      printf("xx %x %x %x\n", c, error, correction)
 
-      buf[pos] = correction & 0xf;
-      pos += 1
+      if(c != nil) then
+        if((c & 0x80) == 0x80) then
+          sumcalc = -1
+          begin
+            ### time stamp
+            idx = 0
+            tsunit  = (buf[idx+0]) <<  0
+            tsunit |= (buf[idx+1]) <<  4
+            tsunit |= (buf[idx+2]) <<  8
+            tsunit |= (buf[idx+3]) << 12
+            tsunit |= (buf[idx+4]) << 16
+            tsunit |= (buf[idx+5]) << 20
+            tsunit |= (buf[idx+6]) << 24
+            tsunit |= (buf[idx+7]) << 28
+            idx += 8
+            #sumcalc ^= tsunit >> 24;
+            sumcalc ^= tsunit >> 16;
+            sumcalc ^= tsunit >>  8;
+            sumcalc ^= tsunit >>  0;
 
+            ### unit number
+            no = (tsunit >> 28) & 0xf
+            #          no = (buf[idx+0])
+            #          idx += 1
+            sumcalc ^= no;
+
+            ### count
+            cnt  = (buf[idx+0] & 0xf) <<  0
+            cnt |= (buf[idx+1] & 0xf) <<  4
+            #          cnt |= (buf[idx+2] & 0xf) <<  8
+            #          cnt |= (buf[idx+3] & 0xf) << 12
+            idx += 2
+            sumcalc ^= cnt >> 8;
+            sumcalc ^= cnt >> 0;
+
+            ### capability
+            ### opt, crc, -, -, -, mag, gyro, accel
+            capability  = (buf[idx+0] & 0xf) <<  0
+            capability |= (buf[idx+1] & 0xf) <<  4
+            capability |= (buf[idx+2] & 0xf) <<  8
+            capability |= (buf[idx+3] & 0xf) << 12
+            idx += 4
+
+            ### accel
+            if((capability & (1<<0)) != 0) then
+              accx  = (buf[idx+0] & 0xf) <<  0
+              accx |= (buf[idx+1] & 0xf) <<  4
+              accx |= (buf[idx+2] & 0xf) <<  8
+              accx |= (buf[idx+3] & 0xf) << 12
+              accy  = (buf[idx+4] & 0xf) <<  0
+              accy |= (buf[idx+5] & 0xf) <<  4
+              accy |= (buf[idx+6] & 0xf) <<  8
+              accy |= (buf[idx+7] & 0xf) << 12
+              accz  = (buf[idx+8] & 0xf) <<  0
+              accz |= (buf[idx+9] & 0xf) <<  4
+              accz |= (buf[idx+10] & 0xf) <<  8
+              accz |= (buf[idx+11] & 0xf) << 12
+              idx += 12
+              sumcalc ^= accx >> 8;
+              sumcalc ^= accx >> 0;
+              sumcalc ^= accy >> 8;
+              sumcalc ^= accy >> 0;
+              sumcalc ^= accz >> 8;
+              sumcalc ^= accz >> 0;
+            else
+              accx = 0
+              accy = 0
+              accz = 0
+            end
+
+            ### gyro
+            if((capability & (1<<1)) != 0) then
+              gyrox  = (buf[idx+0] & 0xf) <<  0
+              gyrox |= (buf[idx+1] & 0xf) <<  4
+              gyrox |= (buf[idx+2] & 0xf) <<  8
+              gyrox |= (buf[idx+3] & 0xf) << 12
+              gyroy  = (buf[idx+4] & 0xf) <<  0
+              gyroy |= (buf[idx+5] & 0xf) <<  4
+              gyroy |= (buf[idx+6] & 0xf) <<  8
+              gyroy |= (buf[idx+7] & 0xf) << 12
+              gyroz  = (buf[idx+8] & 0xf) <<  0
+              gyroz |= (buf[idx+9] & 0xf) <<  4
+              gyroz |= (buf[idx+10] & 0xf) <<  8
+              gyroz |= (buf[idx+11] & 0xf) << 12
+              idx += 12
+              sumcalc ^= gyrox >> 8;
+              sumcalc ^= gyrox >> 0;
+              sumcalc ^= gyroy >> 8;
+              sumcalc ^= gyroy >> 0;
+              sumcalc ^= gyroz >> 8;
+              sumcalc ^= gyroz >> 0;
+            else
+              gyrox = 0;
+              gyroy = 0;
+              gyroz = 0;
+            end
+
+            ### temp
+            if((capability & (1<<3)) != 0) then
+              temp   = (buf[idx+0] & 0xf) <<  0
+              temp  |= (buf[idx+1] & 0xf) <<  4
+              idx += 2
+              sumcalc ^= temp;
+            else
+              temp = 0
+            end
+
+            ### sum, crc
+            sum    = (buf[idx+0] & 0xf) <<  0
+            sum   |= (buf[idx+1] & 0xf) <<  4
+            sumcalc ^= sum
+            sumcalc &= 0xff
+
+            if((capability & (3<<13)) != 0) then # CRC32 least 1 bytes
+              crcmask = 0xff
+              sumcalc = -1
+              crcrx    = (buf[idx+0] & 0xf) <<  0
+              crcrx   |= (buf[idx+1] & 0xf) <<  4
+              if((capability & (1<<13)) != 0) then # CRC32 all bits
+                crcmask = 0xffffffff
+                crcrx   |= (buf[idx+2] & 0xf) <<  8
+                crcrx   |= (buf[idx+3] & 0xf) << 12
+                crcrx   |= (buf[idx+4] & 0xf) << 16
+                crcrx   |= (buf[idx+5] & 0xf) << 20
+                crcrx   |= (buf[idx+6] & 0xf) << 24
+                crcrx   |= (buf[idx+7] & 0xf) << 28
+              end
+
+              str = [(tsunit >>  0)&0xff, (tsunit >>  8)&0xff,
+                     (tsunit >> 16)&0xff, (tsunit >> 24)&0xff].pack('c4')
+              str << [(cnt >> 0)&0xff].pack("c1")
+              str << [(capability>>0)&0xff, (capability>>8)&0xff].pack("c2")
+              if((capability & (1<<0)) != 0) then
+                str << [(accx>>0)&0xff, (accx>>8)&0xff].pack("c2")
+                str << [(accy>>0)&0xff, (accy>>8)&0xff].pack("c2")
+                str << [(accz>>0)&0xff, (accz>>8)&0xff].pack("c2")
+              end
+              if((capability & (1<<1)) != 0) then
+                str << [(gyrox>>0)&0xff,  (gyrox>>8)&0xff].pack("c2")
+                str << [(gyroy>>0)&0xff,  (gyroy>>8)&0xff].pack("c2")
+                str << [(gyroz>>0)&0xff,  (gyroz>>8)&0xff].pack("c2")
+              end
+              if((capability & (1<<3)) != 0) then
+                str << [temp&0xff].pack("c1")
+              end
+
+              crc = 0
+              crc = Zlib.crc32(str, crc);
+              if(((crcrx ^ crc) & crcmask) == 0) then
+                sumcalc = 0
+              end
+            end
+          rescue
+          end
+
+          if(sumcalc == 0) then
+            if(no < 4) then
+              ts = tsunit & 0xfffffff
+              ShowImu(pos, ts, no, cnt, capability, accx, accy, accz, gyrox, gyroy, gyroz, temp, crcrx, crc)
+
+              ### check count
+              fError = 0
+              if($cntPrev[no] != -1 && (($cntPrev[no]+1)&0xff) != cnt) then
+                printf("# error cnt unit:%d cnt:%2x cntPrev:%x\n", no, cnt, $cntPrev[no])
+                $cntError[no] += 1
+                fError |= 1
+              end
+              $cntPrev[no] = cnt;
+
+              ### check timestamp
+              if($tsPrev[no] != -1 && $tsPrev[no] >= ts &&
+                 !(($tsPrev[no] | 0x000ffff) == 0xfffffff && (ts & 0xfff0000) == 0)) then
+                printf("# error ts unit:%d ts:%x tsPrev:%x\n", no, ts, $tsPrev[no])
+                $cntError[no] += 1
+                fError |= 1
+              end
+              $tsPrev[no] = ts;
+
+              if(fError != 1) then
+                $cntRecv[no] += 1
+              end
+
+              textout()
+            end
+          else
+            textout()
+            printf("checksum error %x\n", sumcalc)
+          end
+
+          pos = 0;
+        end
+
+        ### error generation
+        error = c ^ (1 << rand(7))
+
+        ### error correction
+        correction = $tblCorrection[error & 0x7f]
+
+        #      printf("xx %x %x %x\n", c, error, correction)
+
+        buf[pos] = correction & 0xf;
+        pos += 1
+
+      end
     end
   end
 end
