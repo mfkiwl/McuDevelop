@@ -14,6 +14,10 @@ H = [[1, 0, 1, 0,  1, 0, 1],
 
 $outCode = [-1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1]
+
+P = [0, 1, 1, 0, 1, 0, 0, 1,
+     1, 0, 0, 1, 0, 1, 1, 0]
+
 $tblSyndorome = Array.new
 $tblCorrection = Array.new
 
@@ -40,6 +44,18 @@ def main
     $outCode[code] = byte
     printf("0x%02x, ", byte)
 
+  end
+  print "\n\n"
+
+
+  print "\n/*output code with odd parity*/\n"
+  16.times do |code|
+    byte = $outCode[code]
+    parity = (P[(byte>>4)&0xf] + P[byte&0xf]) & 1
+    if(code == 8) then
+      print "\n"
+    end
+    printf("0x%02x, ", byte | ((parity == 1)? 0x00: 0x80));
   end
   print "\n\n"
 
