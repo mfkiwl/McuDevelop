@@ -67,10 +67,6 @@ typedef struct {
 #define       MAIN_TIM2_IC_VALID        (1<<0)
 #define       MAIN_TIM2_IC_OVERWRITE    (1<<1)
 #define       MAIN_SPIRX_DONE           (1<<2)
-#if 0
-  volatile uint16_t      tLsb;
-  volatile uint32_t      tMsb;
-#endif
 } mainTim2Ic_t;
 static mainTim2Ic_t     mainTim2Ic[4];
 
@@ -212,7 +208,10 @@ MainImuLoop(void)
         lenStr[i] = ImuBuildText(i, &imu[i], &str[i][0], setting.format);
         MainQueueImu(i);
         break;
-      case    MAIN_OUTPUT_FORMAT_HAMING_CODE:
+      case    MAIN_OUTPUT_FORMAT_HAMMING_CRC32:
+      case    MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8:
+      case    MAIN_OUTPUT_FORMAT_HAMMING_CRC8:
+      case    MAIN_OUTPUT_FORMAT_HAMMING_CODE:
         imu[i].t = mainTim2Ic[i].t;
         lenStr[i] = ImuBuildHamming(i, &imu[i], &str[i][0], setting.format);
         MainQueueImu(i);
@@ -373,6 +372,8 @@ MainEntry(void)
     }
   }
 
+  setting.format = MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8;
+
   for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
     mainImuNo = i;
     ImuProbe(i);
@@ -505,7 +506,7 @@ MainDisableTim(void)
 void
 MainInterruptTim(void)
 {
-  uint32_t      val;
+  uint32_t      val, t;
   uint32_t      sr, mask, dier;
 
   sr = TIM2_PTR->SR;
@@ -513,6 +514,7 @@ MainInterruptTim(void)
 
   mask = TIM_SR_CC1IF_MASK;
   sr &= dier;
+
   for(int i = 0; i < 4; i++) {
     if(sr & mask) {
       DevCounterGetIcValue(TIM2_NUM, i+1, &val);
@@ -520,11 +522,13 @@ MainInterruptTim(void)
         mainTim2Ic[i].flag |= MAIN_TIM2_IC_OVERWRITE;
       }
       mainTim2Ic[i].flag |= MAIN_TIM2_IC_VALID;
-#if 0
-      mainTim2Ic[i].tLsb = val;
-      mainTim2Ic[i].tMsb = tim2msb;
-#endif
-      mainTim2Ic[i].t    = tim2msb << 16;
+
+      /* carry adjustment */
+      t = tim2msb;
+      if(sr & TIM_SR_UIF_MASK && !(val & 0xf000)) {
+        t++;
+      }
+      mainTim2Ic[i].t    = t << 16;
       mainTim2Ic[i].t   |= val;
 
       mainTim2Ic[i].cnt++;

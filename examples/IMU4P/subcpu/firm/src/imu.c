@@ -30,6 +30,7 @@
 #include        "gpio.h"
 #include        "devErrno.h"
 #include        "devSpi16.h"
+#include        "devCrc.h"
 
 #include        "imu.h"
 #include        "main.h"
@@ -98,11 +99,20 @@ ImuInit(int unit)
 
   /* initialize variables */
   if(unit < 0) {
+    devCrcParam_t       crc;
+
     ph = &h[0];
     for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
       ph->noFunc = -1;
       ph++;
     }
+
+    crc.cr = (DEVCRC_CR_POLYSIZE_32BIT |
+              DEVCRC_CR_REVIN_8BIT | DEVCRC_CR_REVOUT_32BIT);
+    crc.poly = DEVCRC_POLY_CRC32;
+    crc.init = DEVCRC_INIT_0XFFFFFFFF;
+    DevCrcInit(&crc);
+
     goto end;
   }
 
@@ -381,7 +391,7 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
 
   p = str;
 
-  if(format == MAIN_OUTPUT_FORMAT_HAMING_CODE) {
+  if(format == MAIN_OUTPUT_FORMAT_HAMMING_CODE) {
     pTbl = &imuHamming[0];
     msb = 0x80;
   } else {
@@ -390,7 +400,8 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
 
   /* time stamps */
   val64 = imu->t;
-  *p++ = pTbl[(val64 >> 20) & 0xf] | msb;
+  *p++ = pTbl[(val64 >> 24) & 0xf] | msb;
+  *p++ = pTbl[(val64 >> 20) & 0xf];
   *p++ = pTbl[(val64 >> 16) & 0xf];
   *p++ = pTbl[(val64 >> 12) & 0xf];
   *p++ = pTbl[(val64 >>  8) & 0xf];
@@ -415,6 +426,13 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
   *p++ = pTbl[(val32 >>  0) & 0xf];
   *p++ = ' ';
 
+  val = imu->capability;
+  *p++ = pTbl[(val >> 12) & 0xf];
+  *p++ = pTbl[(val >>  8) & 0xf];
+  *p++ = pTbl[(val >>  4) & 0xf];
+  *p++ = pTbl[(val >>  0) & 0xf];
+  *p++ = ' ';
+
   /* accel */
   val = imu->acc.x;
   *p++ = pTbl[(val >> 12) & 0xf];
@@ -471,6 +489,12 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
   *p++ = pTbl[(val32 >>  0) & 0xf];
   *p++ = ' ';
 #endif
+
+  /* sum */
+  *p++ = 's';
+  *p++ = 's';
+  *p++ = ' ';
+
   *p++ = '\n';
   *p++ = '\0';
 
@@ -481,7 +505,7 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
 {
   uint8_t       *p;
   int           n;
-  register uint16_t     val;
+  register uint16_t     val16;
   register uint32_t     val32;
   register uint64_t     val64;
 
@@ -497,88 +521,78 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
 
   /* time stamps */
   val64 = imu->t;
-  *p++ = pTbl[(val64 >>  0) & 0xf] | msb;
+  *p++ = pTbl[(val64 >>  0) & 0xf] ^ msb;
   *p++ = pTbl[(val64 >>  4) & 0xf];
   *p++ = pTbl[(val64 >>  8) & 0xf];
   *p++ = pTbl[(val64 >> 12) & 0xf];
   *p++ = pTbl[(val64 >> 16) & 0xf];
   *p++ = pTbl[(val64 >> 20) & 0xf];
-  sum ^=  val64 >> 16;
-  sum ^=  val64 >>  8;
-  sum ^=  val64 >>  0;
+  *p++ = pTbl[(val64 >> 24) & 0xf];
 
   /* unit */
   *p++ = pTbl[unit & 0xf];
-  sum ^= unit;
 
   /* cnt */
   val32 = imu->cnt;
   *p++ = pTbl[(val32 >>  0) & 0xf];
   *p++ = pTbl[(val32 >>  4) & 0xf];
-  *p++ = pTbl[(val32 >>  8) & 0xf];
-  *p++ = pTbl[(val32 >> 12) & 0xf];
-  /*
-  *p++ = pTbl[(val32 >> 16) & 0xf];
-  *p++ = pTbl[(val32 >> 20) & 0xf];
-  *p++ = pTbl[(val32 >> 24) & 0xf];
-  *p++ = pTbl[(val32 >> 28) & 0xf];
-  sum ^= val32 >>24;
-  sum ^= val32 >>16;
-  */
-  sum ^= val32 >> 8;
-  sum ^= val32 >> 0;
+
+  /* capability */
+  if(format == MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8) {
+    imu->capability |= IMU_CAP_CRC32_8;
+  } else if(format == MAIN_OUTPUT_FORMAT_HAMMING_CRC32) {
+    imu->capability |= IMU_CAP_CRC32;
+  }
+  val16 = imu->capability;
+  *p++ = pTbl[(val16 >>  0) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >> 12) & 0xf];
 
   /* accel */
-  val = imu->acc.x;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >> 12) & 0xf];
-  sum ^= val >> 8;
-  sum ^= val >> 0;
-  val = imu->acc.y;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >> 12) & 0xf];
-  sum ^= val >> 8;
-  sum ^= val >> 0;
-  val = imu->acc.z;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >> 12) & 0xf];
-  sum ^= val >> 8;
-  sum ^= val >> 0;
+  if(imu->capability & IMU_CAP_ACCEL) {
+    val16 = imu->acc.x;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+    *p++ = pTbl[(val16 >>  8) & 0xf];
+    *p++ = pTbl[(val16 >> 12) & 0xf];
+    val16 = imu->acc.y;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+    *p++ = pTbl[(val16 >>  8) & 0xf];
+    *p++ = pTbl[(val16 >> 12) & 0xf];
+    val16 = imu->acc.z;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+    *p++ = pTbl[(val16 >>  8) & 0xf];
+    *p++ = pTbl[(val16 >> 12) & 0xf];
+  }
 
   /* gyro */
-  val = imu->gyro.x;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >> 12) & 0xf];
-  sum ^= val >> 8;
-  sum ^= val >> 0;
-  val = imu->gyro.y;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >> 12) & 0xf];
-  sum ^= val >> 8;
-  sum ^= val >> 0;
-  val = imu->gyro.z;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >> 12) & 0xf];
-  sum ^= val >> 8;
-  sum ^= val >> 0;
+  if(imu->capability & IMU_CAP_GYRO) {
+    val16 = imu->gyro.x;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+    *p++ = pTbl[(val16 >>  8) & 0xf];
+    *p++ = pTbl[(val16 >> 12) & 0xf];
+    val16 = imu->gyro.y;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+    *p++ = pTbl[(val16 >>  8) & 0xf];
+    *p++ = pTbl[(val16 >> 12) & 0xf];
+    val16 = imu->gyro.z;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+    *p++ = pTbl[(val16 >>  8) & 0xf];
+    *p++ = pTbl[(val16 >> 12) & 0xf];
+  }
 
   /* temp x4 */
-  val = imu->temp4x;
-  *p++ = pTbl[(val >>  0) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  sum ^= val >> 0;
+  if(imu->capability & IMU_CAP_TEMPERATURE) {
+    val16 = imu->temp4x;
+    *p++ = pTbl[(val16 >>  0) & 0xf];
+    *p++ = pTbl[(val16 >>  4) & 0xf];
+  }
 
 #if 0
   /* timestamp in imu */
@@ -597,10 +611,94 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
   sum ^= val32 >>  0;
 #endif
 
-  /* sum */
-  val32 = sum;
-  *p++ = pTbl[(val32 >>  0) & 0xf];
-  *p++ = pTbl[(val32 >>  4) & 0xf];
+  if(format == MAIN_OUTPUT_FORMAT_HAMMING_CODE) {
+    sum ^=  imu->t >>  0;
+    sum ^=  imu->t >>  8;
+    sum ^=  imu->t >> 16;
+    sum ^=  (imu->t >> 24) & 0x0f;
+    sum ^= (unit << 4) & 0xf0;
+    sum ^= imu->cnt >> 0;
+    sum ^= imu->cnt >> 8;
+    sum ^= imu->acc.x >> 0;
+    sum ^= imu->acc.x >> 8;
+    sum ^= imu->acc.y >> 0;
+    sum ^= imu->acc.y >> 8;
+    sum ^= imu->acc.z >> 0;
+    sum ^= imu->acc.z >> 8;
+    sum ^= imu->gyro.x >> 0;
+    sum ^= imu->gyro.x >> 8;
+    sum ^= imu->gyro.y >> 0;
+    sum ^= imu->gyro.y >> 8;
+    sum ^= imu->gyro.z >> 0;
+    sum ^= imu->gyro.z >> 8;
+    sum ^= imu->temp4x >> 0;
+
+    /* sum */
+    val32 = sum;
+    *p++ = pTbl[(val32 >>  0) & 0xf];
+    *p++ = pTbl[(val32 >>  4) & 0xf];
+
+  } if(format == MAIN_OUTPUT_FORMAT_HAMMING_CRC32 ||
+       format == MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8) {
+    uint16_t     val;
+
+    DevCrcSetInit(0xffffffff);
+
+    DevCrcCalc16(__REV16(imu->t & 0xffff));
+    val = ((imu->t >> 16) & 0x0fff) | ((unit << 12) & 0xf000);
+    DevCrcCalc16(__REV16(val));
+    DevCrcCalc8(imu->cnt & 0xff);
+    DevCrcCalc16(__REV16(imu->capability));
+    if(imu->capability & IMU_CAP_ACCEL) {
+      DevCrcCalc16(__REV16(imu->acc.x));
+      DevCrcCalc16(__REV16(imu->acc.y));
+      DevCrcCalc16(__REV16(imu->acc.z));
+    }
+    if(imu->capability & IMU_CAP_GYRO) {
+      DevCrcCalc16(__REV16(imu->gyro.x));
+      DevCrcCalc16(__REV16(imu->gyro.y));
+      DevCrcCalc16(__REV16(imu->gyro.z));
+    }
+    if(imu->capability & IMU_CAP_TEMPERATURE) {
+      DevCrcCalc8(imu->temp4x);
+    }
+
+    /* sum */
+    val32 = ~DevCrcGetValue();
+    *p++ = pTbl[(val32 >>  0) & 0xf];
+    *p++ = pTbl[(val32 >>  4) & 0xf];
+    if(format == MAIN_OUTPUT_FORMAT_HAMMING_CRC32) {
+      *p++ = pTbl[(val32 >>  8) & 0xf];
+      *p++ = pTbl[(val32 >> 12) & 0xf];
+      *p++ = pTbl[(val32 >> 16) & 0xf];
+      *p++ = pTbl[(val32 >> 20) & 0xf];
+      *p++ = pTbl[(val32 >> 24) & 0xf];
+      *p++ = pTbl[(val32 >> 28) & 0xf];
+    }
+
+  } else {      /* MAIN_OUTPUT_FORMAT_HAMMING_CRC8 */
+    DevCrcSetInit(0xffffffff);
+
+    DevCrcCalc16(__REV16(imu->t & 0xffff));
+    DevCrcCalc8((imu->t >> 16) & 0xff);
+    DevCrcCalc8(unit);
+    DevCrcCalc16(__REV16(imu->cnt));
+    DevCrcCalc16(__REV16(imu->capability));
+    DevCrcCalc16(__REV16(imu->acc.x));
+    DevCrcCalc16(__REV16(imu->acc.y));
+    DevCrcCalc16(__REV16(imu->acc.z));
+    DevCrcCalc16(__REV16(imu->gyro.x));
+    DevCrcCalc16(__REV16(imu->gyro.y));
+    DevCrcCalc16(__REV16(imu->gyro.z));
+    DevCrcCalc8(imu->temp4x);
+
+    /* sum */
+    val32 = ~DevCrcGetValue();
+    *p++ = pTbl[(val32 >>  0) & 0xf];
+    *p++ = pTbl[(val32 >>  4) & 0xf];
+    *p++ = pTbl[(val32 >>  8) & 0xf];
+    *p++ = pTbl[(val32 >> 12) & 0xf];
+  }
 
   return p - str;
 }

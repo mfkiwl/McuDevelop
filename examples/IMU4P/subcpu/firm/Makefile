@@ -66,6 +66,7 @@ SOURCES =	\
 		$(DEVICELIB_DIR)/$(VENDOR_SERIES)/src/devSpi16.c \
 		$(DEVICELIB_DIR)/$(VENDOR_SERIES)/src/devDma4.c \
 		$(DEVICELIB_DIR)/$(VENDOR_SERIES)/src/devFlash.c \
+		$(DEVICELIB_DIR)/$(VENDOR_SERIES)/src/devCrc.c \
 \
 		../target/$(DEVICE_TYPE)/src/system_$(DEVICE_TYPE).c \
 		src/main.c \
