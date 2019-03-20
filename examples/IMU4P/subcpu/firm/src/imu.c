@@ -381,7 +381,8 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
 {
   uint8_t       *p;
   int           n;
-  register uint16_t     val;
+  register uint16_t     val16;
+  register int          val;
   register uint32_t     val32;
   register uint64_t     val64;
 
@@ -434,44 +435,46 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
   *p++ = ' ';
 
   /* accel */
-  val = imu->acc.x;
-  *p++ = pTbl[(val >> 12) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  0) & 0xf];
-  val = imu->acc.y;
-  *p++ = pTbl[(val >> 12) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  0) & 0xf];
-  val = imu->acc.z;
-  *p++ = pTbl[(val >> 12) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  0) & 0xf];
+  val16 = imu->acc.x;
+  *p++ = pTbl[(val16 >> 12) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  0) & 0xf];
+  val16 = imu->acc.y;
+  *p++ = pTbl[(val16 >> 12) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  0) & 0xf];
+  val16 = imu->acc.z;
+  *p++ = pTbl[(val16 >> 12) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  0) & 0xf];
   *p++ = ' ';
 
   /* gyro */
-  val = imu->gyro.x;
-  *p++ = pTbl[(val >> 12) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  0) & 0xf];
-  val = imu->gyro.y;
-  *p++ = pTbl[(val >> 12) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  0) & 0xf];
-  val = imu->gyro.z;
-  *p++ = pTbl[(val >> 12) & 0xf];
-  *p++ = pTbl[(val >>  8) & 0xf];
-  *p++ = pTbl[(val >>  4) & 0xf];
-  *p++ = pTbl[(val >>  0) & 0xf];
+  val16 = imu->gyro.x;
+  *p++ = pTbl[(val16 >> 12) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  0) & 0xf];
+  val16 = imu->gyro.y;
+  *p++ = pTbl[(val16 >> 12) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  0) & 0xf];
+  val16 = imu->gyro.z;
+  *p++ = pTbl[(val16 >> 12) & 0xf];
+  *p++ = pTbl[(val16 >>  8) & 0xf];
+  *p++ = pTbl[(val16 >>  4) & 0xf];
+  *p++ = pTbl[(val16 >>  0) & 0xf];
 
   *p++ = ' ';
 
-  /* temp x4 */
-  val = imu->temp4x;
+  /* temp x4  -20deg -- 107.5deg -> 0 -- 255 */
+  val = ((int16_t)imu->temp4x >> 1) + 40;
+  if(val < 0) val = 0;
+  if(val > 215) val = 215;
   *p++ = pTbl[(val >>  4) & 0xf];
   *p++ = pTbl[(val >>  0) & 0xf];
   *p++ = ' ';
