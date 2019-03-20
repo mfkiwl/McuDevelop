@@ -26,6 +26,8 @@
 
 #define MAIN_SETTING_ID_POS             0
 #define MAIN_SETTING_ID_LEN             32
+#define MAIN_SETTING_IMUNO_POS          0x20
+#define MAIN_SETTING_IMUNO_LEN          1
 
 typedef struct {
   uint8_t       id[MAIN_SETTING_ID_LEN];
@@ -35,6 +37,7 @@ typedef struct {
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8  2
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC32  3
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC8   4
+  uint8_t       imuno;          /* imu no offset */
 } mainSetting_t;
 
 

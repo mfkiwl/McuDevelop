@@ -82,8 +82,21 @@ CommandExec(int ac, uint8_t *av[])
       ImuInit(i);
     }
 
-  } else if(!strncmp(av[0], "format", 4)) {
+  } else if(!strncmp(av[0], "format", 6)) {
     setting.format = strtoul(av[1], NULL, 10);
+
+  } else if(!strncmp(av[0], "imuno", 5)) {
+    uint32_t    addr = EEPROM_BASE;
+    uint8_t     no;
+    addr = EEPROM_BASE + MAIN_SETTING_IMUNO_POS;
+
+    if(ac >= 2) {
+      no = strtoul(av[1], NULL, 10);
+      setting.imuno = no;
+      DevFlashProgram(0, addr, MAIN_SETTING_IMUNO_LEN, &no);
+    } else {
+      printf("imuno %d\n", *(uint8_t *) addr);
+    }
 
   } else if(!strncmp(av[0], "imu", 3)) {
     int         unit;

@@ -1,12 +1,17 @@
-reset                   timestamp counter reset
 start                   start sending the imu data to uart
 stop                    stop  sending the imu data
+
+reset                   timestamp counter reset
 init                    initialize the imu.
                         the parameters which is set by "imu [num] set" command is used
                         are updated
 format [num]            UART output format is changed
                            0: text out
                            1: hamming encoding
+
+imuno [num]             imu no starts [num]  default is 0
+imuno                   show the imu number offset
+
 
 imu [num] set [freq] [acc] [gyro] [mag]
                          the max ranges are set to accel, gyro, and

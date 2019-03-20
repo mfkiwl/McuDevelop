@@ -205,7 +205,7 @@ MainImuLoop(void)
       switch(setting.format) {
       case    MAIN_OUTPUT_FORMAT_TEXT:
         imu[i].t = mainTim2Ic[i].t;
-        lenStr[i] = ImuBuildText(i, &imu[i], &str[i][0], setting.format);
+        lenStr[i] = ImuBuildText(i+setting.imuno, &imu[i], &str[i][0], setting.format);
         MainQueueImu(i);
         break;
       case    MAIN_OUTPUT_FORMAT_HAMMING_CRC32:
@@ -213,7 +213,7 @@ MainImuLoop(void)
       case    MAIN_OUTPUT_FORMAT_HAMMING_CRC8:
       case    MAIN_OUTPUT_FORMAT_HAMMING_CODE:
         imu[i].t = mainTim2Ic[i].t;
-        lenStr[i] = ImuBuildHamming(i, &imu[i], &str[i][0], setting.format);
+        lenStr[i] = ImuBuildHamming(i+setting.imuno, &imu[i], &str[i][0], setting.format);
         MainQueueImu(i);
         break;
       }
@@ -372,7 +372,13 @@ MainEntry(void)
     }
   }
 
-  setting.format = MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8;
+  {
+    setting.format = MAIN_OUTPUT_FORMAT_HAMMING_CRC32_8;
+    uint8_t       val;
+    val = *(uint8_t *)(EEPROM_BASE + MAIN_SETTING_ID_POS);
+    if(val >= 0x10) val = 0;
+    setting.imuno = val;    /* adhoc */
+  }
 
   for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
     mainImuNo = i;

@@ -10,10 +10,10 @@ require	"serialport"
 
 $tty = "/dev/ttyUSB0"
 
-$cntRecv  = [0, 0, 0, 0]
-$cntError = [0, 0, 0, 0]
-$tsPrev   = [-1, -1, -1, -1]
-$cntPrev  = [-1, -1, -1, -1]
+$cntRecv  = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+$cntError = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+$tsPrev   = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+$cntPrev  = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
 
 $tStart = 0;
 $tPrev = 0;
@@ -319,7 +319,7 @@ def mainHamming
           end
 
           if(sumcalc == 0) then
-            if(no < 4) then
+            if(no < 16) then
               ts = tsunit & 0xfffffff
               ShowImu(pos, ts, no, cnt, capability, accx, accy, accz, gyrox, gyroy, gyroz, temp, crcrx, crc)
 
