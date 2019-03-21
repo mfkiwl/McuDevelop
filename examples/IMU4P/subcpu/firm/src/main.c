@@ -120,7 +120,9 @@ MainUartLoop(void)
         int             ac;
 
         c = '\n';
-        puts("\n");
+        if(setting.fEcho) {
+          puts("\n");
+        }
 
         mainCommandBuf[mainCommandPos] = '\0';
         CommandProcess(mainCommandBuf);
@@ -130,16 +132,20 @@ MainUartLoop(void)
         cnt = 0;
         if(mainCommandPos > 0) {
           mainCommandPos--;
-          puts("\b \b");
+          if(setting.fEcho) {
+            puts("\b \b");
+          }
         }
       } else {
         if(mainCommandPos < sizeof(mainCommandBuf)) {
           uint8_t       str[2];
           mainCommandBuf[mainCommandPos] = c;
           mainCommandPos++;
-          str[0] = c;
-          str[1] = '\0';
-          puts(str);
+          if(setting.fEcho) {
+            str[0] = c;
+            str[1] = '\0';
+            puts(str);
+          }
         }
       }
     }
@@ -339,6 +345,7 @@ MainEntry(void)
   DevDmaInit(-1, 0, NULL);
   MainInitUsart();
   MainInitTim();
+  //MainDisableTim();             /* disable first */
   MainInitSpi();
 
 #if 0
@@ -419,9 +426,9 @@ MainInitUsart(void)
   param.baud = CONFIG_SYSTEM_USART_BAUD;
   param.bit = DEVUSART_BIT_8;
   param.stop = DEVUSART_STOP_1;
-  param.mode = DEVUSART_MODE_DMA;
   param.parity = DEVUSART_PARITY_NONE;
-  param.szFifoTx = 7;
+  param.mode = DEVUSART_MODE_TX_BITDMA | DEVUSART_MODE_RX_BITFIFO;
+  param.szFifoTx = 0;
   param.szFifoRx = 4;
   param.intrDma = 1;
   DevUsartInit(CONFIG_SYSTEM_USART_PORT, &param);

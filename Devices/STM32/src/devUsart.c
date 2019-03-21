@@ -108,21 +108,20 @@ DevUsartInit(int unit, devUsartParam_t *param)
 #endif
   }
 
-  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
-    int         d;
+  int         d;
+  if(psc->param.mode & DEVUSART_MODE_TX_BITFIFO) {
     if((d = FifoCreate(psc->param.szFifoTx)) < 0) {
-      //psc->param.mode = DEVUSART_MODE_PIO;
-      psc->param.mode &= ~DEVUSART_MODE_BITFIFO;
+      psc->param.mode &= ~DEVUSART_MODE_TX_BITFIFO;
     } else {
       psc->dFifoTx = d;
-      /* rx */
-      if((d = FifoCreate(psc->param.szFifoRx)) < 0) {
-        FifoDestroy(psc->dFifoTx);
-        //psc->param.mode = DEVUSART_MODE_PIO;
-        psc->param.mode &= ~DEVUSART_MODE_BITFIFO;
-      } else {
-        psc->dFifoRx = d;
-      }
+    }
+  }
+  if(psc->param.mode & DEVUSART_MODE_RX_BITFIFO) {
+    /* rx */
+    if((d = FifoCreate(psc->param.szFifoRx)) < 0) {
+      psc->param.mode &= ~DEVUSART_MODE_RX_BITFIFO;
+    } else {
+      psc->dFifoRx = d;
     }
   }
 
@@ -167,15 +166,20 @@ DevUsartInit(int unit, devUsartParam_t *param)
   /*** baud */
   p->BRR = masterClk / baud;
 
+  /* enable error interrupt */
+  p->CR3 |= USART_CR3_EIE_YES;
+  /* enable interrupt */
+  if((psc->param.mode & (DEVUSART_MODE_RX_BITFIFO | DEVUSART_MODE_RX_BITDMA)) ==
+     DEVUSART_MODE_RX_BITFIFO) {
 #ifdef SPI_MODULE_FIFO_YES
-  //if(psc->param.mode == DEVUSART_MODE_FIFO) {
     p->CR3 |= USART_CR3_RXFTCFG_1_8 | USART_CR3_RXFTIE_YES;   /* threshold intr */
     p->CR1 |= USART_CR1_RXFFIE_YES;     /* full intr */
     p->CR1 |= USART_CR1_RXNEIE_YES;     /* rx intr */
-    //}
+#else
+    p->CR1 |= USART_CR1_RXNEIE_YES;
 #endif
-  /* enable error interrupt */
-  p->CR3 |= USART_CR3_EIE_YES;
+  }
+
 
   /* enable */
   p->CR1 |= USART_CR1_TE_YES | USART_CR1_RE_YES;
@@ -234,24 +238,27 @@ DevUsartInterrupt(int unit)
   p->ICR = flag;
 
   /*** rx with fifo */
-  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
+  {
     uint8_t             buf[USART_RX_FIFO_SIZE+1];      /* fifo + sz(RDR) */
     uint8_t             *pBuf;
     int                 i, c;
 
+    pBuf = buf;
+    i = 0;
+
+#ifdef SPI_MODULE_FIFO_YES
+
     if(flag & (USART_ISR_RXFT_MASK | USART_ISR_RXFF_MASK | USART_ISR_RXNE_MASK)) {
-      pBuf = buf;
-      i = 0;
       while(p->ISR & USART_ISR_RXFT_MASK) {
         *pBuf++ = p->RDR;
         i++;
       }
       FifoWriteIn(psc->dFifoRx, buf, i);
     }
-    /*** rx without fifo */
+
+#else
+
     if(flag & USART_ISR_RXNE_MASK) {
-      pBuf = buf;
-      i = 0;
       while(p->ISR & USART_ISR_RXNE_MASK) {
         c = p->RDR;
         *pBuf++ = c;
@@ -259,7 +266,9 @@ DevUsartInterrupt(int unit)
       }
       if(i > 0) FifoWriteIn(psc->dFifoRx, buf, i);
     }
+#endif
   }
+
   /*** tx */
   if(flag & USART_ISR_TXE_MASK) {
     if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
@@ -315,9 +324,9 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
     DevUsartSendDma(psc, ptr, size);
   }
 #endif
-  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
+  if(psc->param.mode & DEVUSART_MODE_TX_BITFIFO) {
     FifoWriteIn(psc->dFifoTx, ptr, size);
-    if(psc->param.mode & DEVUSART_MODE_BITDMA) {
+    if(psc->param.mode & DEVUSART_MODE_TX_BITDMA) {
       uint8_t   *pFifo;
       int       lenFifo;
       int       re;
@@ -331,7 +340,7 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
       p->CR1 |= USART_CR1_TXEIE_YES;
     }
   } else {
-    if(psc->param.mode & DEVUSART_MODE_BITDMA) {
+    if(psc->param.mode & DEVUSART_MODE_TX_BITDMA) {
       result = DevUsartSendDma(psc, ptr, size);
     } else {
       result = DevUsartSendPio(psc, ptr, size);
@@ -353,28 +362,18 @@ DevUsartRecv(int unit, uint8_t *ptr, int size)
   if(!psc->up) goto fail;
   p = psc->dev;
 
-
-  if(p->ISR & USART_ISR_RXNE_MASK) {
-    *ptr = p->RDR;
-    sz = 1;
-  }
-
-#if 0
-  if(psc->param.mode & DEVUSART_MODE_BITFIFO) {
-    /* not support yet */
+  if(psc->param.mode & DEVUSART_MODE_RX_BITFIFO) {
+    sz = FifoReadOut(psc->dFifoRx, ptr, size);
 
   } else {
-    if(psc->param.mode & DEVUSART_MODE_BITDMA) {
+    if(psc->param.mode & DEVUSART_MODE_RX_BITDMA) {
     } else {
       if(p->ISR & USART_ISR_RXNE_MASK) {
-      SystemGpioSetUpdateLedOn();
         *ptr = p->RDR;
         sz = 1;
-      SystemGpioSetUpdateLedOff();
       }
     }
   }
-#endif
 
 fail:
   return sz;

@@ -38,6 +38,7 @@ typedef struct {
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC32  3
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC8   4
   uint8_t       imuno;          /* imu no offset */
+  uint8_t       fEcho;          /* uart echo */
 } mainSetting_t;
 
 
