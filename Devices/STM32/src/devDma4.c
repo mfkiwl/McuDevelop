@@ -245,6 +245,27 @@ end:
 }
 
 
+int
+DevDmaGetCounterValue(int unit, int ch, uint32_t *pSize)
+{
+  int           result = DEV_ERRNO_UNKNOWN;
+  stm32Dev_DMA  *p;
+
+  if(!pSize) goto fail;
+  if(ch >= 8) unit = 2;
+
+  p  = dma.sc[unit].dev;
+  ch &= 7;
+
+  *pSize = p->CH[ch-1].CNDTR;
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+  return result;
+}
+
+
 void
 DevDmaDebugShowRegs(int unit, int ch)
 {

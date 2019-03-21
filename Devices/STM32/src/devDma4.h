@@ -67,6 +67,7 @@ int             DevDmaInitAddrSize(int unit, int ch, devDmaParam_t *param);
 int             DevDmaStart(int unit, int ch);
 int             DevDmaStop(int unit, int ch);
 int             DevDmaIsFinished(int unit, int ch);
+int             DevDmaGetCounterValue(int unit, int ch, uint32_t *pSize);
 void            DevDmaDebugShowRegs(int unit, int ch);
 
 void            DevDmaClearIntr(int unit, int ch);
