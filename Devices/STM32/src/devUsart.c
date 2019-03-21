@@ -35,6 +35,9 @@
 
 struct _stUsart         usart;
 
+const static uint8_t    devUsartSendDmaReqTbl[]    = DMA_REQ_USARTTX_TBL;
+const static uint8_t    devUsartRecvDmaReqTbl[]    = DMA_REQ_USARTRX_TBL;
+
 int
 DevUsartInit(int unit, devUsartParam_t *param)
 {
@@ -169,8 +172,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
   /* enable error interrupt */
   p->CR3 |= USART_CR3_EIE_YES;
   /* enable interrupt */
-  if((psc->param.mode & (DEVUSART_MODE_RX_BITFIFO | DEVUSART_MODE_RX_BITDMA)) ==
-     DEVUSART_MODE_RX_BITFIFO) {
+  if(psc->param.mode & DEVUSART_MODE_RX_BITFIFO) {
 #ifdef SPI_MODULE_FIFO_YES
     p->CR3 |= USART_CR3_RXFTCFG_1_8 | USART_CR3_RXFTIE_YES;   /* threshold intr */
     p->CR1 |= USART_CR1_RXFFIE_YES;     /* full intr */
@@ -180,6 +182,36 @@ DevUsartInit(int unit, devUsartParam_t *param)
 #endif
   }
 
+  if(psc->param.mode & DEVUSART_MODE_RX_BITDMA) {
+    devDmaParam_t       param;
+    int                 chDma;
+    uint8_t             *ptr;
+    int                 size;
+
+    FifoGetWritePointer(psc->dFifoRx, &ptr, &size);
+
+    /* start dma */
+    memset(&param, 0, sizeof(param));
+    param.req = devUsartRecvDmaReqTbl[unit];
+    param.a = (void *) ptr;
+    param.b = (void *) &p->RDR;
+    param.cnt = size;
+    param.dirBA = 1;
+    param.aInc = 1;
+    param.circ = 1;
+    param.aSize = DEVDMA_SIZE_8BITS;
+    param.bSize = DEVDMA_SIZE_8BITS;
+#if 0
+    param.intrTC = psc->param.intrDma? 1: 0;
+    param.intrHC = psc->param.intrDma? 1: 0;
+#endif
+
+    chDma = (devUsartRecvDmaReqTbl[unit] >> 4) & 0xf;
+    DevDmaInit(1, chDma, &param);
+    DevDmaStart(1, chDma);
+
+    p->CR3 |= USART_CR3_DMAR_YES;
+  }
 
   /* enable */
   p->CR1 |= USART_CR1_TE_YES | USART_CR1_RE_YES;
@@ -265,6 +297,13 @@ DevUsartInterrupt(int unit)
         i++;
       }
       if(i > 0) FifoWriteIn(psc->dFifoRx, buf, i);
+
+      printf("dma %x %x %x %x %d\n",
+             DMA1_PTR->CH[5-1].CCR,
+             DMA1_PTR->CH[5-1].CPAR,
+             DMA1_PTR->CH[5-1].CMAR,
+             DMA1_PTR->CH[5-1].CNDTR,
+             psc->dFifoRx);
     }
 #endif
   }
@@ -301,6 +340,36 @@ DevUsart3Interrupt(void)
   DevUsartInterrupt(3);
   return;
 }
+
+
+void
+DevUsartInterruptDmaSend(int unit)
+{
+  return;
+}
+void
+DevUsartInterruptDmaRecv(int unit)
+{
+  devUsartSc_t          *psc;
+  int                   chDma;
+  uint32_t              size, cnt;
+
+  if(unit > USART_MODULE_COUNT) goto fail;
+  psc = &usart.sc[unit];
+
+  chDma = (devUsartRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
+  DevDmaGetCounterValue(1, chDma, &cnt);
+
+  if(psc->posFifoRx != cnt) {
+    size = (psc->posFifoRx - cnt) & ((1<<psc->param.szFifoRx)-1);
+    FifoAddWritePointer(psc->dFifoRx, size);
+    psc->posFifoRx = cnt;
+  }
+
+fail:
+  return;
+}
+
 int
 DevUsartSend(int unit, uint8_t *ptr, int size)
 {
@@ -367,6 +436,7 @@ DevUsartRecv(int unit, uint8_t *ptr, int size)
 
   } else {
     if(psc->param.mode & DEVUSART_MODE_RX_BITDMA) {
+      /* not supported yet */
     } else {
       if(p->ISR & USART_ISR_RXNE_MASK) {
         *ptr = p->RDR;
@@ -450,7 +520,6 @@ fail:
 }
 
 
-const static uint8_t    devUsartSendDmaReqTbl[]    = DMA_REQ_USARTTX_TBL;
 static int
 DevUsartSendDma(devUsartSc_t *psc, uint8_t *ptr, int size)
 {

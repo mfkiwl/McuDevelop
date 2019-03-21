@@ -84,6 +84,7 @@ typedef struct {
   stm32Dev_USART        *dev;
   int                   dFifoTx;
   int                   dFifoRx;
+  uint16_t              posFifoRx;
 } devUsartSc_t;
 
 struct _stUsart {
@@ -99,6 +100,9 @@ int             DevUsartGetDataLen(int unit);
 void            DevUsart1Interrupt(void);
 void            DevUsart2Interrupt(void);
 void            DevUsart3Interrupt(void);
+
+void            DevUsartInterruptDmaSend(int unit);
+void            DevUsartInterruptDmaRecv(int unit);
 
 int             DevUsartIsSendingDma(int unit);
 int             DevUsartSendStopDma(int unit);
