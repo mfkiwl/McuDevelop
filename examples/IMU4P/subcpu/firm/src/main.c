@@ -112,11 +112,14 @@ MainUartLoop(void)
   int           c;
   static int    cnt = 0;
 
+  __disable_irq();
+  DevUsartInterruptDmaRecv(1);
+  __enable_irq();
+
   while((c = _getc()) >= 0) {
 
     if(c >= 0) {
-      if(c == '\n') {
-      } else if(c == '\r') {
+      if(c == '\r' || c == '\n') {
         int             ac;
 
         c = '\n';
@@ -345,7 +348,7 @@ MainEntry(void)
   DevDmaInit(-1, 0, NULL);
   MainInitUsart();
   MainInitTim();
-  //MainDisableTim();             /* disable first */
+  MainDisableTim();             /* disable first */
   MainInitSpi();
 
 #if 0
@@ -427,9 +430,10 @@ MainInitUsart(void)
   param.bit = DEVUSART_BIT_8;
   param.stop = DEVUSART_STOP_1;
   param.parity = DEVUSART_PARITY_NONE;
-  param.mode = DEVUSART_MODE_TX_BITDMA | DEVUSART_MODE_RX_BITFIFO;
+  param.mode = (DEVUSART_MODE_TX_BITDMA |
+                DEVUSART_MODE_RX_BITDMA | DEVUSART_MODE_RX_BITFIFO);
   param.szFifoTx = 0;
-  param.szFifoRx = 4;
+  param.szFifoRx = 7;
   param.intrDma = 1;
   DevUsartInit(CONFIG_SYSTEM_USART_PORT, &param);
 
@@ -632,11 +636,18 @@ MainInterruptDmaCh4to7(void)
 {
   uint32_t       sr;
   sr = DMA1_PTR->ISR;
+
+  /* USART TX dma interrupt */
   if(sr & DMA_ISR_GIF_MASK(DMA_CH4)) {
     DevDmaClearIntr(1, DMA_CH4);
 
     DevUsartSendStopDma(1);
     MainSendImu();
+  }
+  /* USART RX dma interrupt */
+  if(sr & DMA_ISR_GIF_MASK(DMA_CH5)) {
+    DevDmaClearIntr(1, DMA_CH5);
+    DevUsartInterruptDmaRecv(1);
   }
 
   return;
