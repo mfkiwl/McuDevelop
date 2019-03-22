@@ -23,6 +23,12 @@ imu [num] set [freq] [acc] [gyro] [mag]
                         specify "-1" if the parameter is not set
 imu [num] get           the imu parameters are shown
 
+imu [num] regset [addr] [val]
+                        set value to [reg] of imu [num]
+                        [num] is 0, 1, 2, 3
+                        [reg] register number (radix 16)
+                        [val] value           (radix 16)
+
 id set [str]            the serial id is set to EEPROM up to 32 charactors
 id get                  the serial id value is shown to console
 

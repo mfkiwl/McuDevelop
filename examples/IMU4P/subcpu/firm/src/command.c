@@ -114,6 +114,13 @@ CommandExec(int ac, uint8_t *av[])
         if(ac >= 6) settings.gyro_fs = strtoul(av[5], NULL, 10);
         ImuSetSettings(unit, &settings);
       }
+    } else if(!strncmp(av[2], "regset", 6)) {
+      if(ac >= 5) {
+        uint8_t         reg, val;
+        reg = strtoul(av[3], NULL, 16);
+        val = strtoul(av[4], NULL, 16);
+        ImuSetValueStandard(unit, reg, val);
+      }
     }
 
   } else if(!strncmp(av[0], "id", 2)) {
