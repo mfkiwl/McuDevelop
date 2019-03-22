@@ -182,6 +182,23 @@ Bmi160Init(imuHandler_t *ph)
 }
 
 
+#define TOP     (BMI160_REG_GYRO_X_LOW)
+#define BOTTOM  (BMI160_REG_TEMP_HIGH)
+
+#define GXL     ((BMI160_REG_GYRO_X_LOW) -(TOP))
+#define GXH     ((BMI160_REG_GYRO_X_HIGH)-(TOP))
+#define GYL     ((BMI160_REG_GYRO_Y_LOW) -(TOP))
+#define GYH     ((BMI160_REG_GYRO_Y_HIGH)-(TOP))
+#define GZL     ((BMI160_REG_GYRO_Z_LOW) -(TOP))
+#define GZH     ((BMI160_REG_GYRO_Z_HIGH)-(TOP))
+#define AXL     ((BMI160_REG_ACC_X_LOW)  -(TOP))
+#define AXH     ((BMI160_REG_ACC_X_HIGH) -(TOP))
+#define AYL     ((BMI160_REG_ACC_Y_LOW)  -(TOP))
+#define AYH     ((BMI160_REG_ACC_Y_HIGH) -(TOP))
+#define AZL     ((BMI160_REG_ACC_Z_LOW)  -(TOP))
+#define AZH     ((BMI160_REG_ACC_Z_HIGH) -(TOP))
+
+#define READ_LEN  ((BOTTOM) - (TOP) + 1)
 int
 Bmi160RecvValue(imuHandler_t *ph, imuValue_t *p)
 {
@@ -198,8 +215,7 @@ Bmi160RecvValue(imuHandler_t *ph, imuValue_t *p)
   unit = ph->unit;
   buf = p->raw;
 
-#define READ_LEN  ((BMI160_REG_TEMP_HIGH) - (BMI160_REG_GYRO_X_LOW) + 1)
-  result = ImuGetValueStandard(unit, BMI160_REG_GYRO_X_LOW, buf, READ_LEN);
+  result = ImuGetValueStandard(unit, TOP, buf, READ_LEN);
   if(result != DEV_ERRNO_NONBLOCK) {
     Bmi160ReadValue(ph, p);
     result = DEV_ERRNO_SUCCESS;
@@ -210,18 +226,6 @@ fail:
 }
 
 
-#define GXL     ((BMI160_REG_GYRO_X_LOW) -(BMI160_REG_GYRO_X_LOW))
-#define GXH     ((BMI160_REG_GYRO_X_HIGH)-(BMI160_REG_GYRO_X_LOW))
-#define GYL     ((BMI160_REG_GYRO_Y_LOW) -(BMI160_REG_GYRO_X_LOW))
-#define GYH     ((BMI160_REG_GYRO_Y_HIGH)-(BMI160_REG_GYRO_X_LOW))
-#define GZL     ((BMI160_REG_GYRO_Z_LOW) -(BMI160_REG_GYRO_X_LOW))
-#define GZH     ((BMI160_REG_GYRO_Z_HIGH)-(BMI160_REG_GYRO_X_LOW))
-#define AXL     ((BMI160_REG_ACC_X_LOW)  -(BMI160_REG_GYRO_X_LOW))
-#define AXH     ((BMI160_REG_ACC_X_HIGH) -(BMI160_REG_GYRO_X_LOW))
-#define AYL     ((BMI160_REG_ACC_Y_LOW)  -(BMI160_REG_GYRO_X_LOW))
-#define AYH     ((BMI160_REG_ACC_Y_HIGH) -(BMI160_REG_GYRO_X_LOW))
-#define AZL     ((BMI160_REG_ACC_Z_LOW)  -(BMI160_REG_GYRO_X_LOW))
-#define AZH     ((BMI160_REG_ACC_Z_HIGH) -(BMI160_REG_GYRO_X_LOW))
 int
 Bmi160ReadValue(imuHandler_t *ph, imuValue_t *p)
 {

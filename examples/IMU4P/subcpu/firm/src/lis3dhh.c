@@ -118,6 +118,17 @@ Lis3dhhInit(imuHandler_t *ph)
 }
 
 
+#define TOP     LIS3DHH_REG_CTRL_REG5
+#define BOTTOM  LIS3DHH_REG_ACC_Z_HIGH
+
+#define AXL     ((LIS3DHH_REG_ACC_X_LOW) -(TOP))
+#define AXH     ((LIS3DHH_REG_ACC_X_HIGH)-(TOP))
+#define AYL     ((LIS3DHH_REG_ACC_Y_LOW) -(TOP))
+#define AYH     ((LIS3DHH_REG_ACC_Y_HIGH)-(TOP))
+#define AZL     ((LIS3DHH_REG_ACC_Z_LOW) -(TOP))
+#define AZH     ((LIS3DHH_REG_ACC_Z_HIGH)-(TOP))
+
+#define READ_LEN  ((BOTTOM) - (TOP) + 1)
 int
 Lis3dhhRecvValue(imuHandler_t *ph, imuValue_t *p)
 {
@@ -130,8 +141,7 @@ Lis3dhhRecvValue(imuHandler_t *ph, imuValue_t *p)
   unit = ph->unit;
   buf = p->raw;
 
-#define READ_LEN  ((LIS3DHH_REG_ACC_Z_HIGH) - (LIS3DHH_REG_CTRL_REG5) + 1)
-  result = ImuGetValueStandard(ph->unit, LIS3DHH_REG_CTRL_REG5, buf, READ_LEN);
+  result = ImuGetValueStandard(ph->unit, TOP, buf, READ_LEN);
   if(result != DEV_ERRNO_NONBLOCK) {
     Lis3dhhReadValue(ph, p);
     result = DEV_ERRNO_SUCCESS;
@@ -141,13 +151,7 @@ fail:
   return result;
 }
 
-#define TOP     LIS3DHH_REG_CTRL_REG5
-#define AXL     ((LIS3DHH_REG_ACC_X_LOW) -(TOP))
-#define AXH     ((LIS3DHH_REG_ACC_X_HIGH)-(TOP))
-#define AYL     ((LIS3DHH_REG_ACC_Y_LOW) -(TOP))
-#define AYH     ((LIS3DHH_REG_ACC_Y_HIGH)-(TOP))
-#define AZL     ((LIS3DHH_REG_ACC_Z_LOW) -(TOP))
-#define AZH     ((LIS3DHH_REG_ACC_Z_HIGH)-(TOP))
+
 int
 Lis3dhhReadValue(imuHandler_t *ph, imuValue_t *p)
 {
