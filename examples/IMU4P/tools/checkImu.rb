@@ -123,6 +123,8 @@ def mainHamming
   dSerial = SerialPort.open($tty, 4000000, 8, 1, 0)
   dSerial.binmode()
 
+  dSerial.write("start\n")
+
   tIdle = Time.now
   fIdle = 0
   ret = 1
@@ -142,18 +144,20 @@ def mainHamming
   sum = 0;
   crcrx = 0
 
+  fStartStopEn = 0
+
 #  dSerial.each_byte do |c|
 
   while true do
     ret = IO.select([dSerial], nil, nil, 0)
 
-      if((Time.now - tIdle) >= 2) then
+      if(fStartStopEn == 1 && (Time.now - tIdle) >= 2) then
         tIdle = Time.now
         if(fIdle == 1) then
-#          dSerial.write("start\n")
+          dSerial.write("start\n")
           fIdle = 0;
         else
-#          dSerial.write("stop\n")
+          dSerial.write("stop\n")
           fIdle = 1;
         end
       end
@@ -321,7 +325,7 @@ def mainHamming
           if(sumcalc == 0) then
             if(no < 16) then
               ts = tsunit & 0xfffffff
-              ShowImu(pos, ts, no, cnt, capability, accx, accy, accz, gyrox, gyroy, gyroz, temp, crcrx, crc)
+              #ShowImu(pos, ts, no, cnt, capability, accx, accy, accz, gyrox, gyroy, gyroz, temp, crcrx, crc)
 
               ### check count
               fError = 0
