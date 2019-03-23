@@ -34,6 +34,7 @@
 #include        "imu.h"
 #include        "main.h"
 #include        "devFlash.h"
+#include        "devUsart.h"
 
 #include        "command.h"
 
@@ -177,11 +178,18 @@ CommandExec(int ac, uint8_t *av[])
 
   } else if(!strncmp(av[0], "version", 7)) {
     extern const uint8_t        strVersionText[];
-    uint8_t                     **ptr = (uint8_t **)CONFIG_BOOTLOADER_INFO_VERSION_POS;
+    uint8_t                     *ptr;
+
+    ptr = *(uint8_t **)CONFIG_BOOTLOADER_INFO_VERSION_POS;
+
     puts(strVersionText);
+    while(DevUsartIsSendingDma(CONFIG_CONSOLE_NUMBER));
     puts("\n");
-    puts(*ptr);
+    while(DevUsartIsSendingDma(CONFIG_CONSOLE_NUMBER));
+    puts(ptr);
+    while(DevUsartIsSendingDma(CONFIG_CONSOLE_NUMBER));
     puts("\n");
+    while(DevUsartIsSendingDma(CONFIG_CONSOLE_NUMBER));
   }
 
   return 0;
