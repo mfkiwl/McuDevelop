@@ -121,6 +121,8 @@ Lis3dhhInit(imuHandler_t *ph)
 #define TOP     LIS3DHH_REG_CTRL_REG5
 #define BOTTOM  LIS3DHH_REG_ACC_Z_HIGH
 
+#define TL      ((LIS3DHH_REG_OUT_TEMP_LOW)  -(TOP))
+#define TH      ((LIS3DHH_REG_OUT_TEMP_HIGH) -(TOP))
 #define AXL     ((LIS3DHH_REG_ACC_X_LOW) -(TOP))
 #define AXH     ((LIS3DHH_REG_ACC_X_HIGH)-(TOP))
 #define AYL     ((LIS3DHH_REG_ACC_Y_LOW) -(TOP))
@@ -157,7 +159,6 @@ Lis3dhhReadValue(imuHandler_t *ph, imuValue_t *p)
 {
   int           result;
   uint16_t      temp;
-  uint8_t       *buf;
   uint16_t      *src, *dest;
 
   if(!p) goto fail;
@@ -169,9 +170,8 @@ Lis3dhhReadValue(imuHandler_t *ph, imuValue_t *p)
   *dest++ = *src++;
   *dest++ = *src++;
 
-  temp = (buf[LIS3DHH_REG_OUT_TEMP_HIGH] << 8) |
-    buf[LIS3DHH_REG_OUT_TEMP_LOW] ;
-  p->temp4x = (25 << 2) + (temp >> 7);
+  temp = (p->raw[TH] << 8) | p->raw[TL];
+  p->temp4x = (25 << 2) + (temp >> 6);
 
   p->capability = (IMU_CAP_TEMPERATURE | IMU_CAP_ACCEL);
 

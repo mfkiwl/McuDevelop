@@ -471,7 +471,7 @@ ImuBuildText(int unit, imuValue_t *imu, uint8_t *str, int format)
 
   *p++ = ' ';
 
-  /* temp x4  -20deg -- 107.5deg -> 0 -- 255 */
+  /* temp x2  -20deg -- 107.5deg -> 0 -- 255 */
   val = ((int16_t)imu->temp4x >> 1) + 40;
   if(val < 0) val = 0;
   if(val > 215) val = 215;
@@ -508,6 +508,7 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
 {
   uint8_t       *p;
   int           n;
+  register  int16_t     temp;
   register uint16_t     val16;
   register uint32_t     val32;
   register uint64_t     val64;
@@ -590,11 +591,14 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
     *p++ = pTbl[(val16 >> 12) & 0xf];
   }
 
-  /* temp x4 */
+  /* temp x2 */
   if(imu->capability & IMU_CAP_TEMPERATURE) {
-    val16 = imu->temp4x;
-    *p++ = pTbl[(val16 >>  0) & 0xf];
-    *p++ = pTbl[(val16 >>  4) & 0xf];
+  /* temp x2 -20deg -- 107.5deg -> 0 -- 255 */
+    temp = ((int16_t)imu->temp4x >> 1) + 40;
+    if(temp < 0) temp = 0;      /* the lower  limit is -20.0deg */
+    if(temp > 215) temp = 215;  /* the higher limit is 107.5deg */
+    *p++ = pTbl[(temp >>  0) & 0xf];
+    *p++ = pTbl[(temp >>  4) & 0xf];
   }
 
 #if 0
@@ -634,7 +638,7 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
     sum ^= imu->gyro.y >> 8;
     sum ^= imu->gyro.z >> 0;
     sum ^= imu->gyro.z >> 8;
-    sum ^= imu->temp4x >> 0;
+    sum ^= temp >> 0;
 
     /* sum */
     val32 = sum;
@@ -663,7 +667,7 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
       DevCrcCalc16(__REV16(imu->gyro.z));
     }
     if(imu->capability & IMU_CAP_TEMPERATURE) {
-      DevCrcCalc8(imu->temp4x);
+      DevCrcCalc8(temp);
     }
 
     /* sum */
@@ -693,7 +697,7 @@ ImuBuildHamming(int unit, imuValue_t *imu, uint8_t *str, int format)
     DevCrcCalc16(__REV16(imu->gyro.x));
     DevCrcCalc16(__REV16(imu->gyro.y));
     DevCrcCalc16(__REV16(imu->gyro.z));
-    DevCrcCalc8(imu->temp4x);
+    DevCrcCalc8(temp);
 
     /* sum */
     val32 = ~DevCrcGetValue();

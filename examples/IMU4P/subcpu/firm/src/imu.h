@@ -55,7 +55,7 @@ typedef struct {
   imuAxis_t     acc;
   imuAxis_t     gyro;
   uint32_t      ts;             /* timestamp of sensor */
-  uint16_t      temp4x;
+  uint16_t      temp4x;         /* 0x00 = 0deg, 0x28 = 10deg */
   uint16_t      flag;
 #define       IMU_FLAG_OVERWRITE      (1<<0)
 } imuValue_t;
