@@ -38,9 +38,14 @@ typedef struct {
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC32  3
 #define       MAIN_OUTPUT_FORMAT_HAMMING_CRC8   4
   uint8_t       imuno;          /* imu no offset */
-  uint8_t       fEcho;          /* uart echo */
+
+  uint8_t       fEcho: 1;          /* uart echo */
+  uint8_t       fCaptureEn: 1;     /* sensor data capture enable */
 } mainSetting_t;
 
+
+void                    MainEnableCapture(void);
+void                    MainDisableCapture(void);
 
 void                    MainUsbdifIntr(void);
 void                    MainEnableTim(void);
@@ -73,6 +78,7 @@ static void             MainInitUsart(void);
 static void             MainInitCounter(void);
 static void             MainInitI2c(void);
 static void             MainInitSpi(void);
+static void             MainInitSpiPio(void);
 static void             MainInitAdc(void);
 static void             MainInitDac(void);
 static void             MainInitUsb(void);

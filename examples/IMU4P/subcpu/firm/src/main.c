@@ -301,7 +301,6 @@ MainSendImu(void)
   if(mainQueueImuStart != mainQueueImuEnd) {
     n = mainQueueImuBuf[mainQueueImuEnd];
 
-    //puts(&str[n][0]);
     DevUsartSend(CONFIG_CONSOLE_NUMBER, &str[n][0], lenStr[n]);
 
     mainQueueImuEnd++;
@@ -348,7 +347,6 @@ MainEntry(void)
   DevDmaInit(-1, 0, NULL);
   MainInitUsart();
   MainInitTim();
-  MainDisableTim();             /* disable first */
   MainInitSpi();
 
 #if 0
@@ -407,13 +405,35 @@ MainEntry(void)
   while(1) {
     MainUartLoop();
     MainLedBlinking();
-    MainImuLoop();
+    if(setting.fCaptureEn) MainImuLoop();
   }
   /************************************************
    * end
    */
   while(1);
 
+}
+
+
+void
+MainEnableCapture(void)
+{
+  memset(&mainTim2Ic, 0, sizeof(mainTim2Ic));
+
+  MainEnableTim();
+
+  setting.fCaptureEn = 1;
+
+  return;
+}
+void
+MainDisableCapture(void)
+{
+  MainDisableTim();
+
+  setting.fCaptureEn = 0;
+
+  return;
 }
 
 
@@ -472,7 +492,7 @@ MainInitTim(void)
   //param.clktrg.prescaler = 0;
 
   param.ch.mode = DEVCOUNTER_MODE_IC;
-  param.ch.intr = 1;
+  //param.ch.intr = 1;          /* delete //, if power on start */
   DevCounterInit(TIM2_NUM, &param);
 
   NVIC_SetPriority(TIM2_IRQn, 0);
@@ -589,11 +609,10 @@ MainInitSpi(void)
 
   /* IMU control */
   //param.speed = 40000000;     /* speed: don't care */
-  param.prescaler = 0;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
+  param.prescaler = 1;          /* 32MHz/(2^(x+1)) x={1:8Mbps, 2:4Mbps} */
   param.dmaTx = 0;
   param.dmaRx = 1;
   param.dmaIntr = 1;
-  param.dmaNonblock = CONFIG_IMU_SPI_NONBLOCK;
   DevSpiInit(1, &param);
 
   return;

@@ -72,10 +72,10 @@ CommandExec(int ac, uint8_t *av[])
     MainResetTimCounter();
 
   } else if(!strncmp(av[0], "start", 5)) {
-    MainEnableTim();
+    MainEnableCapture();
 
   } else if(!strncmp(av[0], "stop", 4)) {
-    MainDisableTim();
+    MainDisableCapture();
 
   } else if(!strncmp(av[0], "init", 4)) {
     for(int i = 0; i < CONFIG_NUM_OF_IMUS; i++) {
@@ -120,6 +120,21 @@ CommandExec(int ac, uint8_t *av[])
         reg = strtoul(av[3], NULL, 16);
         val = strtoul(av[4], NULL, 16);
         ImuSetValueStandard(unit, reg, val);
+      }
+    } else if(!strncmp(av[2], "regget", 6)) {
+      if(ac >= 4) {
+        uint8_t         reg;
+        int             size = 1;
+        uint8_t         buf[8];
+        reg = strtoul(av[3], NULL, 16);
+        if(ac >= 5) {
+          size = strtoul(av[4], NULL, 16);
+        }
+        ImuGetValueStandard(unit, reg, buf, size);
+        for(int i = 0; i < size; i++) {
+          printf("%02x ", buf[i]);
+        }
+        puts("\n");
       }
     }
 
