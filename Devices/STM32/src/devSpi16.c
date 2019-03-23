@@ -395,10 +395,15 @@ DevSpiRecvDma(devSpiSc_t *psc, uint8_t *ptr, int size)
 
   p = psc->dev;
 
+#ifdef SPI_MODULE_FIFO_YES
   /* flush rx buffer */
   while(p->SR & SPI_SR_RXNE_MASK) {
     *(__IO uint8_t *)&p->DR;
   }
+#endif
+#ifdef SPI_MODULE_FIFO_NO
+  *(__IO uint8_t *)&p->DR;
+#endif
   p->SR;
 
   p->CR1 |= SPI_CR1_RXONLY_YES | SPI_CR1_MSTR_YES;
@@ -425,11 +430,8 @@ DevSpiRecvDma(devSpiSc_t *psc, uint8_t *ptr, int size)
   while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
   DevDmaStop(1, chDma);
 
-  p->CR1 &= ~SPI_CR1_SPE_MASK;
-  //while(p->SR & SPI_SR_BSY_MASK);
+  p->CR1 &= ~(SPI_CR1_SPE_MASK | SPI_CR1_RXONLY_MASK);
 
-fail:
-  p->CR1 &= ~SPI_CR1_RXONLY_MASK;
 end:
   return size;
 }
@@ -441,15 +443,12 @@ DevSpiRecvIsFinishDma(int unit)
   int           result = DEV_ERRNO_UNKNOWN;
 
   devSpiSc_t            *psc;
-  stm32Dev_SPI          *p;
 
   int                   chDma;
 
   if(unit > SPI_MODULE_COUNT) goto fail;
   psc = &spi.sc[unit];
   if(!psc->up) goto fail;
-
-  p = psc->dev;
 
   chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
 
@@ -474,18 +473,13 @@ DevSpiRecvStopDma(int unit)
   if(!psc->up) goto fail;
 
   p = psc->dev;
+  p->CR1 &= ~(SPI_CR1_RXONLY_MASK | SPI_CR1_SPE_MASK);
 
   chDma = (devSpiRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
-  //while(DevDmaIsFinished(1, chDma) != DEV_ERRNO_SUCCESS);
   DevDmaStop(1, chDma);
 
-  p->CR1 &= ~SPI_CR1_SPE_MASK;
-  //while(p->SR & SPI_SR_BSY_MASK);
-
   result = 0;
-
 fail:
-  p->CR1 &= ~SPI_CR1_RXONLY_MASK;
 
   return result;
 }
