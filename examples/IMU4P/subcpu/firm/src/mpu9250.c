@@ -64,7 +64,8 @@ Mpu9250Probe(imuHandler_t *ph)
   }
 #endif
 
-  if(c == WHOAMI_VALUE) {
+  if(c == WHOAMI_VALUE_MPU9250 ||
+     c == WHOAMI_VALUE_ICM20789) {
 #if CONFIG_IMU_DEBUG_PROBE
     printf("# imu probed unit: %d MPU8250\n", unit);
 #endif

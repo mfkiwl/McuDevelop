@@ -164,6 +164,19 @@
 
 #define MPU9250_REG_WHOAMI              0x75
 #define         WHOAMI_VALUE                    0x71
+#define         WHOAMI_VALUE_MPU9150            0x68
+#define         WHOAMI_VALUE_MPU9250            0x71
+#define         WHOAMI_VALUE_ICM20600           0x11
+#define         WHOAMI_VALUE_ICM20601           0xac
+#define         WHOAMI_VALUE_ICM20602           0x12
+#define         WHOAMI_VALUE_ICM20609           0xa6
+//#define         WHOAMI_VALUE_ICM20648           0xe0
+//#define         WHOAMI_VALUE_ICM20649           0xe1
+#define         WHOAMI_VALUE_ICG20660           0x91
+#define         WHOAMI_VALUE_ICM20689           0x98
+#define         WHOAMI_VALUE_ICM20690           0x20
+#define         WHOAMI_VALUE_IAM20680           0xa9
+#define         WHOAMI_VALUE_ICM20789           0x03
 
 #define MPU9250_REG_XA_OFFSET_H         0x77
 #define MPU9250_REG_XA_OFFSET_L         0x78
