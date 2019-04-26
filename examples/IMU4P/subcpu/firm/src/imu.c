@@ -39,6 +39,7 @@
 #include        "adxl345.h"
 #include        "mpu9250.h"
 #include        "lis3dhh.h"
+#include        "icm42605.h"
 
 
 typedef struct {
@@ -59,6 +60,7 @@ const static imuFunc_t  imuFunc[] = {
   {Lis3dhhProbe, Lis3dhhInit, Lis3dhhRecvValue, Lis3dhhReadValue, Lis3dhhGetSettings, Lis3dhhSetSettings},
   {Adxl345Probe, Adxl345Init, Adxl345RecvValue, Adxl345ReadValue, NULL, NULL},
   {Mpu9250Probe, Mpu9250Init, Mpu9250RecvValue, Mpu9250ReadValue, Mpu9250GetSettings, Mpu9250SetSettings},
+  {Icm42605Probe, Icm42605Init, Icm42605RecvValue, Icm42605ReadValue, Icm42605GetSettings, Icm42605SetSettings},
   {NULL, NULL, NULL, NULL, NULL},
 };
 
