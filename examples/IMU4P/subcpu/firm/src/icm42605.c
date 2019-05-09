@@ -63,7 +63,11 @@ Icm42605Probe(imuHandler_t *ph)
   }
 #endif
 
-  if(c == WHOAMI_VALUE_ICM42605) {
+  if(c == WHOAMI_VALUE_ICM42605
+#if WHOAMI_VALUE_TESTID
+     || c == WHOAMI_VALUE_TESTID
+#endif
+     ) {
 #if CONFIG_IMU_DEBUG_PROBE
     printf("# imu probed unit: %d ICM42605\n", unit);
 #endif

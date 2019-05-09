@@ -180,6 +180,7 @@
 #define         WHOAMI_VALUE_IAM20680           0xa9
 #define         WHOAMI_VALUE_ICM20789           0x03
 #define         WHOAMI_VALUE_ICM42605           0x42
+#define         WHOAMI_VALUE_TESTID             0x00
 
 #define ICM42605_REG_BANKSEL            0x76
 
