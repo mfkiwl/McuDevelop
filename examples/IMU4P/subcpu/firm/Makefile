@@ -111,6 +111,7 @@ MV			= mv
 LN			= ln
 OBJCOPY			= objcopy
 PROGMCU			= $(CONFIG_ROOTDIR)/../bin/progmcu.Linux-x86_64
+DFUUTIL			= dfu-util
 SHELL			= /bin/bash
 
 SCONV			= $(CONFIG_ROOTDIR)/../bin/sconv
@@ -199,4 +200,5 @@ clean:
 	/bin/$(RM) -fr obj
 
 prog:
-	$(PROGMCU) --force --stm32 --uart -e -p -k -f obj/STM32L0_gcc/firmware.bin --uartdev=/dev/ttyUSB0 -R
+#	$(PROGMCU) --force --stm32 --uart -e -p -k -f obj/STM32L0_gcc/firmware.bin --uartdev=/dev/ttyUSB0 -R
+	$(DFUUTIL) -D obj/STM32L0_gcc/firm/firm.bin -a 0 --dfuse-address 0x8000000
