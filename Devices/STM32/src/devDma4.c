@@ -99,8 +99,11 @@ DevDmaInit(int unit, int ch, devDmaParam_t *param)
   p->CH[ch-1].CCR   = 0;
 
   /* set to registers */
+#ifdef DMA_NO_CSELR
+#else
   p->CSELR &= ~DMA_CSELR_DMA_MASK(ch);
   p->CSELR |= DMA_CSELR_DMA_SEL(ch, param->req & 7);
+#endif
   p->CH[ch-1].CPAR  = (uint32_t)param->b;
   p->CH[ch-1].CMAR = (uint32_t)param->a;
   p->CH[ch-1].CNDTR = param->cnt;
@@ -276,7 +279,13 @@ DevDmaDebugShowRegs(int unit, int ch)
   p  = dma.sc[unit].dev;
   ch &= 7;
 
-  printf("dma%d.ch%x cr: %x, cselr %x \r\n", unit, ch, p->CH[ch-1].CCR, p->CSELR);
+  printf("dma%d.ch%x cr: %x, cselr %x \r\n", unit, ch, p->CH[ch-1].CCR,
+#ifdef DMA_NO_CSELR
+         0
+#else
+         p->CSELR
+#endif
+         );
   printf("par: %x, mar: %x, cnt %x\r\n", p->CH[ch-1].CPAR, p->CH[ch-1].CMAR, p->CH[ch-1].CNDTR);
 
   return;
