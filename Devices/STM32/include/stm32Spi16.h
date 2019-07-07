@@ -178,6 +178,13 @@ typedef struct {
 
   __IO uint16_t         TXCRCR;         /* 0x18 */
 
+#ifdef        SPI16_SUPPORT_I2S
+  uint16_t              reserved1a;
+  __IO uint16_t         I2SCFGR;        /* 0x1c */
+  uint16_t              reserved1e;
+  __IO uint16_t         I2SPR;          /* 0x20 */
+#endif
+
 } stm32Dev_SPI;
 
 
