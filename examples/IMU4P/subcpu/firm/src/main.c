@@ -113,7 +113,7 @@ MainUartLoop(void)
   static int    cnt = 0;
 
   __disable_irq();
-  DevUsartInterruptDmaRecv(1);
+  DevUsartInterruptDmaRecv(CONFIG_CONSOLE_NUMBER);
   __enable_irq();
 
   while((c = _getc()) >= 0) {
@@ -227,7 +227,7 @@ MainImuLoop(void)
         break;
       }
 
-      if(!DevUsartIsSendingDma(1)) {
+      if(!DevUsartIsSendingDma(CONFIG_CONSOLE_NUMBER)) {
         __disable_irq();
         MainSendImu();
         __enable_irq();
@@ -446,7 +446,7 @@ MainInitUsart(void)
   DevUsartInit(-1, NULL);
 
   memset(&param, 0, sizeof(param));
-  param.baud = CONFIG_SYSTEM_USART_BAUD;
+  param.baud = CONFIG_CONSOLE_BAUD;
   param.bit = DEVUSART_BIT_8;
   param.stop = DEVUSART_STOP_1;
   param.parity = DEVUSART_PARITY_NONE;
@@ -455,7 +455,7 @@ MainInitUsart(void)
   param.szFifoTx = 0;
   param.szFifoRx = 7;
   param.intrDma = 1;
-  DevUsartInit(CONFIG_SYSTEM_USART_PORT, &param);
+  DevUsartInit(CONFIG_CONSOLE_NUMBER, &param);
 
   return;
 }
@@ -660,13 +660,13 @@ MainInterruptDmaCh4to7(void)
   if(sr & DMA_ISR_GIF_MASK(DMA_CH4)) {
     DevDmaClearIntr(1, DMA_CH4);
 
-    DevUsartSendStopDma(1);
+    DevUsartSendStopDma(CONFIG_CONSOLE_NUMBER);
     MainSendImu();
   }
   /* USART RX dma interrupt */
   if(sr & DMA_ISR_GIF_MASK(DMA_CH5)) {
     DevDmaClearIntr(1, DMA_CH5);
-    DevUsartInterruptDmaRecv(1);
+    DevUsartInterruptDmaRecv(CONFIG_CONSOLE_NUMBER);
   }
 
   return;
