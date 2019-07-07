@@ -53,11 +53,12 @@ DevFlashErase(int unit, uint32_t addr, int size)
     FLASH_PTR->PKEYR = FLASH_PKEY1;
     FLASH_PTR->PKEYR = FLASH_PKEY2;
   }
+#ifndef FLASH_NO_PRGKEYR
   if(FLASH_PTR->PECR & FLASH_PECR_PRGLOCK_MASK) {
     FLASH_PTR->PRGKEYR = FLASH_PRGKEY1;
     FLASH_PTR->PRGKEYR = FLASH_PRGKEY2;
   }
-
+#endif
   FLASH_PTR->PECR |= FLASH_PECR_ERASE_YES;
   FLASH_PTR->PECR |= FLASH_PECR_PROG_YES;             /* adhoc need ??? */
 
@@ -71,7 +72,9 @@ DevFlashErase(int unit, uint32_t addr, int size)
     while(FLASH_PTR->SR & FLASH_SR_BSY_MASK);
   }
 
+#ifndef FLASH_NO_PECR
   FLASH_PTR->PECR = 0;
+#endif
 
   return 0;
 }
@@ -91,10 +94,12 @@ DevFlashProgram(int unit, uint32_t addr, int size, uint8_t *pBuf)
     FLASH_PTR->PKEYR = FLASH_PKEY1;
     FLASH_PTR->PKEYR = FLASH_PKEY2;
   }
+#ifndef FLASH_NO_PRGKEYR
   if(FLASH_PTR->PECR & FLASH_PECR_PRGLOCK_MASK) {
     FLASH_PTR->PRGKEYR = FLASH_PRGKEY1;
     FLASH_PTR->PRGKEYR = FLASH_PRGKEY2;
   }
+#endif
 
   pAddr32 = (__IO uint32_t *) addr;
   p = pBuf;
@@ -156,10 +161,12 @@ DevFlashWrite32(int unit, uint32_t addr, uint32_t word)
     FLASH_PTR->PKEYR = FLASH_PKEY1;
     FLASH_PTR->PKEYR = FLASH_PKEY2;
   }
+#ifndef FLASH_NO_PRGKEYR
   if(FLASH_PTR->PECR & FLASH_PECR_PRGLOCK_MASK) {
     FLASH_PTR->PRGKEYR = FLASH_PRGKEY1;
     FLASH_PTR->PRGKEYR = FLASH_PRGKEY2;
   }
+#endif
   FLASH_PTR->PECR = FLASH_PECR_PROG_YES | FLASH_PECR_FPRG_YES;
 
   while(FLASH_PTR->SR & FLASH_SR_BSY_MASK);
