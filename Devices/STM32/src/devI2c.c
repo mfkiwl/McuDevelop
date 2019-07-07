@@ -28,7 +28,6 @@
 
 #include        "system.h"
 
-#include        "devDma.h"
 #include        "devI2c.h"
 
 struct _stI2c         i2c;
@@ -807,7 +806,7 @@ DevI2cTransmitDma(devI2cSc_t *psc, devI2cPkt *pkt)
       devDmaParam_t       param;
       int               ch = 7;
       memset(&param, 0, sizeof(param));
-      param.req = devI2cRecvDmaReqTbl[psc->unit];
+      param.req = devI2cSendDmaReqTbl[psc->unit];
       param.a = (void *)  pkt->ptrRecv;
       param.b = (void *) &p->RXDR;
       param.cnt = cnt;
