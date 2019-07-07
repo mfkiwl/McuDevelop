@@ -32,11 +32,11 @@ VECTOR_RAM_SIZE = 0x400;
 /* Specify the memory areas */
 MEMORY
 {
-  FLASH_INTERRUPT       (rx) : ORIGIN = 0x08004000, LENGTH = 0x0040
-  FLASH_INTERRUPT_USR   (rx) : ORIGIN = 0x08004040, LENGTH = 0x03c0
-  FLASH_CONFIG          (rx) : ORIGIN = 0x08004400, LENGTH = 0x0020
-  FLASH_TEXT            (rx) : ORIGIN = 0x08004420, LENGTH = 0x148f0
-  RAM_DATA              (wr) : ORIGIN = 0x20000000, LENGTH = 0x5000
+  FLASH_INTERRUPT       (rx) : ORIGIN = 0x08000000, LENGTH = 0x0040
+  FLASH_INTERRUPT_USR   (rx) : ORIGIN = 0x08000040, LENGTH = 0x03c0
+  FLASH_CONFIG          (rx) : ORIGIN = 0x08000400, LENGTH = 0x0020
+  FLASH_TEXT            (rx) : ORIGIN = 0x08000420, LENGTH = 0x7be0
+  RAM_DATA              (wr) : ORIGIN = 0x20000000, LENGTH = 0x2000
 }
 
 /* Define output sections */
