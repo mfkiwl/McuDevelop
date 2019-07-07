@@ -27,6 +27,8 @@
 #define FLASH_PAGE_SIZE                 2048
 #define FLASH_ERASED_VALUE              0xff
 
+#define FLASH_NO_PECR           1
+
 typedef struct {
   __IO uint32_t		ACR;
 #define FLASH_LATENCY_SHIFT	(0)
