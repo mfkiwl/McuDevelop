@@ -218,6 +218,16 @@ typedef enum  {
   TIM22_NUM,
   TIM_NUM_MAX
 } timNo_t;
+typedef enum  {
+  TIM_UNIT_INIT = -1,
+  TIM2_UNIT = 0,
+  TIM3_UNIT,
+  TIM6_UNIT,
+  TIM7_UNIT,
+  TIM21_UNIT,
+  TIM22_UNIT,
+  TIM_UNIT_MAX
+} timUnit_t;
 
 #define TIM2_PTR        ((stm32Dev_TIM *) ((APB1_BASE) + 0x0000))
 #define TIM3_PTR        ((stm32Dev_TIM *) ((APB1_BASE) + 0x0400))
@@ -233,6 +243,14 @@ typedef enum  {
 
 #include        "stm32I2c.h"
 
+typedef enum  {
+  I2C_UNIT_INIT = -1,
+  I2C1_UNIT = 0,
+  I2C2_UNIT,
+  I2C3_UNIT,
+  I2C_UNIT_MAX
+} i2cUnit_t;
+
 #define I2C1_PTR        ((stm32Dev_I2C *) ((APB1_BASE) + 0x5400))
 #define I2C2_PTR        ((stm32Dev_I2C *) ((APB1_BASE) + 0x5800))
 #define I2C3_PTR        ((stm32Dev_I2C *) ((APB1_BASE) + 0x7800))
@@ -246,6 +264,15 @@ typedef enum  {
 #define USART_MODULE_COUNT              3
 
 #include        "stm32Usart.h"
+
+typedef enum  {
+  USART_UNIT_INIT = -1,
+  USART1_UNIT = 0,
+  USART2_UNIT,
+  USART4_UNIT,
+  USART5_UNIT,
+  USART_UNIT_MAX
+} usartUnit_t;
 
 #define USART1_PTR      ((stm32Dev_USART *) ((APB2_BASE) + 0x3800))
 #define USART2_PTR      ((stm32Dev_USART *) ((APB1_BASE) + 0x4400))
@@ -263,6 +290,13 @@ typedef enum  {
 #define SPI_MODULE_FIFO_NO      1
 
 #include        "stm32Spi16.h"
+
+typedef enum  {
+  SPI_UNIT_INIT = -1,
+  SPI1_UNIT = 0,
+  SPI2_UNIT,
+  SPI_UNIT_MAX
+} spiUnit_t;
 
 #define SPI1_PTR        ((stm32Dev_SPI *) ((APB2_BASE) + 0x3000))
 
