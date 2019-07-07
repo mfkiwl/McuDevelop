@@ -133,14 +133,16 @@ DevUsartInit(int unit, devUsartParam_t *param)
     p->CR1 |= USART_CR1_OVER8_YES;
     baud >>= 1;
   }
-#ifdef SPI_MODULE_FIFO_YES
+#ifdef USART_MODULE_FIFO_YES
   p->CR1 |= USART_CR1_UE_YES | USART_CR1_FIFOEN_YES;  /* module enable */
 #else
   p->CR1 |= USART_CR1_UE_YES;                         /* module enable */
 #endif
   p->CR2  = 0;
   p->CR3  = 0;
+#ifndef USART_NO_PRESC
   p->PRESC  = 0;
+#endif
 
   /*** parity */
   if(param->parity & DEVUSART_PARITY_MASK) {
@@ -173,7 +175,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
   p->CR3 |= USART_CR3_EIE_YES;
   /* enable interrupt */
   if(psc->param.mode & DEVUSART_MODE_RX_BITFIFO) {
-#ifdef SPI_MODULE_FIFO_YES
+#ifdef USART_MODULE_FIFO_YES
     p->CR3 |= USART_CR3_RXFTCFG_1_8 | USART_CR3_RXFTIE_YES;   /* threshold intr */
     p->CR1 |= USART_CR1_RXFFIE_YES;     /* full intr */
     p->CR1 |= USART_CR1_RXNEIE_YES;     /* rx intr */
@@ -267,7 +269,9 @@ DevUsartInterrupt(int unit)
   p = psc->dev;
 
   flag = p->ISR;
+#ifndef USART_NO_ICR
   p->ICR = flag;
+#endif
 
   /*** rx with fifo */
   {
@@ -276,9 +280,10 @@ DevUsartInterrupt(int unit)
     int                 i, c;
 
     pBuf = buf;
+
     i = 0;
 
-#ifdef SPI_MODULE_FIFO_YES
+#ifdef USART_MODULE_FIFO_YES
 
     if(flag & (USART_ISR_RXFT_MASK | USART_ISR_RXFF_MASK | USART_ISR_RXNE_MASK)) {
       while(p->ISR & USART_ISR_RXFT_MASK) {
@@ -298,12 +303,14 @@ DevUsartInterrupt(int unit)
       }
       if(i > 0) FifoWriteIn(psc->dFifoRx, buf, i);
 
+#if 0
       printf("dma %x %x %x %x %d\n",
              DMA1_PTR->CH[5-1].CCR,
              DMA1_PTR->CH[5-1].CPAR,
              DMA1_PTR->CH[5-1].CMAR,
              DMA1_PTR->CH[5-1].CNDTR,
              psc->dFifoRx);
+#endif
     }
 #endif
   }
@@ -609,7 +616,6 @@ DevUsartSendStopDma(int unit)
 
   chDma = (devUsartSendDmaReqTbl[unit] >> 4) & 0xf;
   DevDmaStop(1, chDma);
-  DevDmaStop(1, 4);
 
   p->CR3 &= ~USART_CR3_DMAT_MASK;
 
