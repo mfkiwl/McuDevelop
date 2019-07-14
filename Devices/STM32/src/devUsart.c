@@ -51,22 +51,22 @@ DevUsartInit(int unit, devUsartParam_t *param)
   void                  (*intr)(void);
   int                   baud;
 
-  if(unit == -1) {
+  if(unit == USART_NUM_INIT) {
     memset(&usart, 0, sizeof(usart));
 #ifdef  LPUART1_PTR
     usart.sc[1].dev = LPUART1_PTR;
 #endif
 #ifdef  USART1_PTR
-    usart.sc[1].dev = USART1_PTR;
+    usart.sc[USART1_NUM].dev = USART1_PTR;
 #endif
 #ifdef  USART2_PTR
-    usart.sc[2].dev = USART2_PTR;
+    usart.sc[USART2_NUM].dev = USART2_PTR;
 #endif
 #ifdef  USART3_PTR
-    usart.sc[3].dev = USART3_PTR;
+    usart.sc[USART3_NUM].dev = USART3_PTR;
 #endif
 #ifdef  USART4_PTR
-    usart.sc[4].dev = USART4_PTR;
+    usart.sc[USART4_NUM].dev = USART4_PTR;
 #endif
 #if 0
     usart.sc[4].dev = UART4;
@@ -88,22 +88,22 @@ DevUsartInit(int unit, devUsartParam_t *param)
   SystemGetClockValue(&clk);
 
   switch(unit) {
-#ifdef  USART2_PTR
-  case        1:
+#ifdef  USART1_PTR
+  case        USART1_NUM:
     masterClk = clk.pclk2;      /* adhoc */
     irq = USART1_IRQn;
     intr = DevUsart1Interrupt;
     break;
 #endif
 #ifdef  USART2_PTR
-  case        2:
+  case        USART2_NUM:
     masterClk = clk.pclk1;      /* adhoc */
     irq = USART2_IRQn;
     intr = DevUsart2Interrupt;
     break;
 #endif
 #ifdef  USART3_PTR
-  case        3:
+  case        USART3_NUM:
     masterClk = clk.pclk2;      /* adhoc */
     irq = USART3_IRQn;
     intr = DevUsart3Interrupt;
@@ -190,7 +190,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
     uint8_t             *ptr;
     int                 size;
 
-    FifoGetWritePointer(psc->dFifoRx, &ptr, &size);
+    FifoGetWritePointer(psc->dFifoRx, (char **)&ptr, &size);
 
     /* start dma */
     memset(&param, 0, sizeof(param));
@@ -270,8 +270,10 @@ DevUsartInterrupt(int unit)
 
   flag = p->ISR;
 #ifndef USART_NO_ICR
-  p->ICR = flag;
+  p->ICR = flag;        // clear interrupt flag
 #endif
+
+  flag &= p->CR1;       // clear bit, if interrupt disable
 
   /*** rx with fifo */
   {
@@ -321,6 +323,7 @@ DevUsartInterrupt(int unit)
       DevUsartSendFifo(psc);
     }
   }
+
 #if 0
   /*** overrun */
   if(flag & USART_ISR_ORE_MASK) {
@@ -334,17 +337,17 @@ fail:
 void
 DevUsart1Interrupt(void)
 {
-  DevUsartInterrupt(1);
+  DevUsartInterrupt(USART1_NUM);
 }
 void
 DevUsart2Interrupt(void)
 {
-  DevUsartInterrupt(2);
+  DevUsartInterrupt(USART2_NUM);
 }
 void
 DevUsart3Interrupt(void)
 {
-  DevUsartInterrupt(3);
+  DevUsartInterrupt(USART3_NUM);
   return;
 }
 
@@ -406,7 +409,7 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
       uint8_t   *pFifo;
       int       lenFifo;
       int       re;
-      re = FifoGetReadPointer(psc->dFifoTx, &pFifo, &lenFifo);
+      re = FifoGetReadPointer(psc->dFifoTx, (char **)&pFifo, &lenFifo);
       if(re >= 0 && lenFifo > 0) {
         //DevUsartSendDma(psc, ptr, size);
         DevUsartSendDma(psc, pFifo, lenFifo);
@@ -503,20 +506,24 @@ fail:
 static int
 DevUsartSendFifo(devUsartSc_t *psc)
 {
+  int                   re;
   stm32Dev_USART        *p;
   uint8_t               *ptr;
   int                   size, cnt;
 
   p = psc->dev;
 
-  FifoGetReadPointer(psc->dFifoTx, &ptr, &size);
-  cnt = 0;
-  while(size-- > 0) {
-    if(!(p->ISR & USART_CR1_TXEIE_MASK)) break;
-    p->TDR = *ptr++;
-    cnt++;
+  re = FifoGetReadPointer(psc->dFifoTx, (char **)&ptr, &size);
+  if(re >= 0 && size > 0) {
+    cnt = 0;
+    while(size > 0) {
+      if(!(p->ISR & USART_ISR_TXE_MASK)) break;
+      p->TDR = *ptr++;
+      cnt++;
+      size--;
+    }
+    FifoAddReadPointer(psc->dFifoTx, cnt);
   }
-  FifoAddReadPointer(psc->dFifoTx, cnt);
 
   if(FifoGetDirtyLen(psc->dFifoTx) == 0) {
     p->CR1 &= ~USART_CR1_TXEIE_MASK;

@@ -155,6 +155,7 @@ typedef int     IRQn_Type;
 /*************************************************************
  * 06 GPIO
  */
+#undef  STM32GPIO_BRR_28H_EXIST
 #include        "stm32Gpio.h"
 
 #define GPIO_PTR	((stm32Dev_GPIO *) ((AHB1_BASE) + 0x0000))
@@ -239,12 +240,14 @@ typedef enum  {
 
 #undef USART_MODULE_FIFO_YES
 #define USART_NO_PRESC          1
-#define USART_NO_ICR            1
+#undef  USART_NO_ICR
 
 typedef enum  {
   USART_NUM_INIT = -1,
   USART1_NUM = 0,
   USART2_NUM,
+  USART3_NUM,
+  USART4_NUM,
   USART6_NUM,
   USART_NUM_MAX
 } usartNo_t;
