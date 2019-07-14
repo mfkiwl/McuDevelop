@@ -282,6 +282,10 @@ typedef struct {
 #define RCC_AHB1ENR_DMA1EN_MASK		(1 << (RCC_AHB1ENR_DMA1EN_SHIFT))
 #define RCC_AHB1ENR_DMA1EN_NO		(0 << (RCC_AHB1ENR_DMA1EN_SHIFT))
 #define RCC_AHB1ENR_DMA1EN_YES		(1 << (RCC_AHB1ENR_DMA1EN_SHIFT))
+#define RCC_AHB1ENR_DTCMRAMEN_SHIFT	20
+#define RCC_AHB1ENR_DTCMRAMEN_MASK	(1 << (RCC_AHB1ENR_DTCMRAMEN_SHIFT))
+#define RCC_AHB1ENR_DTCMRAMEN_NO	(0 << (RCC_AHB1ENR_DTCMRAMEN_SHIFT))
+#define RCC_AHB1ENR_DTCMRAMEN_YES	(1 << (RCC_AHB1ENR_DTCMRAMEN_SHIFT))
 #define RCC_AHB1ENR_CRCEN_SHIFT		12
 #define RCC_AHB1ENR_CRCEN_MASK		(1 << (RCC_AHB1ENR_CRCEN_SHIFT))
 #define RCC_AHB1ENR_CRCEN_NO		(0 << (RCC_AHB1ENR_CRCEN_SHIFT))
@@ -546,17 +550,27 @@ typedef struct {
 
 #define CALCPLL(reg, no, freqPllIn)      {                              \
   int div;                                                              \
-  m = ((((reg) & RCC_PLLCFGR_PLLM_MASK) >> RCC_PLLCFGR_PLLM_SHIFT) + 1);        \
-  n = ( ((reg) & RCC_PLLCFGR_PLLN_MASK) >> RCC_PLLCFGR_PLLN_SHIFT);             \
+  m = ( ((reg) & RCC_PLLCFGR_PLLM_MASK) >> RCC_PLLCFGR_PLLM_SHIFT);     \
+  n = ( ((reg) & RCC_PLLCFGR_PLLN_MASK) >> RCC_PLLCFGR_PLLN_SHIFT);     \
   vco = (freqPllIn) / m * n;                                            \
   systemClk.pll ##no.vco = vco;                                         \
+\
+  /* div and store P, Q */ \
+  div   = RCC_PTR->PLLCFGR & RCC_PLLCFGR_PLLP_MASK;     \
+  div >>= RCC_PLLCFGR_PLLP_SHIFT;                       \
+  div  += 1;                                            \
+  systemClk.pll ##no.P = vco >> div;                    \
+\
+  div   = RCC_PTR->PLLCFGR & RCC_PLLCFGR_PLLQ_MASK;     \
+  div >>= RCC_PLLCFGR_PLLQ_SHIFT;                       \
+  systemClk.pll ##no.Q = vco / div;                     \
 \
 }
 
 
 #define RccPll1Enable()                         \
 { \
-  /* disable pll and wait till PLL3 is ready */ \
+  /* disable pll and wait till PLL is ready */ \
   RCC_PTR->CR &= ~RCC_CR_PLLON_MASK; \
   while(RCC_PTR->CR & RCC_CR_PLLON_MASK); \
  \
