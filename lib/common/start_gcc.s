@@ -30,7 +30,7 @@
 /**********************************************
  * Vector table
  */
-    .if (TARGETCODE==0x01 || TARGETCODE==0x02)  /* define in config file */
+    .if (TARGETCODE==0x01 || TARGETCODE==0x02 || TARGETCODE==0x70)  /* define in config file */
     .section .isr_vector, "a"
     .align  4
     .globl  __vector_table
