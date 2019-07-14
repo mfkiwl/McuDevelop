@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2018 zhtlab
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files
+ * (the "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+/*-Memory Regions-*/
+define symbol __region_FLASH_size__       = 0x800;
+define symbol __region_RAM_size__         = 0x8000;
+
+define symbol __region_FLASH_start__       = 0x08000000;
+define symbol __region_FLASH_end__         = __region_FLASH_start__ + __region_FLASH_size__;
+define symbol __region_RAM_base__          = 0x20000000;
+define symbol __region_RAM_start__         = 0x20000000;
+define symbol __region_RAM_end__           = 0x20005000;
+
+
+/*-Specials-*/
+define symbol __intvec_start__     = __region_FLASH_start__;
+define symbol __boot0cfg_start__   = __region_FLASH_start__ + 0x400;
+define symbol __boot0_start__      = __region_FLASH_start__ + 0x420;
+
+/*-Sizes-*/
+define symbol __size_cstack__ = (1*1024);
+define symbol __size_heap__   = (0*1024);
+
+
+define exported symbol __VECTOR_TABLE      = __region_FLASH_start__;
+define exported symbol __VECTOR_RAM        = __region_RAM_start__;
+
+/*define exported symbol __BOOT_STACK_ADDRESS = __region_RAM_end__;*/
+
+define memory mem with size = 4G;
+define region FLASH_region = mem:[from __region_FLASH_start__ to (__region_FLASH_end__-1)];
+define region RAM_region   = mem:[from __region_RAM_start__  to (__region_RAM_end__ -1)];
+define region BOOT1CODE    = mem:[from 0x08000100 to 0x080003ff ] | mem:[from 0x08000420 to 0x080007ff ];
+
+define block CSTACK    with alignment = 8, size = __size_cstack__   { };
+define block HEAP      with alignment = 8, size = __size_heap__     { };
+
+initialize manually { readwrite };
+initialize manually { section .data};
+initialize manually { section .textrw };
+do not initialize  { section .noinit };
+
+/*
+define block ApplicationFlash { readonly };
+*/
+define block ApplicationRam { readwrite, block CSTACK, block HEAP };
+/*
+place at address mem:__intvec_start__   { readonly section .intvec, readonly section .noinit, section .text};
+place at address mem:__boot0cfg_start__ { readonly section .boot0cfg};
+place at address mem:__boot0_start__    { readonly section .rodata, readonly section .iar.init_table, section .textsys};
+*/
+
+place at address mem:__intvec_start__   { readonly section .intvec};
+place at address mem:__boot0cfg_start__ { readonly section .boot0cfg};
+place in BOOT1CODE { readonly section .noinit, section .text, readonly section .rodata,
+      readonly section .data_init, readonly section .iar.init_table};
+/*place in FLASH_region { block ApplicationFlash };*/
+place in RAM_region   { block ApplicationRam };
