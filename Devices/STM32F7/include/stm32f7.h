@@ -278,6 +278,14 @@ typedef enum  {
 #define I2C_MODULE_COUNT        2
 //#define SPI_MODULE_FIFO_NO      1
 
+typedef enum  {
+  I2C_NUM_INIT = -1,
+  I2C1_NUM = 0,
+  I2C2_NUM,
+  I2C3_NUM,
+  I2C_NUM_MAX
+} i2cNo_t;
+
 #include        "stm32I2c.h"
 
 #define I2C1_PTR      ((stm32Dev_I2C *) ((APB1_BASE) + 0x5400))
@@ -287,7 +295,7 @@ typedef enum  {
 
 
 /*******************************************
- * 32 OTG / 33 USBPHY
+ * 32 OTG
  */
 #define USB_EPOUT_COUNTS        9     /* max number of ep  plus 1 */
 #define USB_EPIN_COUNTS         9     /* max number of ep  plus 1 */
@@ -296,7 +304,8 @@ typedef enum  {
 
 #define USB1_HS                 ((stm32Dev_USB *) ((AHB1_BASE)+0x20000))
 #define USB2_FS                 ((stm32Dev_USB *) ((AHB2_BASE)+0x00000))
-
+#define USB1_HS_PTR             ((stm32Dev_USB *) ((AHB1_BASE)+0x20000))
+#define USB2_FS_PTR             ((stm32Dev_USB *) ((AHB2_BASE)+0x00000))
 
 #define USB_FS_MAX_PACKET_SIZE          64
 #define USB_HS_MAX_PACKET_SIZE          512
@@ -306,8 +315,19 @@ typedef enum  {
 #define USB_SPEED_FULL                  0
 
 #define USB_MODULE_TBL                  {NULL, USB1_OTG_HS, USB2_OTG_FS}
+typedef enum  {
+  USB_NUM_INIT = -1,
+  USBHS_NUM = 1,
+  USBFS_NUM,
+  USB_NUM_MAX
+} usbNo_t;
 
 
+/*******************************************
+ * 33 USBPHY
+ */
+#include        "stm32Usbphyc.h"
+#define USBPHYC_PTR             ((stm32Dev_USBPHYC *)((APB2_BASE)+0x07c00))
 
 
 #endif
