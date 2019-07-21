@@ -52,16 +52,16 @@ DevI2cInit(int unit, devI2cParam_t *param)
   if(unit == -1) {
     memset(&i2c, 0, sizeof(i2c));
 #ifdef  I2C1_PTR
-    i2c.sc[1].dev = I2C1_PTR;
+    i2c.sc[0].dev = I2C1_PTR;
 #endif
 #ifdef  I2C2_PTR
-    i2c.sc[2].dev = I2C2_PTR;
+    i2c.sc[1].dev = I2C2_PTR;
 #endif
 #ifdef  I2C3_PTR
-    i2c.sc[3].dev = I2C3_PTR;
+    i2c.sc[2].dev = I2C3_PTR;
 #endif
 #ifdef  I2C4_PTR
-    i2c.sc[4].dev = I2C4_PTR;
+    i2c.sc[3].dev = I2C4_PTR;
 #endif
 #ifdef  I2C5_PTR
     i2c.sc[5].dev = I2C5_PTR;
@@ -203,7 +203,7 @@ DevI2cInterrupt(int unit)
 void
 DevI2c1Interrupt(void)
 {
-  DevI2cInterrupt(1);
+  DevI2cInterrupt(I2C1_NUM);
 }
 /**
   * @brief  interrupt entry point for unit 2
@@ -213,29 +213,32 @@ DevI2c1Interrupt(void)
 void
 DevI2c2Interrupt(void)
 {
-  DevI2cInterrupt(2);
+  DevI2cInterrupt(I2C2_NUM);
 }
 /**
   * @brief  interrupt entry point for unit 3
   * @param  noen
   * @retval none
   */
+#ifdef  I2C3_PTR
 void
 DevI2c3Interrupt(void)
 {
-  DevI2cInterrupt(3);
+  DevI2cInterrupt(I2C3_NUM);
 }
+#endif
 /**
   * @brief  interrupt entry point for unit 4
   * @param  noen
   * @retval none
   */
+#ifdef  I2C4_PTR
 void
 DevI2c4Interrupt(void)
 {
-  DevI2cInterrupt(4);
+  DevI2cInterrupt(I2C4_NUM);
 }
-
+#endif
 /**
   * @brief  send routine
   * @param  unit  unit number
@@ -306,7 +309,7 @@ DevI2cTransmit(int unit, devI2cPkt *p)
   psc = &i2c.sc[unit];
   if(!psc->up) goto fail;
 
-  while((psc->dev->ISR & 0x8000) ||
+  while((psc->dev->ISR & I2C_ISR_BUSY_MASK) ||
         (psc->seq != DEVI2C_SEQ_IDLE &&
          !(psc->seq & DEVI2C_SEQ_STAT_NACK_MASK)));
 
@@ -572,7 +575,6 @@ DevI2cTransmitPio(devI2cSc_t *psc, devI2cPkt *pkt)
 
       /* send the start condition */
       p->CR2 |= I2C_CR2_START;
-      psc->seq = DEVI2C_SEQ_SEND_CMD;
 
       /* send the slave address */
       while((p->ISR & I2C_ISR_TXIS_MASK));
