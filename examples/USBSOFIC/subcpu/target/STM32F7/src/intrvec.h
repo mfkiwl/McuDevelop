@@ -35,6 +35,7 @@ void DMA1_Stream2_IRQHandler(void);
 void DMA1_Stream3_IRQHandler(void);
 void DMA1_Stream4_IRQHandler(void);
 void DevI2c1Interrupt(void);
+void DevI2c2Interrupt(void);
 void DevUsbInterruptUsb2(void);
 
 enum interruptLines {
@@ -90,7 +91,7 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /*  30 TIM4                         */
   DevI2c1Interrupt,                     /*  31 I2C1 Event                   */
   IntrException,                        /*  32 I2C1 Error                   */
-  IntrException,                        /*  33 I2C2 Event                   */
+  DevI2c2Interrupt,                     /*  33 I2C2 Event                   */
   IntrException,                        /*  34 I2C2 Error                   */
   IntrException,                        /*  35 SPI1                         */
   IntrException,                        /*  36 SPI2                         */
