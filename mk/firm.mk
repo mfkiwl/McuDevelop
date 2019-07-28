@@ -62,7 +62,7 @@ OBJS		= $(addprefix $(OBJDIR)/, $(notdir $(SOURCESASM:.s=.o))) \
 
 INCDIRS_LIB	= -I $(CMSIS_DIR)/Include \
 		-I $(CMSIS_DIR)/DSP/Include \
-		-I $(FREERTOS_DIR)/portable/$(PORTABLE_DIR_CC)/ARM_$(FREERTOS_ARCH) \
+		-I $(FREERTOS_DIR)/portable/$(PORTABLE_DIR_CC)/$(CONFIG_FREERTOS_MCUARCH) \
 		-I $(FREERTOS_DIR)/include \
 		-I $(USBDIF_DIR)/include \
 		-I $(USBDIF_DIR)/src \
