@@ -24,7 +24,7 @@
 #
 # clock
 #
-CONFIG_CLOCK_HSE                = 26000000      # unit: Hz
+CONFIG_CLOCK_HSE                = 24000000      # unit: Hz
 //CONFIG_CLOCK_FREQ_EXT_CRYSTAL   = 32000000      # unit: Hz
 
 CONFIG_CLOCK_FREQ_16MHZ         = 16000000     # unit: Hz
@@ -159,3 +159,8 @@ CONFIG_USB_MAXNUM_REGCLASSES                     = 4
 
 CONFIG_SYSTEM_USART_PORT                        = USART1_NUM
 CONFIG_SYSTEM_USART_BAUD                        = 921600
+
+
+###############################
+### I2C addr list
+CONFIG_I2C_ADDR_SI5351                          = SI5351_I2C_ADDR0
