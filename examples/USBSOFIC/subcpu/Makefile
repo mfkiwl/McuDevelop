@@ -91,4 +91,4 @@ PROGMCU		= bin/progmcu.Linux-x86_64
 
 prog:
 	@echo type \"../progusbhid/src/progusbhid -e -p --wholearea -f obj/bootfirm.xxxxx\"    to burn
-	$(PROGMCU) -e -p -B -f obj/bootfirm.bin --force --allarea --stm --uart --uartdev=/dev/ttyUSB0 -D 0x80000000
+	$(PROGMCU) -e -p -B -f obj/bootfirm.bin --force --allarea --stm --uart --uartdev=/dev/ttyUSB0 #-D 0x80000000
