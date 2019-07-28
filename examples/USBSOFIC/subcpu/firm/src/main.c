@@ -42,6 +42,7 @@
 #include        "devUsart.h"
 #include        "devI2c.h"
 #include        "devSpi32.h"
+#include        "si5351.h"
 
 #include        "usbdif.h"
 #include        "usb_cdcacm.h"
@@ -151,7 +152,7 @@ MainIdleLoop(void)
 
   static uint32_t       pp;
 
-  if(tCnt >= 10000) {
+  if(tCnt >= 1000) {
     systemClockFreq_t         p;
     tCnt = 0;
     i++;
@@ -175,6 +176,11 @@ MainTask(void const * argument)
   MainInitUsart();
   //MainInitI2c();
 
+  {
+    systemClockFreq_t         p;
+    SystemGetClockValue(&p);
+    SystemDebugShowClockValue(&p);
+  }
   //MainInitCounter();
 
   /* start all tasks */
@@ -188,6 +194,7 @@ MainTask(void const * argument)
 
   puts("\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n#-----\r\n");
   puts("# " CONFIG_PRODUCT_NAME_TEXT " was started\r\n");
+
 
 
   /* Infinite loop */
@@ -206,7 +213,11 @@ MainEntry(void)
   systemClockFreq_t   clk;
   uint32_t            systick;
 
-  DevGpioSets(gpioDefaultTbl);
+  //MainInitSi5351();
+  //SystemChangeClockHigher();
+  //SystemUpdateClockValue();
+
+  //DevGpioSets(gpioDefaultTbl);
 
   IntrInit(0);
 
@@ -266,7 +277,7 @@ MainInitUsart(void)
 }
 
 
-static void
+void
 MainInitI2c(void)
 {
   /* uart initialize */
@@ -276,41 +287,14 @@ MainInitI2c(void)
 
   memset(&param, 0, sizeof(param));
   param.speed = DEVI2C_SPEED_400KHZ;
-  param.mode = DEVI2C_MODE_PIO;         /* adhoc */
+  param.mode = DEVI2C_MODE_PIO;
   param.dma  = 0;
-  param.intr = 1;
+  param.intr = 0;
 
-  DevI2cInit(1, &param);
+  DevI2cInit(I2C2_NUM, &param);
 
-#if 0
-  NVIC_SetPriority(I2C1EV_IRQn, 5);
-  NVIC_EnableIRQ(I2C1EV_IRQn);
-#endif
-
-  devI2cPkt     pkt;
-  uint8_t       cmd[4];
-  uint8_t       *buf;
-
-  buf   = SystemMallocStreamBuf(1, 16, NULL);
-  buf[0] = 0x55;
-  pkt.addr = 0x1d;
-  pkt.ptrCmd = &buf[0];
-  pkt.lenCmd = 1;
-  pkt.ptrSend = &buf[0];
-  pkt.lenSend = 1;
-  pkt.ptrRecv = buf;
-  pkt.lenRecv = 4;
-   DevI2cTransmit(1, &pkt);
-
-  buf[0] = 0x55;
-  pkt.addr = 0x1d;
-  pkt.ptrCmd = &buf[0];
-  pkt.lenCmd = 1;
-  pkt.ptrSend = &buf[0];
-  pkt.lenSend = 1;
-  pkt.ptrRecv = buf;
-  pkt.lenRecv = 5;
-  DevI2cTransmit(1, &pkt);
+  NVIC_SetPriority(I2C2_EV_IRQn, 2);
+  NVIC_EnableIRQ(I2C2_EV_IRQn);
 
   return;
 }
@@ -467,13 +451,6 @@ MainInitSpi(void)
   param.dmaRx = 1;      /* do not use dma with both tx and rx */
   DevSpiInit(5, &param);
 
-  /* AD9957 command */
-  param.speed = 10000000;
-  param.prescaler = 2;
-  param.dmaTx = 0;
-  param.dmaRx = 0;
-  DevSpiInit(4, &param);
-
   return;
 }
 
@@ -502,7 +479,7 @@ MainInitUsb(void)
   /* global initialize */
   UsbifInit(-1, NULL);
 
-  unit = 0;
+  unit = 1;
   /* device initialize */
   usbInitParam.pDeviceDesc   = usbDescDevice;
   usbInitParam.lenDeviceDesc = usbDescDeviceLen;
@@ -528,8 +505,6 @@ MainInitUsb(void)
   class.pUserData = &usbcdcCb;
   dUsbCdc = UsbifRegisterClass(unit, &class);
 #endif
-
-
 
 
   /* start usb middleware */
@@ -569,10 +544,8 @@ MainInitUsb(void)
 static void
 MainUsbdifTask(void const * argument)
 {
-#if 0
-  /*MX_FATFS_Init();*/
+
   MainInitUsb();
-#endif
 
   /* Infinite loop */
   while(1) {
@@ -580,6 +553,49 @@ MainUsbdifTask(void const * argument)
   }
 }
 
+
+
+/*
+ *   XO -- PLLA -- MULTISYNTH0 -- DIV_R0 -- CLK0
+ *   XO -- PLLB -- MULTISYNTH2 -- DIV_R2 -- CLK2
+ *
+ *  Limitations PLL
+ *    fCLKIN      =  10 --  40MHz after input divider (divCLKIN=1,2,4,8)
+ *    fVCO        = 600 -- 900MHz
+ *    N/M         = (15+0/1048575), and up to (90*0/1048575)
+ *
+ *  Limitations MULTITYNTH
+ *    fMultisynth = 0.5 -- 200MHz
+ *    Multisyth   = 4, 6, 8, (8+1/1048575), and up to (900+0/1)
+ *
+ *  Limitations OUTPUT
+ *    output div  = 1, 2, 4, 8, 16, 32, 64, 128
+ *
+ *  fOUT = fVCO / (Multisynth * R)
+ *
+ *  fVCO = fXTAL * (a + b/c)
+ *
+ *   8+1/1048575 -- 900*0/1
+ *
+ *    VCO(a, b, c) = (30, 402, 1625)
+ * 24.576MHz*(32+0/1)    = 786.432MHz = 26MHz * 786432/26000 = 26 * (30 + 402/1625)
+ *    DIV(a, b, c) = (32, 0, 1)
+ * 24.000MHz*(32+96/125) = 786.432MHz = 26MHz * 786432/26000 = 26 * (30 + 402/1625)
+ *    DIV(a, b, c) = (32, 96, 125)
+ *
+ */
+void
+MainInitSi5351(void)
+{
+
+  Si5351Init(0,
+             26000000,                  // IN
+             786432000, 0,              // VCO0, VCO1
+             24576000, 0, 24000000,     // OUT0, 1, 2
+             0);
+
+  return;
+}
 
 
 

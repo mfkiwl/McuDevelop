@@ -79,11 +79,11 @@ void            SystemGpioInit(void);
 void            *SystemMallocStreamBuf(int type, int size, void *vp);
 void            SystemSysTickIntr(void);
 
+void             SystemChangeClockHigher(void);
+void             SystemChangeClockDefault(void);
+void             SystemUpdateClockValue(void);
 #ifdef  _SYSTEM_C_
 static void             SystemCoreClockUpdate(void);
-static void             SystemChangeClockHigher(void);
-static void             SystemChangeClockDefault(void);
-static void             SystemUpdateClockValue(void);
 static int              SystemFmcInit(void);
 #endif
 

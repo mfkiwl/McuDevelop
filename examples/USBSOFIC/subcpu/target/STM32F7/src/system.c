@@ -34,6 +34,10 @@
 #include        "stm32f7Rcc.h"
 #include        "devCrs.h"
 
+void            MainInitI2c(void);
+void            MainInitSi5351(void);
+
+
 #define SYSTEM_TIMER_REG        (TIM5_PTR->CNT)     /* decrement counter */
 
 static systemClockFreq_t        systemClk;
@@ -66,11 +70,11 @@ SystemInit(void)
   /*********************************
    * clock control
    */
-  systemClockFreq_t     clk;
+  //systemClockFreq_t     clk;
   RCC_PTR->APB2ENR |= RCC_APB2ENR_SYSCFGEN_YES;
-  SystemChangeClockHigher();
+  //SystemChangeClockHigher();
   SystemUpdateClockValue();
-  SystemGetClockValue(&clk);
+  //SystemGetClockValue(&clk);
 
 #if 0
   devCrsParam_t     crs;
@@ -96,15 +100,58 @@ SystemInit(void)
                        RCC_AHB1ENR_GPIOEEN_YES | RCC_AHB1ENR_GPIOFEN_YES |
                        RCC_AHB1ENR_GPIOGEN_YES | RCC_AHB1ENR_GPIOHEN_YES |
                        RCC_AHB1ENR_GPIOIEN_YES);
-  /* usart */
-  RCC_PTR->APB2ENR |= RCC_APB2ENR_USART1EN_YES;
-
-  /* timer */
+  /* i2c */
+  RCC_PTR->APB1ENR |= RCC_APB1ENR_I2C2EN_YES;
 
   /*********************************
    * gpio initialize
    */
   DevGpioInit();
+  DevGpioSets(gpioDefaultTbl);
+
+  /*********************************
+   * external pll control
+   */
+  MainInitI2c();
+  MainInitSi5351();
+
+  /* wait about 20ms @16MHz */
+  for(int i = 0; i < 20000;i++) RCC_PTR->CR;
+
+  /* switch to higher freq */
+  SystemChangeClockHigher();
+  SystemUpdateClockValue();
+
+  /* usart */
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_USART1EN_YES;
+
+  /* timer */
+
+  /* usb, otg */
+  RCC_PTR->AHB1ENR |= RCC_AHB1ENR_OTGHSEN_YES;
+
+  /* usb phy controller,  enable LDO, enable CTRLer */
+  int         tout = 0x400000;
+  USBPHYC_PTR->LDO |= USBPHYC_LDO_DISABLE_YES;  /* errata: 1 is enable */
+  while((USBPHYC_PTR->LDO & USBPHYC_LDO_STATUS_MASK)) {
+    if(tout-- <= 0) break;
+  }
+
+  switch(CONFIG_CLOCK_HSE) {
+  case 12000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_12MHZ; break;
+  case 12500000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_12_5MHZ; break;
+  case 16000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_16MHZ; break;
+  case 24000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_24MHZ; break;
+  case 25000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_25MHZ; break;
+  }
+
+  USBPHYC_PTR->TUNE =
+    USBPHYC_TUNE_HSDRVCHKITRM_20_94MA |
+    USBPHYC_TUNE_HSDRVRFRED_SHIFT |
+    USBPHYC_TUNE_HSDRVDCCUR_DEC5MV |
+    USBPHYC_TUNE_LFSCAPEN_YES | USBPHYC_TUNE_INCURREN_YES | USBPHYC_TUNE_INCURRINT_YES;
+
+  USBPHYC_PTR->PLL1 |= USBPHYC_PLL1_EN_YES;
 
 
   /*********************************
@@ -125,7 +172,7 @@ SystemLoop(void)
 
 
 
-static void
+void
 SystemChangeClockDefault(void)
 {
   /* enable HSION bit */
@@ -136,13 +183,14 @@ SystemChangeClockDefault(void)
                RCC_CR_PLLON_MASK);
 
   /* reset the following registers */
-  RCC_PTR->PLLCFGR = 0;
+  RCC_PTR->PLLCFGR = 0x24003010;
   RCC_PTR->CR &= ~RCC_CR_HSEBYP_MASK;
   RCC_PTR->CIR = 0;
+  while(!(RCC_PTR->CR & (RCC_CR_HSIRDY_MASK)));
 
   return;
 }
-static void
+void
 SystemChangeClockHigher(void)
 {
   uint32_t              val;
@@ -152,18 +200,17 @@ SystemChangeClockHigher(void)
   //while(!(PWR_PTR->D3CR & PWR_D3CR_VOSRDY_MASK));
 
   /*** select clock sources */
-  RCC_PTR->CR |= RCC_CR_HSEON_YES;
-  //RCC_PTR->CR |= RCC_CR_HSEBYP_YES;
-  while(!(~RCC_PTR->CR & (RCC_CR_HSERDY_MASK)));
+  RCC_PTR->CR |= RCC_CR_HSEON_YES| RCC_CR_HSEBYP_YES;
+  while(!(RCC_PTR->CR & (RCC_CR_HSERDY_MASK)));
 
   /* pll1 settings  vco range (100-432MHz)
-   * HSE=26MHz
+   * HSE=24MHz
    * M=13(2MHz), N=60(120MHz)
    * P=2(60MHz), Q=2(60MHz)
    */
-  RCC_PTR->PLLCFGR |= (RCC_PLLCFGR_PLLSRC_HSE |
-                       RCC_PLLCFGR_PLLM_DIV(13) | RCC_PLLCFGR_PLLN_MULX(60) |
-                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV2 );
+  RCC_PTR->PLLCFGR  = (RCC_PLLCFGR_PLLSRC_HSE |
+                       RCC_PLLCFGR_PLLM_DIV(12) | RCC_PLLCFGR_PLLN_MULX(60) |
+                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(5) );
 
   RccPll1Enable();
 
@@ -172,12 +219,11 @@ SystemChangeClockHigher(void)
    * APB2 is up to 108MHz
    */
   RCC_PTR->CFGR = (RCC_CFGR_HPRE_DIV2 |
-                   RCC_CFGR_PPRE1_DIV2 | RCC_CFGR_PPRE2_DIV1);
+                   RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1);
 
   /* the system clock is selected to PLL1 */
   RCC_PTR->CFGR |= RCC_CFGR_SW_PLL;
   while((RCC_PTR->CFGR & RCC_CFGR_SWS_MASK) != RCC_CFGR_SWS_PLL);
-
 
   /*** MCO setting */
 #if CONFIG_MCO_ENABLE
@@ -196,7 +242,7 @@ SystemChangeClockHigher(void)
 const static uint8_t   systemAHBPrescalerTable[]   = RCC_CLOCK_HPRETABLE;
 const static uint8_t   systemPeri1PrescalerTable[] = RCC_CLOCK_PPRETABLE;
 const static uint8_t   systemPeri2PrescalerTable[] = RCC_CLOCK_PPRETABLE;
-static void
+void
 SystemUpdateClockValue(void)
 {
   int           div, shift;
@@ -281,6 +327,8 @@ void
 SystemDebugShowClockValue(systemClockFreq_t *p)
 {
   printf("# clock info\r\n");
+  printf("  clkin: %d\r\n", p->pllin);
+  printf("  vco: %d\r\n", p->pll1.vco);
   printf("  pll1p: %d, q: %d\r\n",
          p->pll1.P, p->pll1.Q);
 #if 0

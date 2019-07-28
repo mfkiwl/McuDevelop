@@ -75,6 +75,7 @@ SOURCES =	\
 		$(DEVICELIB_DIR)/STM32/src/devI2c.c \
 		$(DEVICELIB_DIR)/STM32/src/devCounter.c \
 		$(DEVICELIB_DIR)/STM32/src/devUsart.c \
+		$(DEVICELIB_DIR)/STM32/src/si5351.c \
 		../target/$(DEVICE_TYPE)/src/system.c \
 
 #		$(DEVICELIB_DIR)/STM32/src/devI2c.c \

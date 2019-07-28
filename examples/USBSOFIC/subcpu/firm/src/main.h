@@ -29,17 +29,20 @@
 
 /*void                    _Error_Handler(char *, int);*/
 
+void             MainInitI2c(void);
+void             MainInitSi5351(void);
+
 #ifdef _MAIN_C_
 static void             MainTask(void const * argument);
 static void             MainUsbdifTask(void const * argument);
 static void             MainIdleLoop(void);
 static void             MainInitUsart(void);
 static void             MainInitCounter(void);
-static void             MainInitI2c(void);
 static void             MainInitSpi(void);
 static void             MainInitAdc(void);
 static void             MainInitDac(void);
 static void             MainInitUsb(void);
+
 #endif
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)      /* adhoc */
