@@ -1,0 +1,728 @@
+EESchema Schematic File Version 2
+LIBS:FPGACONF-rescue
+LIBS:zhtlab_ADDA
+LIBS:zhtlab_BEAD
+LIBS:zhtlab_CLK_PLL_DDS
+LIBS:zhtlab_CN
+LIBS:zhtlab_FPGA
+LIBS:zhtlab_FUSE
+LIBS:zhtlab_HOLE
+LIBS:zhtlab_LED
+LIBS:zhtlab_LOGIC
+LIBS:zhtlab_MCU
+LIBS:zhtlab_MEMORY
+LIBS:zhtlab_NONDEV
+LIBS:zhtlab_OPAMP
+LIBS:zhtlab_POWER
+LIBS:zhtlab_RCL
+LIBS:zhtlab_SENSOR
+LIBS:zhtlab_SW
+LIBS:zhtlab_TP
+LIBS:zhtlab_TR_FET
+LIBS:zhtlab_VD
+LIBS:zhtlab_X
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:FPGACONF-cache
+EELAYER 25 0
+EELAYER END
+$Descr A3 16535 11693
+encoding utf-8
+Sheet 3 5
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Notes 700  1200 0    400  ~ 0
+ECP5 CN
+$Comp
+L GND #PWR042
+U 1 1 5BFE83CB
+P 3600 5400
+F 0 "#PWR042" H 3600 5150 50  0001 C CNN
+F 1 "GND" H 3600 5250 50  0000 C CNN
+F 2 "" H 3600 5400 50  0001 C CNN
+F 3 "" H 3600 5400 50  0001 C CNN
+	1    3600 5400
+	1    0    0    -1  
+$EndComp
+Text Notes 3950 3350 0    50   ~ 0
+GND
+Text Notes 3950 3450 0    50   ~ 0
+2.5V
+Text Notes 3950 3550 0    50   ~ 0
+B15
+Text Notes 3950 3650 0    50   ~ 0
+B13
+Text Notes 3950 3750 0    50   ~ 0
+D11(CLK)
+Text Notes 3950 3850 0    50   ~ 0
+B12(CLK)
+Text Notes 3950 3950 0    50   ~ 0
+D12
+Text Notes 3950 4050 0    50   ~ 0
+C13
+Text Notes 3950 4150 0    50   ~ 0
+E13
+Text Notes 3950 4250 0    50   ~ 0
+A9
+Text Notes 3950 4350 0    50   ~ 0
+5VIN
+Text Notes 3950 4450 0    50   ~ 0
+EXPCON 2.5V
+Text Notes 3950 4550 0    50   ~ 0
+3.3V
+Text Notes 3950 4650 0    50   ~ 0
+3.3V
+Text Notes 3950 4750 0    50   ~ 0
+E7
+Text Notes 3950 4850 0    50   ~ 0
+A11
+Text Notes 3950 4950 0    50   ~ 0
+A19
+Text Notes 3950 5050 0    50   ~ 0
+EXPCON 3.3V
+Text Notes 3950 5150 0    50   ~ 0
+EXPCON 3.3V
+Text Notes 3950 5250 0    50   ~ 0
+EXPCON 3.3V
+Text Notes 5500 3350 0    50   ~ 0
+NC
+Text Notes 5500 3450 0    50   ~ 0
+D15
+Text Notes 5500 3550 0    50   ~ 0
+C15
+Text Notes 5500 3650 0    50   ~ 0
+B20
+Text Notes 5500 3750 0    50   ~ 0
+E11
+Text Notes 5500 3850 0    50   ~ 0
+C12
+Text Notes 5500 3950 0    50   ~ 0
+E12
+Text Notes 5500 4050 0    50   ~ 0
+D13
+Text Notes 5500 4150 0    50   ~ 0
+A14
+Text Notes 5500 4250 0    50   ~ 0
+B11
+Text Notes 5500 4350 0    50   ~ 0
+GND
+Text Notes 5500 4450 0    50   ~ 0
+GND
+Text Notes 5500 4550 0    50   ~ 0
+GND
+Text Notes 5500 4650 0    50   ~ 0
+GND
+Text Notes 5500 4750 0    50   ~ 0
+GND
+Text Notes 5500 4850 0    50   ~ 0
+GND
+Text Notes 5500 4950 0    50   ~ 0
+GND
+Text Notes 5500 5050 0    50   ~ 0
+GND
+Text Notes 5500 5150 0    50   ~ 0
+GND
+Text Notes 5500 5250 0    50   ~ 0
+GND
+Text Notes 10750 3350 0    50   ~ 0
+GND
+Text Notes 10750 3450 0    50   ~ 0
+F1(CLK)
+Text Notes 10750 3550 0    50   ~ 0
+G1(CLK)
+Text Notes 10750 3650 0    50   ~ 0
+J5
+Text Notes 10750 3750 0    50   ~ 0
+K3
+Text Notes 10750 3850 0    50   ~ 0
+L5
+Text Notes 10750 3950 0    50   ~ 0
+N5
+Text Notes 10750 4050 0    50   ~ 0
+P5
+Text Notes 10750 4150 0    50   ~ 0
+M3
+Text Notes 10750 4250 0    50   ~ 0
+EXPCON 3.3V
+Text Notes 10750 4350 0    50   ~ 0
+GND
+Text Notes 10750 4450 0    50   ~ 0
+GND
+Text Notes 10750 4550 0    50   ~ 0
+GND
+Text Notes 10750 4650 0    50   ~ 0
+M1
+Text Notes 10750 4750 0    50   ~ 0
+GND
+Text Notes 10750 4850 0    50   ~ 0
+N1
+Text Notes 10750 4950 0    50   ~ 0
+GND
+Text Notes 10750 5050 0    50   ~ 0
+E14
+Text Notes 10750 5150 0    50   ~ 0
+CARDSELX
+Text Notes 10750 5250 0    50   ~ 0
+GND
+Text Notes 9450 3350 0    50   ~ 0
+K2
+Text Notes 9450 3450 0    50   ~ 0
+A15
+Text Notes 9450 3550 0    50   ~ 0
+H2
+Text Notes 9450 3650 0    50   ~ 0
+J4
+Text Notes 9450 3750 0    50   ~ 0
+J3
+Text Notes 9450 3850 0    50   ~ 0
+L4
+Text Notes 9450 3950 0    50   ~ 0
+M4
+Text Notes 9450 4050 0    50   ~ 0
+N4
+Text Notes 9450 4150 0    50   ~ 0
+N3
+Text Notes 9450 4250 0    50   ~ 0
+GND
+Text Notes 9450 4350 0    50   ~ 0
+K5
+Text Notes 9450 4450 0    50   ~ 0
+M5
+Text Notes 9450 4550 0    50   ~ 0
+L3
+Text Notes 9450 4650 0    50   ~ 0
+N2
+Text Notes 9450 4750 0    50   ~ 0
+L2
+Text Notes 9450 4850 0    50   ~ 0
+L1
+Text Notes 9450 4950 0    50   ~ 0
+C14
+Text Notes 9450 5050 0    50   ~ 0
+P1
+Text Notes 9450 5150 0    50   ~ 0
+D14
+Text Notes 9450 5250 0    50   ~ 0
+K4
+$Comp
+L GND #PWR043
+U 1 1 5BFE88BB
+P 6100 5350
+F 0 "#PWR043" H 6100 5100 50  0001 C CNN
+F 1 "GND" H 6100 5200 50  0000 C CNN
+F 2 "" H 6100 5350 50  0001 C CNN
+F 3 "" H 6100 5350 50  0001 C CNN
+	1    6100 5350
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR044
+U 1 1 5BFE89D3
+P 11600 5400
+F 0 "#PWR044" H 11600 5150 50  0001 C CNN
+F 1 "GND" H 11600 5250 50  0000 C CNN
+F 2 "" H 11600 5400 50  0001 C CNN
+F 3 "" H 11600 5400 50  0001 C CNN
+	1    11600 5400
+	1    0    0    -1  
+$EndComp
+Text GLabel 6400 7100 2    50   Input ~ 0
+FPGA_D0_MOSI
+Text GLabel 6400 7000 2    50   Output ~ 0
+FPGA_D1_MISO
+Text GLabel 3300 7500 0    50   Input ~ 0
+FPGA_CCLK_SCK
+Text GLabel 3300 7400 0    50   Input ~ 0
+MCU_PD0:FMC_D2
+Text GLabel 3300 6900 0    50   Input ~ 0
+MCU_PE10:FMC_D7
+Text GLabel 3300 7000 0    50   Input ~ 0
+MCU_PE9:FMC_D6
+Text GLabel 3300 7300 0    50   Input ~ 0
+MCU_PD1:FMC_D3
+Text Notes 4000 6750 0    50   ~ 0
+PROGRAM
+Text Notes 4000 6850 0    50   ~ 0
+WTITEN
+Text Notes 4000 6950 0    50   ~ 0
+R1  DQ7
+Text Notes 4000 7050 0    50   ~ 0
+T1  DQ6
+Text Notes 4000 7150 0    50   ~ 0
+U1  DQ5_MISO2
+Text Notes 4000 7250 0    50   ~ 0
+V1  DQ4_MOSI2
+Text Notes 4000 7350 0    50   ~ 0
+W1  DQ3
+Text Notes 4000 7450 0    50   ~ 0
+Y2  DQ2
+Text Notes 4000 7550 0    50   ~ 0
+CCLK
+Text Notes 5150 6750 0    50   ~ 0
+FLASH_CS
+Text Notes 5150 6850 0    50   ~ 0
+DONE
+Text Notes 5150 6950 0    50   ~ 0
+INIT
+Text Notes 5150 7050 0    50   ~ 0
+V2  DQ1_MISO
+Text Notes 5150 7150 0    50   ~ 0
+W2  DQ0_MOSI
+Text Notes 5150 7250 0    50   ~ 0
+T2  CSN
+Text Notes 5150 7350 0    50   ~ 0
+U2  CS1N
+Text Notes 5150 7450 0    50   ~ 0
+R2  BUSY_CSSPIN
+Text Notes 5150 7550 0    50   ~ 0
+R3  DOUT_CSON
+Text GLabel 6400 7200 2    50   Output ~ 0
+FPGA_CSX
+Text Notes 4000 7650 0    60   ~ 0
+GND
+Text Notes 5150 7650 0    60   ~ 0
+VCCIO8
+$Comp
+L GND #PWR045
+U 1 1 5BFFDE1C
+P 3600 7700
+F 0 "#PWR045" H 3600 7450 50  0001 C CNN
+F 1 "GND" H 3600 7550 50  0000 C CNN
+F 2 "" H 3600 7700 50  0001 C CNN
+F 3 "" H 3600 7700 50  0001 C CNN
+	1    3600 7700
+	1    0    0    -1  
+$EndComp
+NoConn ~ 6000 3300
+$Comp
+L GND #PWR046
+U 1 1 5BFFFC74
+P 9100 5400
+F 0 "#PWR046" H 9100 5150 50  0001 C CNN
+F 1 "GND" H 9100 5250 50  0000 C CNN
+F 2 "" H 9100 5400 50  0001 C CNN
+F 3 "" H 9100 5400 50  0001 C CNN
+	1    9100 5400
+	1    0    0    -1  
+$EndComp
+NoConn ~ 11500 5100
+NoConn ~ 3700 3400
+NoConn ~ 3700 4400
+NoConn ~ 3700 4500
+NoConn ~ 3700 4600
+NoConn ~ 3700 5000
+NoConn ~ 3700 5100
+NoConn ~ 3700 5200
+NoConn ~ 6000 6700
+NoConn ~ 6000 7400
+NoConn ~ 6000 7500
+NoConn ~ 6000 7300
+NoConn ~ 3700 6800
+NoConn ~ 6000 6900
+NoConn ~ 11500 4200
+NoConn ~ 3700 4200
+$Comp
+L CN_10x2_D1.0mm_P2.54mm_TH-RESCUE-ECP5FX3 CN202
+U 1 1 5C0273D2
+P 3700 6700
+AR Path="/5C0273D2" Ref="CN202"  Part="1" 
+AR Path="/5BFE5D15/5C0273D2" Ref="CN202"  Part="1" 
+F 0 "CN202" H 4850 6900 63  0000 C CNN
+F 1 "CN_10x2_D1.0mm_P2.54mm_TH" H 4850 6800 63  0000 C CNN
+F 2 "Zhtlab_CN:CN_10x2_D1.0mm_P2.54mm_TH" H 4850 7000 63  0001 C CNN
+F 3 "" H 4850 6250 63  0001 C CNN
+	1    3700 6700
+	1    0    0    -1  
+$EndComp
+$Comp
+L CN_20x2_D1.0mm_P2.54mm_TH-RESCUE-ECP5FX3 CN201
+U 1 1 5C027BAB
+P 3700 3300
+F 0 "CN201" H 4850 3500 63  0000 C CNN
+F 1 "CN_20x2_D1.0mm_P2.54mm_TH" H 4850 3400 63  0000 C CNN
+F 2 "Zhtlab_CN:CN_20x2_D1.0mm_P2.54mm_TH" H 4850 3600 63  0001 C CNN
+F 3 "" H 4850 3350 63  0001 C CNN
+	1    3700 3300
+	1    0    0    -1  
+$EndComp
+$Comp
+L CN_20x2_D1.0mm_P2.54mm_TH-RESCUE-ECP5FX3 CN203
+U 1 1 5C027CCE
+P 9200 3300
+F 0 "CN203" H 10350 3500 63  0000 C CNN
+F 1 "CN_20x2_D1.0mm_P2.54mm_TH" H 10350 3400 63  0000 C CNN
+F 2 "Zhtlab_CN:CN_20x2_D1.0mm_P2.54mm_TH" H 10350 3600 63  0001 C CNN
+F 3 "" H 10350 3350 63  0001 C CNN
+	1    9200 3300
+	1    0    0    -1  
+$EndComp
+NoConn ~ 9200 3300
+$Comp
+L CN_02x1_D1.0mm_P2.54mm_TH CN204
+U 1 1 5C03272D
+P 9200 6700
+F 0 "CN204" H 10350 6900 63  0000 C CNN
+F 1 "CN_02x1_D1.0mm_P2.54mm_TH" H 10350 6800 63  0000 C CNN
+F 2 "Zhtlab_CN:CN_01x2_D1.0mm_P2.54mm_TH" H 10350 7000 60  0001 C CNN
+F 3 "" H 10350 6750 63  0001 C CNN
+	1    9200 6700
+	1    0    0    -1  
+$EndComp
+NoConn ~ 9200 6800
+NoConn ~ 9200 6700
+$Comp
+L HOLE_01x1_D3.4mm_P0.00mm_NTH HOLE201
+U 1 1 5C0468AC
+P 9650 8000
+F 0 "HOLE201" H 9650 8000 60  0001 C CNN
+F 1 "HOLE_01x1_D3.4mm_P0.00mm_NTH" H 9650 8000 60  0000 C CNN
+F 2 "Zhtlab_Holes:Hole_01x1_D3.4mm_P0.00mm_NTH" H 9550 7900 60  0001 C CNN
+F 3 "" H 9650 8000 60  0001 C CNN
+	1    9650 8000
+	1    0    0    -1  
+$EndComp
+NoConn ~ 3700 4900
+NoConn ~ 3700 4800
+NoConn ~ 3700 4700
+NoConn ~ 3700 4100
+NoConn ~ 3700 3500
+NoConn ~ 3700 3600
+NoConn ~ 3700 3700
+NoConn ~ 3700 3800
+NoConn ~ 3700 3900
+NoConn ~ 3700 4000
+NoConn ~ 6000 3400
+NoConn ~ 6000 3600
+NoConn ~ 6000 3700
+NoConn ~ 6000 3500
+NoConn ~ 6000 3800
+NoConn ~ 6000 3900
+NoConn ~ 6000 4000
+NoConn ~ 6000 4100
+NoConn ~ 6000 4200
+NoConn ~ 9200 3400
+NoConn ~ 9200 3500
+NoConn ~ 9200 3600
+NoConn ~ 9200 3700
+NoConn ~ 9200 3800
+NoConn ~ 9200 3900
+NoConn ~ 9200 4000
+NoConn ~ 9200 4100
+NoConn ~ 9200 4300
+NoConn ~ 9200 4400
+NoConn ~ 9200 4500
+NoConn ~ 9200 4600
+NoConn ~ 9200 4700
+NoConn ~ 11500 3400
+NoConn ~ 11500 3500
+NoConn ~ 11500 3600
+NoConn ~ 11500 3700
+NoConn ~ 11500 3800
+NoConn ~ 11500 3900
+NoConn ~ 11500 4000
+NoConn ~ 11500 4100
+NoConn ~ 11500 4600
+NoConn ~ 11500 4800
+NoConn ~ 11500 5000
+NoConn ~ 9200 5200
+NoConn ~ 9200 5100
+NoConn ~ 9200 5000
+NoConn ~ 9200 4900
+NoConn ~ 9200 4800
+Text GLabel 3300 7100 0    50   Input ~ 0
+MCU_PE8:FMC_D5
+Text GLabel 3300 7200 0    50   Input ~ 0
+MCU_PE7:FMC_D4
+Wire Wire Line
+	3600 5400 3600 3300
+Wire Wire Line
+	3600 3300 3700 3300
+Wire Wire Line
+	6100 4300 6100 5350
+Wire Wire Line
+	6100 4300 6000 4300
+Wire Wire Line
+	6000 4400 6100 4400
+Connection ~ 6100 4400
+Wire Wire Line
+	6000 4500 6100 4500
+Connection ~ 6100 4500
+Wire Wire Line
+	6000 4600 6100 4600
+Connection ~ 6100 4600
+Wire Wire Line
+	6000 4700 6100 4700
+Connection ~ 6100 4700
+Wire Wire Line
+	6000 4800 6100 4800
+Connection ~ 6100 4800
+Wire Wire Line
+	6100 4900 6000 4900
+Connection ~ 6100 4900
+Wire Wire Line
+	6000 5000 6100 5000
+Connection ~ 6100 5000
+Wire Wire Line
+	6100 5100 6000 5100
+Connection ~ 6100 5100
+Wire Wire Line
+	6000 5200 6100 5200
+Connection ~ 6100 5200
+Wire Wire Line
+	11600 3300 11600 5400
+Wire Wire Line
+	11600 5200 11500 5200
+Wire Wire Line
+	11500 4900 11600 4900
+Connection ~ 11600 5200
+Wire Wire Line
+	11500 4300 11600 4300
+Connection ~ 11600 4900
+Wire Wire Line
+	11500 4400 11600 4400
+Connection ~ 11600 4400
+Wire Wire Line
+	11600 4500 11500 4500
+Connection ~ 11600 4500
+Wire Wire Line
+	11500 4700 11600 4700
+Connection ~ 11600 4700
+Wire Wire Line
+	11500 3300 11600 3300
+Connection ~ 11600 4300
+Wire Wire Line
+	6000 7000 6400 7000
+Wire Wire Line
+	6400 7200 6000 7200
+Wire Wire Line
+	6000 7100 6400 7100
+Wire Wire Line
+	3300 7500 3700 7500
+Wire Wire Line
+	3600 7700 3600 7600
+Wire Wire Line
+	3600 7600 3700 7600
+Wire Wire Line
+	9100 5400 9100 4200
+Wire Wire Line
+	9100 4200 9200 4200
+Wire Wire Line
+	3700 6900 3300 6900
+Wire Wire Line
+	3300 7000 3700 7000
+Wire Wire Line
+	3700 7300 3300 7300
+Wire Wire Line
+	3300 7400 3700 7400
+Wire Wire Line
+	3300 7100 3700 7100
+Wire Wire Line
+	3700 7200 3300 7200
+Text GLabel 3300 6700 0    50   Input ~ 0
+MCU_PC7:FPGA_PROGX
+Wire Wire Line
+	3700 6700 3300 6700
+Text GLabel 6400 6800 2    50   Output ~ 0
+MCU_PB0:FPGA_DONE
+Wire Wire Line
+	6000 6800 6400 6800
+Text GLabel 5700 10000 2    50   Input ~ 0
+MCU_PB7:SPI1_CS0X
+Text GLabel 5700 9400 2    50   Input ~ 0
+MCU_PB3:SPI1_SCK
+Text GLabel 5700 9600 2    50   Input ~ 0
+MCU_PB4:SPI1_MISO
+Text GLabel 5700 9800 2    50   Output ~ 0
+MCU_PB5:SPI1_MOSI
+$Comp
+L SN74CBTLV3257D U301
+U 1 1 5D80CCB0
+P 4900 9200
+F 0 "U301" H 4900 9375 63  0000 C CNN
+F 1 "SN74CBTLV3257D" H 4900 9250 63  0000 C CNN
+F 2 "zhtlab_SMD_standard:SOIC-16_3.9x10.0mm_Pitch1.27mm" H 4890 7800 79  0001 C CNN
+F 3 "" H 4900 9250 79  0001 C CNN
+F 4 "1.27mm" H 4900 7690 79  0001 C CNN "pin pitch"
+	1    4900 9200
+	1    0    0    -1  
+$EndComp
+Text GLabel 5700 9500 2    50   Input ~ 0
+MCU_PD5:FMC_NWE
+Text GLabel 5700 10100 2    50   Input ~ 0
+MCU_PD7:FMC_NE1
+Text GLabel 5700 9900 2    50   Input ~ 0
+MCU_PD14:FMC_D0
+Text GLabel 5700 9700 2    50   Input ~ 0
+MCU_PD15:FMC_D1
+Wire Wire Line
+	5300 9400 5700 9400
+Wire Wire Line
+	5700 9500 5300 9500
+Wire Wire Line
+	5300 9600 5700 9600
+Wire Wire Line
+	5700 9700 5300 9700
+Wire Wire Line
+	5300 9800 5700 9800
+Wire Wire Line
+	5700 9900 5300 9900
+Wire Wire Line
+	5300 10000 5700 10000
+Wire Wire Line
+	5700 10100 5300 10100
+Text GLabel 3900 9400 0    50   Output ~ 0
+FPGA_CCLK_SCK
+Text GLabel 3900 9800 0    50   Input ~ 0
+FPGA_D0_MOSI
+Text GLabel 3900 9600 0    50   Output ~ 0
+FPGA_D1_MISO
+Text GLabel 3900 10000 0    50   Output ~ 0
+FPGA_CSX
+Wire Wire Line
+	3900 9400 4500 9400
+Wire Wire Line
+	4500 9600 3900 9600
+Wire Wire Line
+	3900 9800 4500 9800
+Wire Wire Line
+	4500 10000 3900 10000
+Wire Wire Line
+	4500 10300 4400 10300
+Wire Wire Line
+	4400 10300 4400 10500
+Wire Wire Line
+	4500 10400 4400 10400
+Connection ~ 4400 10400
+$Comp
+L GND #PWR047
+U 1 1 5D80D96D
+P 4400 10500
+F 0 "#PWR047" H 4400 10250 50  0001 C CNN
+F 1 "GND" H 4400 10350 50  0000 C CNN
+F 2 "" H 4400 10500 50  0001 C CNN
+F 3 "" H 4400 10500 50  0001 C CNN
+	1    4400 10500
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR048
+U 1 1 5D8580F0
+P 6200 8100
+F 0 "#PWR048" H 6200 7950 60  0001 C CNN
+F 1 "GND" H 6350 8050 60  0001 C CNN
+F 2 "" H 6200 8100 60  0001 C CNN
+F 3 "" H 6200 7950 60  0001 C CNN
+	1    6200 8100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6200 7900 6200 8100
+$Comp
+L C0603 C302
+U 1 1 5D8580F8
+P 6200 7800
+F 0 "C302" H 6400 7850 50  0000 C CNN
+F 1 "2.2u" H 6200 7900 50  0000 C CNN
+F 2 "zhtlab_SMD_standard:RCL_1608m" H 6300 7675 79  0001 C CNN
+F 3 "" H 6100 7800 79  0001 C CNN
+F 4 "1608M" H 5900 7900 50  0000 C CNN "size"
+	1    6200 7800
+	0    1    -1   0   
+$EndComp
+Wire Wire Line
+	6200 7600 6000 7600
+Connection ~ 6200 7600
+Wire Wire Line
+	6200 7700 6200 6500
+$Comp
+L VD_MCU #PWR049
+U 1 1 5D8581F6
+P 6200 6500
+F 0 "#PWR049" H 6200 6750 60  0001 C CNN
+F 1 "VD_MCU" H 6200 6650 60  0000 C CNN
+F 2 "" H 6200 6600 79  0001 C CNN
+F 3 "" H 6200 6600 79  0001 C CNN
+	1    6200 6500
+	1    0    0    -1  
+$EndComp
+$Comp
+L VD_MCU #PWR050
+U 1 1 5D858389
+P 5500 9000
+F 0 "#PWR050" H 5500 9250 60  0001 C CNN
+F 1 "VD_MCU" H 5500 9150 60  0000 C CNN
+F 2 "" H 5500 9100 79  0001 C CNN
+F 3 "" H 5500 9100 79  0001 C CNN
+	1    5500 9000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5500 9000 5500 10200
+Wire Wire Line
+	5500 9300 5300 9300
+Connection ~ 5500 9300
+$Comp
+L GND #PWR051
+U 1 1 5D8585F1
+P 5500 10500
+F 0 "#PWR051" H 5500 10350 60  0001 C CNN
+F 1 "GND" H 5650 10450 60  0001 C CNN
+F 2 "" H 5500 10500 60  0001 C CNN
+F 3 "" H 5500 10350 60  0001 C CNN
+	1    5500 10500
+	1    0    0    -1  
+$EndComp
+$Comp
+L C0603 C301
+U 1 1 5D8585F9
+P 5500 10300
+F 0 "C301" H 5450 10200 50  0000 C CNN
+F 1 "2.2u" H 5500 10400 50  0000 C CNN
+F 2 "zhtlab_SMD_standard:RCL_1608m" H 5600 10175 79  0001 C CNN
+F 3 "" H 5400 10300 79  0001 C CNN
+F 4 "1608M" H 5200 10400 50  0000 C CNN "size"
+	1    5500 10300
+	0    1    -1   0   
+$EndComp
+Wire Wire Line
+	5500 10400 5500 10500
+NoConn ~ 3700 4300
+Text GLabel 3900 10200 0    50   Input ~ 0
+MCU_PC5:CONF_SEL
+Wire Wire Line
+	3900 10200 4500 10200
+$EndSCHEMATC
