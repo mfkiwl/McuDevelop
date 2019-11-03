@@ -32,6 +32,17 @@
 
 #include        "devSpi16.h"
 
+#ifdef SPI_MODULE_FIFO_YES
+#define IsRxOccupy(p)    ((p)->SR & SPI_SR_FRLVL_MASK)
+#else
+#ifdef SPI_MODULE_FIFO_NO
+#define IsRxOccupy(p)    ((p)->SR & SPI_SR_RXNE_MASK)
+#else
+#error no fifo definition
+#endif
+#endif
+
+
 struct _stSpi         spi;
 static devDmaParam_t       paramDmaRx;
 const static uint8_t    devSpiRecvDmaReqTbl[]    = DMA_REQ_SPIRX_TBL;
@@ -54,28 +65,30 @@ DevSpiInit(int unit, devSpiParam_t *param)
   if(unit == -1) {
     memset(&spi, 0, sizeof(spi));
 #ifdef  SPI1_PTR
-    spi.sc[1].dev = SPI1_PTR;
+    spi.sc[SPI1_NUM].dev = SPI1_PTR;
 #endif
 #ifdef  SPI2_PTR
-    spi.sc[2].dev = SPI2_PTR;
+    spi.sc[SPI2_NUM].dev = SPI2_PTR;
 #endif
 #ifdef  SPI3_PTR
-    spi.sc[3].dev = SPI3_PTR;
+    spi.sc[SPI3_NUM].dev = SPI3_PTR;
 #endif
 #ifdef  SPI4_PTR
-    spi.sc[4].dev = SPI4_PTR;
+    spi.sc[SPI4_NUM].dev = SPI4_PTR;
 #endif
 #ifdef  SPI5_PTR
-    spi.sc[5].dev = SPI5_PTR;
+    spi.sc[SPI5_NUM].dev = SPI5_PTR;
 #endif
 #ifdef  SPI6_PTR
-    spi.sc[6].dev = SPI6_PTR;
+    spi.sc[SPI6_NUM].dev = SPI6_PTR;
 #endif
 
     goto end;
   }
 
+
   if(unit > SPI_MODULE_COUNT) goto fail;
+
   psc = &spi.sc[unit];
   p = psc->dev;
 
@@ -89,7 +102,7 @@ DevSpiInit(int unit, devSpiParam_t *param)
 
   psc->unit = unit;
 
-  cr1 |= (SPI_CR1_BIDIMODE_YES | SPI_CR1_BIDIOE_YES |
+  cr1 |= (/*SPI_CR1_BIDIMODE_YES | SPI_CR1_BIDIOE_YES |*/
           SPI_CR1_LSBFRST_NO | SPI_CR1_MSTR_YES);
   br = psc->param.prescaler << SPI_CR1_BR_SHIFT;
   if(br > SPI_CR1_BR_MAXVALUE) br = SPI_CR1_BR_MAXVALUE;
@@ -133,6 +146,48 @@ fail:
 
 
 /**
+  * @brief  initilize the devcie
+  * @param  unit   unit number
+  * @param  speed  clock (in Hz)
+  * @retval int  0: success
+  */
+int
+DevSpiSetSpeed(int unit, int speed)
+{
+  int                   result = DEV_ERRNO_UNIT_EXCEEDED;
+  stm32Dev_SPI          *p;
+  devSpiSc_t            *psc;
+  uint32_t              cr1;
+  uint32_t              div;
+  systemClockFreq_t     rccclk;
+  int                   pclk;
+
+  if(unit > SPI_MODULE_COUNT) goto fail;
+
+  psc = &spi.sc[unit];
+  p = psc->dev;
+
+  SystemGetClockValue(&rccclk);
+  pclk = rccclk.pclk2;
+  for(div = 0; div < 8; div++) {
+    pclk >>= 1;
+    if(pclk <= speed) break;
+  }
+
+  cr1  = p->CR1;
+  cr1 &= ~SPI_CR1_BR_MASK;
+  cr1 |= SPI_CR1_BR_VAL(div);
+  p->CR1 = cr1;
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+  return result;
+}
+
+
+
+/**
   * @brief  interrupt process routine
   * @param  unit   unit number
   * @retval none
@@ -152,10 +207,15 @@ fail:
   return;
 }
 /**
-  * @brief  interrupt entry point for unit 4
+  * @brief  interrupt entry point for unit 1,2,3,4
   * @param  noen
   * @retval none
   */
+void
+DevSpi1Interrupt(void)
+{
+  DevSpiInterrupt(1);
+}
 void
 DevSpi4Interrupt(void)
 {
@@ -285,7 +345,7 @@ DevSpiRecvPio(devSpiSc_t *psc, uint8_t *ptr, int size)
 
   p = psc->dev;
   /* flush rx buffer */
-  while(p->SR & SPI_SR_RXNE_MASK) {
+  while(IsRxOccupy(p)) {
     *(__IO uint8_t *)&p->DR;
   }
   p->SR;
@@ -296,15 +356,7 @@ DevSpiRecvPio(devSpiSc_t *psc, uint8_t *ptr, int size)
 
   sz = size;
   for(int i = 0; i < size; i++) {
-#ifdef SPI_MODULE_FIFO_NO
-    while(!(p->SR & SPI_SR_RXNE_MASK));
-#else
-#ifdef SPI_MODULE_FIFO_YES
-    while(!(p->SR & SPI_SR_FRLVL_MASK));
-#else
-#error no fifo definition
-#endif
-#endif
+    while(!IsRxOccupy(p));
     *ptr++ = *(__IO uint8_t *)&p->DR;
   }
   p->CR1 &= ~SPI_CR1_SPE_MASK;

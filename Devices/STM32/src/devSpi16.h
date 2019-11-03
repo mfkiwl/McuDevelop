@@ -59,11 +59,13 @@ struct _stSpi {
 
 
 int             DevSpiInit(int unit, devSpiParam_t *param);
+int             DevSpiSetSpeed(int unit, int speed);
 int             DevSpiLoop(int unit);
 int             DevSpiSend(int unit, uint8_t *ptr, int size);
 int             DevSpiRecv(int unit, uint8_t *ptr, int size);
 int             DevSpiRecvIsFinishDma(int unit);
 int             DevSpiRecvStopDma(int unit);
+void            DevSpi1Interrupt(void);
 void            DevSpi3Interrupt(void);
 
 
