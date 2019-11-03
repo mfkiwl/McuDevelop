@@ -198,8 +198,8 @@ typedef int     IRQn_Type;
 /* [7:4]:ch [3:0]:req */
 #define DMA_REQ_SPITX_TBL       {0, 0x31, 0x52}
 #define DMA_REQ_SPIRX_TBL       {0, 0x21, 0x42}
-#define DMA_REQ_USARTTX_TBL     {0, 0x43, 0x74}
-#define DMA_REQ_USARTRX_TBL     {0, 0x53, 0x64}
+#define DMA_REQ_USARTTX_TBL     {0x43, 0x74}
+#define DMA_REQ_USARTRX_TBL     {0x53, 0x64}
 
 
 /*************************************************************
@@ -218,7 +218,7 @@ typedef enum  {
   TIM22_NUM,
   TIM_NUM_MAX
 } timNo_t;
-typedef enum  {
+typedef enum  {         // old
   TIM_UNIT_INIT = -1,
   TIM2_UNIT = 0,
   TIM3_UNIT,
@@ -266,6 +266,15 @@ typedef enum  {
 #include        "stm32Usart.h"
 
 typedef enum  {
+  USART_NUM_INIT = -1,
+  USART1_NUM = 0,
+  USART2_NUM,
+  USART3_NUM,
+  USART4_NUM,
+  USART5_NUM,
+  USART_NUM_MAX
+} usartNo_t;
+typedef enum  {         // old
   USART_UNIT_INIT = -1,
   USART1_UNIT = 0,
   USART2_UNIT,
