@@ -98,6 +98,7 @@ typedef struct {
 #define FUNC11_LCD	11
 #define FUNC12_SD	12
 #define FUNC12_FMC	12
+#define FUNC12          12
 #define FUNC12_COMP	12
 #define FUNC13_SAI	13
 #define FUNC14_TIM	14
