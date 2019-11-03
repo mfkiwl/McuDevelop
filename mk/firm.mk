@@ -56,8 +56,10 @@ include		$(MAKEFILE_DEP)
 include		$(CONFIG_MK)
 vpath		%.c $(sort $(dir $(SOURCES)))
 vpath		%.s $(sort $(dir $(SOURCESASM)))
+vpath		%.S $(sort $(dir $(SOURCESASMC)))
 
 OBJS		= $(addprefix $(OBJDIR)/, $(notdir $(SOURCESASM:.s=.o))) \
+		  $(addprefix $(OBJDIR)/, $(notdir $(SOURCESASMC:.S=.o))) \
 			$(addprefix $(OBJDIR)/, $(notdir $(SOURCES:.c=.o)))
 
 INCDIRS_LIB	= -I $(CMSIS_DIR)/Include \
@@ -66,12 +68,16 @@ INCDIRS_LIB	= -I $(CMSIS_DIR)/Include \
 		-I $(FREERTOS_DIR)/include \
 		-I $(USBDIF_DIR)/include \
 		-I $(USBDIF_DIR)/src \
+		-I $(SDMMC_DIR)/include \
+		-I $(SDMMC_DIR)/src \
+		-I $(FATFS_DIR)/source \
 		-I $(DEVICELIB_DIR)/$(DEVICE_TYPE)/include \
 		-I $(DEVICELIB_DIR)/$(VENDOR_SERIES)/include \
 		-I $(DEVICELIB_DIR)/$(VENDOR_SERIES)/src \
+		-I $(DEVICELIB_DIR)/include \
 		-I $(DEVICE_DIR)/src \
-		-I $(COMMON_DIR)
-
+		-I $(COMMON_DIR) \
+		-I $(LLVM_DIR)
 
 CFLAGS		= $(CFLAGS_DEV) $(DEFINES) $(INCDIRS) $(INCDIRS_LIB) $(DEPFLAGS) $(LSTFLAGS)
 
@@ -91,7 +97,7 @@ SHELL		= /bin/bash
 ######################################################
 # make special target definitions
 #
-.SUFFIXES:	.c .s .o .d
+.SUFFIXES:	.c .s .S .o .d
 .PHONY:		clean depend
 
 
@@ -133,6 +139,8 @@ endif
 
 $(OBJDIR)/%.o: %.s
 	$(AS)  -c $(CPU) $(ASFLAGS) -o $@ $<
+$(OBJDIR)/%.o: %.S
+	$(AS)  -c $(CPU) $(ASFLAGS) -o $@ $<
 
 
 ######################################################
@@ -152,6 +160,8 @@ clean:
 # depend
 #
 $(OBJDIR)/%.d: %.s
+	echo "${@:.d=.o} $@: $(DESTDIR)/config.inc" > $@
+$(OBJDIR)/%.d: %.S
 	echo "${@:.d=.o} $@: $(DESTDIR)/config.inc" > $@
 
 -include $(DEPENDS)
