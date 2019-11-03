@@ -26,6 +26,14 @@
 
 typedef struct {
   __IO uint32_t         CR1;            /* 0x00 */
+#define PWR_CR1_ODSWEN_SHIFT            17
+#define PWR_CR1_ODSWEN_MASK             (1 << (PWR_CR1_ODSWEN_SHIFT))
+#define PWR_CR1_ODSWEN_NO               (0 << (PWR_CR1_ODSWEN_SHIFT))
+#define PWR_CR1_ODSWEN_YES              (1 << (PWR_CR1_ODSWEN_SHIFT))
+#define PWR_CR1_ODEN_SHIFT              16
+#define PWR_CR1_ODEN_MASK               (1 << (PWR_CR1_ODEN_SHIFT))
+#define PWR_CR1_ODEN_NO                 (0 << (PWR_CR1_ODEN_SHIFT))
+#define PWR_CR1_ODEN_YES                (1 << (PWR_CR1_ODEN_SHIFT))
 #define PWR_CR1_VOS_SHIFT               14
 #define PWR_CR1_VOS_MASK                (3 << (PWR_CR1_VOS_SHIFT))
 #define PWR_CR1_VOS_RANGE_FORBIDDEN     (0 << (PWR_CR1_VOS_SHIFT))
@@ -34,7 +42,11 @@ typedef struct {
 #define PWR_CR1_VOS_RANGE1_180MHZ       (3 << (PWR_CR1_VOS_SHIFT))
 
   __IO uint32_t         CSR1;           /* 0x04 */
-#define PWR_CSR1_VOSRDY_SHIFT           4
+#define PWR_CSR1_ODSWRDY_SHIFT          17
+#define PWR_CSR1_ODSWRDY_MASK           (1 << (PWR_CSR1_ODSWRDY_SHIFT))
+#define PWR_CSR1_ODRDY_SHIFT            16
+#define PWR_CSR1_ODRDY_MASK             (1 << (PWR_CSR1_ODRDY_SHIFT))
+#define PWR_CSR1_VOSRDY_SHIFT           14
 #define PWR_CSR1_VOSRDY_MASK            (1 << (PWR_CSR1_VOSRDY_SHIFT))
 
   __IO uint32_t         CR2;            /* 0x08 */
