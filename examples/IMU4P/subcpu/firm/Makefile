@@ -53,7 +53,6 @@ SOURCES =	\
 		$(COMMON_DIR)/string_gcc.c \
 		$(COMMON_DIR)/fifo.c \
 		$(COMMON_DIR)/crc32.c \
-		$(CONFIG_ROOTDIR)/../lib/openbsd/string/memcmp.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strtok.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strncmp.c \
 		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strncpy.c \
