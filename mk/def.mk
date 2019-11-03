@@ -32,9 +32,12 @@ DEVICE_DIR	:= ../target/$(DEVICE_TYPE)
 DEVICELIB_DIR	:= $(CONFIG_ROOTDIR)/../Devices
 FREERTOS_DIR	:= $(CONFIG_ROOTDIR)/../Middlewares/FreeRTOS/Source
 USBDIF_DIR	:= $(CONFIG_ROOTDIR)/../Middlewares/Usbdif
+SDMMC_DIR	:= $(CONFIG_ROOTDIR)/../Middlewares/Sdmmc
+FATFS_DIR	:= $(CONFIG_ROOTDIR)/../Middlewares/Fatfs
 COMMON_DIR	:= $(CONFIG_ROOTDIR)/../lib/common
 PRINTF_DIR	:= $(CONFIG_ROOTDIR)/../lib/printf-MarcoPaland
 OPENBSD_DIR	:= $(CONFIG_ROOTDIR)/../lib/openbsd
 LIBAEABI_CORTEXM0_DIR	:= $(CONFIG_ROOTDIR)/../lib/libaeabi-cortexm0
+LLVM_DIR	:= $(CONFIG_ROOTDIR)/../lib/llvm
 
 CONFIG_MK	:= $(DESTDIR)/config.mk
