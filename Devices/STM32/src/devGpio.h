@@ -95,6 +95,8 @@
 #define GPIO_FUNC12_SD          ((FUNC12_SD) << (GPIO_FUNC_SHIFT))
 #define GPIO_FUNC12_COMP        ((FUNC12_COMP) << (GPIO_FUNC_SHIFT))
 #define GPIO_FUNC12_FMC         ((FUNC12_FMC) << (GPIO_FUNC_SHIFT))
+#define GPIO_FUNC12_SDMMC       ((FUNC12) << (GPIO_FUNC_SHIFT))
+#define GPIO_FUNC12_USBHS       ((FUNC12) << (GPIO_FUNC_SHIFT))
 #define GPIO_FUNC13_SAI         ((FUNC13_SAI) << (GPIO_FUNC_SHIFT))
 #define GPIO_FUNC14_TIM         ((FUNC14_TIM) << (GPIO_FUNC_SHIFT))
 #define GPIO_FUNC15             ((FUNC15) << (GPIO_FUNC_SHIFT))
