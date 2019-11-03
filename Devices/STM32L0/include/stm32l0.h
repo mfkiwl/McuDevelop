@@ -301,6 +301,12 @@ typedef enum  {         // old
 #include        "stm32Spi16.h"
 
 typedef enum  {
+  SPI_NUM_INIT = -1,
+  SPI1_NUM = 0,
+  SPI2_NUM,
+  SPI_NUM_MAX
+} spiNo_t;
+typedef enum  {
   SPI_UNIT_INIT = -1,
   SPI1_UNIT = 0,
   SPI2_UNIT,
