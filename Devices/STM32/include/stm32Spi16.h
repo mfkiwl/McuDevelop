@@ -66,6 +66,7 @@ typedef struct {
 #define SPI_CR1_BR_DIV128               (6 << (SPI_CR1_BR_SHIFT))
 #define SPI_CR1_BR_DIV256               (7 << (SPI_CR1_BR_SHIFT))
 #define SPI_CR1_BR_MAXVALUE             (7 << (SPI_CR1_BR_SHIFT))
+#define SPI_CR1_BR_VAL(x)               (((x) << (SPI_CR1_BR_SHIFT)) & SPI_CR1_BR_MASK)
 #define SPI_CR1_MSTR_SHIFT              (2)
 #define SPI_CR1_MSTR_MASK               (1 << (SPI_CR1_MSTR_SHIFT))
 #define SPI_CR1_MSTR_NO                 (0 << (SPI_CR1_MSTR_SHIFT))
