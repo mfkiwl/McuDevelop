@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 zhtlab
+ * Copyright (c) 2018,2019 zhtlab
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -50,11 +50,23 @@ memcpy(void *d, void *s, int size)
   return s;
 }
 
+int
+memcmp (const char *str1, const char *str2, int size)
+{
+  register const uint8_t *s1 = (const uint8_t *)str1;
+  register const uint8_t *s2 = (const uint8_t *)str2;
+
+  while (size-- > 0) {
+    if (*s1++ != *s2++) return (s1[-1] < s2[-1])? -1: 1;
+  }
+  return 0;
+}
+
 char *
 strcpy(char *dst, const char *src)
 {
-  char	*dst_bak;
-  while(*dst++ = *src++);
+  char  *dst_bak = dst;
+  while(*src) *dst++ = *src++;
   return dst_bak;
 }
 int
