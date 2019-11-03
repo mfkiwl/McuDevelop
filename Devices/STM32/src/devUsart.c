@@ -190,7 +190,7 @@ DevUsartInit(int unit, devUsartParam_t *param)
     uint8_t             *ptr;
     int                 size;
 
-    FifoGetWritePointer(psc->dFifoRx, (char **)&ptr, &size);
+    FifoGetWritePointer(psc->dFifoRx, &ptr, &size);
 
     /* start dma */
     memset(&param, 0, sizeof(param));
@@ -409,7 +409,7 @@ DevUsartSend(int unit, uint8_t *ptr, int size)
       uint8_t   *pFifo;
       int       lenFifo;
       int       re;
-      re = FifoGetReadPointer(psc->dFifoTx, (char **)&pFifo, &lenFifo);
+      re = FifoGetReadPointer(psc->dFifoTx, &pFifo, &lenFifo);
       if(re >= 0 && lenFifo > 0) {
         //DevUsartSendDma(psc, ptr, size);
         DevUsartSendDma(psc, pFifo, lenFifo);
@@ -513,7 +513,7 @@ DevUsartSendFifo(devUsartSc_t *psc)
 
   p = psc->dev;
 
-  re = FifoGetReadPointer(psc->dFifoTx, (char **)&ptr, &size);
+  re = FifoGetReadPointer(psc->dFifoTx, &ptr, &size);
   if(re >= 0 && size > 0) {
     cnt = 0;
     while(size > 0) {
