@@ -111,6 +111,11 @@ Icm42605Init(imuHandler_t *ph)
 
   SystemWaitCounter(2);
 
+  /* interface setting */
+  reg = ICM42605_REG_INTF_CONFIG0;
+  val = 0x30 | INTF_CONFIG0_SIFS_CFG_I2C_DIS;
+  ImuSetValueStandard(unit, reg, val);
+
   /* power manegement */
   reg = ICM42605_REG_PWR_MGMT0;
   val = (PWR_MGMT0_TEMP_DIS_NO | PWR_MGMT0_IDLE_NO |
@@ -140,8 +145,6 @@ Icm42605Init(imuHandler_t *ph)
   return result;
 }
 
-
-#define ICM42605_REG_ACCEL_DATA_X1      0x1f
 
 #define TOP     (ICM42605_REG_TEMP_OUT_H)
 #define TH      ((ICM42605_REG_TEMP_OUT_H)   -(TOP))
@@ -195,14 +198,15 @@ Icm42605ReadValue(imuHandler_t *ph, imuValue_t *p)
   /* the data of *src byte order must be little endian
    * however, *src is bigendian, so swap high and low byte
    */
-  src  = (uint16_t *) &p->raw[AXH];
+  src  = (uint16_t *) &p->raw[TH];
+
+  temp    = __REV16(*src++);
+  p->temp4x = (23 << 2) + (temp >> 7);
+
   dest = (uint16_t *) &p->acc.x;
   *dest++ = __REV16(*src++);
   *dest++ = __REV16(*src++);
   *dest++ = __REV16(*src++);
-
-  temp    = __REV16(*src++);
-  p->temp4x = (23 << 2) + (temp >> 7);
 
   dest = (uint16_t *) &p->gyro.x;
   *dest++ = __REV16(*src++);
