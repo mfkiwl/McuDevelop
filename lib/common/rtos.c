@@ -55,18 +55,27 @@ RtosKernelStart(void)
   * @param  arg user argument
   * @retval task id
   */
-rtosTaskId
-RtosTaskCreate(const rtosTaskInfo_t *pInfo, void *arg)
+rtosStatus_t
+RtosTaskCreate(const rtosTaskInfo_t *pInfo, void *arg, rtosTaskId *pId)
 {
+  rtosStatus_t          result = RTOS_SUCCESS;
   TaskHandle_t  handle;
-  xTaskCreate(pInfo->pFunc,
-              pInfo->pName,
-              pInfo->szStack,
-              arg,
-              pInfo->priority,
-              &handle);
+  portBASE_TYPE re;
 
-  return (rtosTaskId)handle;
+  if(pId == RTOS_NULL) pId = &handle;
+  re = xTaskCreate(pInfo->pFunc,
+                   pInfo->pName,
+                   pInfo->szStack,
+                   arg,
+                   pInfo->priority,
+                   pId
+                   );
+
+  if(re == portSTACK_GROWTH) {
+    result = RTOS_LACKOFSTACK;
+  }
+
+  return result;
 }
 /**
   * @brief  sleep this task

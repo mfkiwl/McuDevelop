@@ -43,6 +43,8 @@ void    xPortSysTickHandler(void);
 #endif
 
 
+#define RTOS_NULL       ((void *) 0)
+
 typedef enum {
   RTOS_PRI_IDLE           = 0,
   RTOS_PRI_LOWER,
@@ -67,13 +69,16 @@ typedef struct {
   uint8_t               *pName;
   rtosTaskPriority      priority;
   uint32_t              szStack;
+  rtosTaskId            id;
 } rtosTaskInfo_t;
 
 typedef enum {
   RTOS_SUCCESS = 0,
-  RTOS_NOTSTARTEDYET,
-  RTOS_INVALIDARG,
-  RTOS_TIMEOUT,
+  RTOS_UNKNOWN          = -1,
+  RTOS_NOTSTARTEDYET    = -10,
+  RTOS_INVALIDARG       = -11,
+  RTOS_TIMEOUT          = -12,
+  RTOS_LACKOFSTACK      = -13,
 } rtosStatus_t;
 
 
@@ -81,7 +86,7 @@ typedef enum {
 rtosStatus_t            RtosKernelStart(void);
 
 /* task */
-rtosTaskId              RtosTaskCreate(const rtosTaskInfo_t *pInfo, void *arg);
+rtosStatus_t            RtosTaskCreate(const rtosTaskInfo_t *pInfo, void *arg, rtosTaskId *pId);
 rtosStatus_t            RtosTaskSleep(uint32_t millisec);
 
 /* mutex */
