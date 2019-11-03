@@ -21,10 +21,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _STM32F4_H_
-#define _STM32F4_H_
+#ifndef _STM32F7_H_
+#define _STM32F7_H_
 
-#define __CM4_REV               1
+#define __CM7_REV               0
 #define __MPU_PRESENT           1
 #define __FPU_PRESENT           1
 #define __NVIC_PRIO_BITS        4
@@ -52,7 +52,7 @@ enum irqNumbers {
   PendSV_IRQn           =  ( -2),
   SysTick_IRQn          =  ( -1),
 
-  DMA1_CH0_IRQn           =  11,
+  DMA1_CH0_IRQn         =  11,
   DMA1_CH1_IRQn,
   DMA1_CH2_IRQn,
   DMA1_CH3_IRQn,
@@ -62,39 +62,47 @@ enum irqNumbers {
   DMA1_CH7_IRQn,
   ADC1_IRQn,
 
-  TIM1_BRK_TIM9_IRQn      =    24,
+  TIM1_BRK_TIM9_IRQn    =  24,
   TIM1_UP_TIM10_IRQn,
   TIM1_TRG_COM_TIM11_IRQn,
   TIM1_CC_IRQn,
   TIM2_IRQn,
   TIM3_IRQn,
   TIM4_IRQn,
-  I2C1_EV_IRQn            =  31,
+  I2C1_EV_IRQn          =  31,
   I2C1_ER_IRQn,
   I2C2_EV_IRQn,
   I2C2_ER_IRQn,
-  SPI1_IRQn               =  35,
+  SPI1_IRQn             =  35,
   SPI2_IRQn,
-  USART1_IRQn             =  37,
+  USART1_IRQn           =  37,
   USART2_IRQn,
   USART3_IRQn,
   EXTI15_10_IRQn,
 
-  OTG_FS_WAKE_IRQn        =  42,
+  OTG_FS_WAKE_IRQn      =  42,
+  SDMMC1_IRQn           =  49,
 
-  DMA2_CH0_IRQn           =  56,
+  DMA2_CH0_IRQn         =  56,
   DMA2_CH1_IRQn,
   DMA2_CH2_IRQn,
   DMA2_CH3_IRQn,
   DMA2_CH4_IRQn,
 
-  OTG_FS_IRQn             =  67,
+  OTG_FS_IRQn           =  67,
   DMA2_CH5_IRQn,
   DMA2_CH6_IRQn,
   DMA2_CH7_IRQn,
   USART6_IRQn,
   I2C3_EV_IRQn,
   I2C3_ER_IRQn,
+  OTG_HS_EP1_OUT_IRQn   =  74,
+  OTG_HS_EP1_IN_IRQn,
+  OTG_HS_WAKE_IRQn,
+  OTG_HS_IRQn,
+
+  SDMMC2_IRQn           = 103,
+
 };
 
 typedef int     IRQn_Type;
@@ -191,9 +199,28 @@ typedef int     IRQn_Type;
 
 
 /*************************************************************
- * 12 TIM1
- * 13 TIM2 -- TIM5
- * 14 TIM10 -- TIM11
+ * 12 FMC
+ */
+#include        "stm32Fmc.h"
+
+#define FMC_PTR         ((stm32Dev_FMC *) (AHB3_BASE + 0x0000))
+
+#define FMC_BANK1_PTR   ((void *) (0x60000000))
+#define FMC_BANK1SRAM0_PTR   ((void *) (0x60000000))
+#define FMC_BANK1SRAM1_PTR   ((void *) (0x64000000))
+#define FMC_BANK1SRAM2_PTR   ((void *) (0x68000000))
+#define FMC_BANK1SRAM3_PTR   ((void *) (0x6c000000))
+#define FMC_BANK2_PTR   ((void *) (0x70000000))
+#define FMC_BANK3_PTR   ((void *) (0x80000000))
+#define FMC_BANK4_PTR   ((void *) (0x90000000))
+#define FMC_BANK1SDRAM_PTR      ((void *) (0xc0000000))
+#define FMC_BANK2SDRAM_PTR      ((void *) (0xd0000000))
+
+
+/*************************************************************
+ * 18 TIM1/8
+ * 19 TIM2 -- TIM5
+ * 20 TIM10 -- TIM14
  */
 #include        "stm32Tim.h"
 
@@ -234,7 +261,7 @@ typedef enum  {
 
 
 /*************************************************************
- * 19 USART
+ * 27 USART
  */
 #include        "stm32Usart.h"
 
@@ -262,13 +289,29 @@ typedef enum  {
 
 
 /*************************************************************
- * 20 SPI
+ * 28 SPI
  */
 
-#define SPI_MODULE_COUNT        1
-#define SPI_MODULE_FIFO_NO      1
+#define SPI_MODULE_COUNT        2
+#define SPI_MODULE_FIFO_YES     1
+
+typedef enum  {
+  SPI_NUM_INIT = -1,
+  SPI1_NUM = 0,
+  SPI2_NUM,
+  SPI3_NUM,
+  SPI4_NUM,
+  SPI5_NUM,
+  SPI_NUM_MAX
+} spiNo_t;
 
 #include        "stm32Spi16.h"
+
+#define SPI1_PTR        ((stm32Dev_SPI *) ((APB2_BASE) + 0x3000))
+#define SPI2_PTR        ((stm32Dev_SPI *) ((APB1_BASE) + 0x3800))
+#define SPI3_PTR        ((stm32Dev_SPI *) ((APB1_BASE) + 0x3c00))
+#define SPI4_PTR        ((stm32Dev_SPI *) ((APB2_BASE) + 0x3400))
+#define SPI5_PTR        ((stm32Dev_SPI *) ((APB2_BASE) + 0x5000))
 
 
 /*************************************************************
@@ -293,12 +336,28 @@ typedef enum  {
 #define I2C3_PTR      ((stm32Dev_I2C *) ((APB1_BASE) + 0x5c00))
 
 
+/*************************************************************
+ * 30 SDMMC
+ */
+typedef enum  {
+  SDMMC_NUM_INIT = -1,
+  SDMMC1_NUM = 0,
+  SDMMC2_NUM,
+  SDMMC_NUM_MAX
+} sdmmcNo_t;
+
+#include        "stm32Sdmmc.h"
+
+#define SDMMC1_PTR      ((stm32Dev_SDMMC *) ((APB2_BASE) + 0x2c00))
+#define SDMMC2_PTR      ((stm32Dev_SDMMC *) ((APB2_BASE) + 0x1c00))
+
 
 /*******************************************
  * 32 OTG
  */
 #define USB_EPOUT_COUNTS        9     /* max number of ep  plus 1 */
 #define USB_EPIN_COUNTS         9     /* max number of ep  plus 1 */
+#define USB_HS_INTPHY           1
 
 #include        "stm32Otg.h"
 
