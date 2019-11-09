@@ -40,9 +40,7 @@ FpgaLatticeProgramPre(int unit, uint32_t idExp)
   uint32_t      id;
 
   FpgaLatticeReadDeviceID(unit, &id);
-  //printf("id exp:%x recv:%x\n", idExp, id);
   if(id != idExp) {
-    printf("#   the device id is not matched  recv[%x]\n", id);
     goto fail;
   }
   RtosTaskSleep(1);
