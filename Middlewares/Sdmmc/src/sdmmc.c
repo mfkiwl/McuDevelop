@@ -36,6 +36,7 @@
 #define SDMMC_DEBUG_API         0
 #define SDMMC_DEBUG_CMD         0
 #define SDMMC_DEBUG_TRANSFER    0
+#define SDMMC_DEBUG_INFO        0
 #define SDMMC_DEBUG_DUMP        0
 
 
@@ -60,7 +61,7 @@ SdmmcInit(int unit)
 
   memset(&sdmmc, 0, sizeof(sdmmc));
 
-  sdmmc.sc[0].maxclk = 25000000;
+  sdmmc.sc[0].maxclk = 50000000;
 
 #if 0
   DevSdmmcInit(SDMMC_NUM_INIT, NULL);
@@ -100,6 +101,7 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
   uint32_t              status;
 
   sdmmcSc_t             *psc;
+  devSdmmcIoctlTransferInfo_t   info;
 
   psc = &sdmmc.sc[unit];
 
@@ -113,17 +115,22 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
 #endif
 
   // set the block size
-  SdmmcCmd16SetBlockLength(unit, 512);          // CMD16  the block size is set 512
-  val = SET_TRANSFER_INFO_READ_BS(SET_TRANSFER_INFO_BLKSIZE_512B);
-  DevSdmmcIoctl(unit, DEV_SDMMC_IOCTL_SET_TRANSFER_INFO, &val);
+  val = 1<<SET_TRANSFER_INFO_BLKSIZE_512B;
+  SdmmcCmd16SetBlockLength(unit, val);          // CMD16  the block size is set 512
 
-  re = DevSdmmcReadBlock2(unit, lba, count, (uint32_t *)ptr);
+  // set the recv count and block size to the module
+  info.cntBlock = count;
+  info.szBlock = SET_TRANSFER_INFO_BLKSIZE_512B;
+  info.dir = DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CARD_TO_CTRL;
+  info.ptrDma = ptr;
+  DevSdmmcIoctl(unit, DEV_SDMMC_IOCTL_SET_TRANSFER_INFO, &info);
 
+  // send the read command
   if(count == 1) {
     SdmmcCmd17ReadSingleBlock(unit, lba);
   } else {
     if(psc->supportCmd23) {
-      result = SdmmcCmd23SetBlockCount(unit, count);
+       result = SdmmcCmd23SetBlockCount(unit, count);
       if(result != SDMMC_SUCCESS) {
         psc->supportCmd23 = 0;
       }
@@ -131,8 +138,10 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
     SdmmcCmd18ReadMultiBlock(unit, lba);
   }
 
+  // data recv
   result = DevSdmmcWaitRecvData(unit, (uint32_t *)ptr, 400000);
 
+  // stop sending
   if(!psc->supportCmd23 && count > 1) {
     SdmmcCmd12StopTransmission(unit);
   }
@@ -316,12 +325,10 @@ sdmmcResult
 SdmmcCmd12StopTransmission(int unit)
 {
   sdmmcResult           result = SDMMC_ERRNO_UNKNOWN;
-  uint32_t              tout;
   uint32_t              val;
 
   SdmmcSubSendCommand(unit, SDMMC_CMD12_STOP_TRANSMISSION, NULL);
-  result = SdmmcSubWaitSendCmd(unit);
-  //SdmmcSubRecvCmdResp1(unit, &val);
+  result = SdmmcSubRecvCmdResp1(unit, &val);
 
 #if SDMMC_DEBUG_CMD
   printf("# SdmmcCmd12StopTransmission() unit:%d, result:%d\n",
@@ -355,13 +362,11 @@ SdmmcCmd16SetBlockLength(int unit, uint32_t blocksize)
   sdmmcResult           result = SDMMC_ERRNO_UNKNOWN;
   int                   re;
   uint32_t              val;
+  //  devSdmmcIoctlTransferInfo_t   info;
 
   SdmmcSubSendCommand(unit, SDMMC_CMD16_SET_BLOCKLEN, &blocksize);
   result = SdmmcSubRecvCmdResp1(unit, &val);
   if(result != SDMMC_SUCCESS) goto fail;
-
-  val = SET_TRANSFER_INFO_READ_BS(SET_TRANSFER_INFO_BLKSIZE_8B);
-  DevSdmmcIoctl(unit, DEV_SDMMC_IOCTL_SET_TRANSFER_INFO, &val);
 
 #if SDMMC_DEBUG_CMD
   printf("# SdmmcCmd16SetBlockLength() unit:%d, blocksize:%x, result:%d\n",
@@ -716,6 +721,8 @@ SdmmcSubGetCapability(int unit)
     psc->cardType = SDMMC_CARDTYPE_SDHC_SDXC;
   }
 
+
+#if SDMMC_DEBUG_INFO
   /* debug */
   if(psc->cardVersion == SDMMC_CARDVERSIONE_1_X) {
     puts("# SD cap  1.x  SDSC\n");
@@ -727,6 +734,7 @@ SdmmcSubGetCapability(int unit)
     }
   }
   printf("# SD voltage: %dmV\n", (psc->vccio == SDMMC_VCCIO_1800MV)? 1800: 3300);
+#endif
 
   result == SDMMC_SUCCESS;
 
@@ -744,6 +752,8 @@ SdmmcSubInitCard(int unit)
   uint32_t      rca = 1;
   uint32_t      val;
 
+  devSdmmcIoctlTransferInfo_t   info;
+
   psc = &sdmmc.sc[unit];
 
   // get the CID info
@@ -759,7 +769,15 @@ SdmmcSubInitCard(int unit)
   SdmmcCmd7SelDeselCard(unit, psc->rca);        // cmd7
 
   // the block size is set 8
-  SdmmcCmd16SetBlockLength(unit, 8);            // CMD16  the block size is set 8
+  val = 1<<SET_TRANSFER_INFO_BLKSIZE_8B;
+  SdmmcCmd16SetBlockLength(unit, val);          // CMD16  the block size is set 8
+
+  // the block size, count, destination address are set to the sdmodule
+  info.cntBlock = 1;
+  info.szBlock = SET_TRANSFER_INFO_BLKSIZE_8B;
+  info.dir = DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CARD_TO_CTRL;
+  info.ptrDma = psc->scr;
+  DevSdmmcIoctl(unit, DEV_SDMMC_IOCTL_SET_TRANSFER_INFO, &info);
 
   SdmmcAppCmd51SendSCR(unit, psc->rca, psc->scr); // ACMD51 get scr
 

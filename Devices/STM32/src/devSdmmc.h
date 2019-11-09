@@ -41,23 +41,23 @@ typedef struct {
 } devSdmmcParam_t;
 
 
-#if 0
 typedef struct {
   uint32_t      cntBlock;
   uint32_t      szBlock;
   uint32_t      dir;
 #define DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CARD_TO_CTRL    0
 #define DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CTRL_TO_CARD    1
-  uint32_t      toutData;
+  //uint32_t      toutData;
+  void          *ptrDma;
 
 } devSdmmcIoctlTransferInfo_t;
-#endif
 
 
 #ifdef _DEV_SDMMC_C_
 
 
 typedef struct {
+  int                   unit;
   stm32Dev_SDMMC        *dev;
 
   int                   up: 1;
@@ -127,7 +127,6 @@ int             DevSdmmcIoctl(int unit, int req, void *ptr);
 #define         SET_TRANSFER_INFO_BLKSIZE_VAL(x)        (( (x)<<(SET_TRANSFER_INFO_BLKSIZE_SHIFT)) & SET_TRANSFER_INFO_BLKSIZE_MASK)
 #define         SET_TRANSFER_INFO_WRITE_BS(x)           ((SET_TRANSFER_INFO_DIR_WRITE) | (SET_TRANSFER_INFO_BLKSIZE_VAL(x)))
 #define         SET_TRANSFER_INFO_READ_BS(x)            ((SET_TRANSFER_INFO_DIR_READ)  | (SET_TRANSFER_INFO_BLKSIZE_VAL(x)))
-#define DEV_SDMMC_IOCTL_TRANSFER                0x0200
 #define DEV_SDMMC_IOCTL_SET_CLOCK               0x0300
 #define DEV_SDMMC_IOCTL_SET_DATA_TRANSMISSION   0x0400
 #define         SET_DATA_TRANSMISSION_SHIFT             8
@@ -143,6 +142,8 @@ int             DevSdmmcReadData(int unit, uint32_t *ptr, int len, int tout);
 #ifdef  _DEV_SDMMC_C_
 static void     DevSdmmcInterrupt(int unit);
 static void     DevSdmmcChangeClock(devSdmmcUnit_t *psc);
+static int      DevSdmmcWaitRecvDataPio(devSdmmcUnit_t *psc, uint32_t *ptr, int tout);
+static int      DevSdmmcWaitRecvDataDma(devSdmmcUnit_t *psc, uint32_t *ptr, int tout);
 #endif
 
 

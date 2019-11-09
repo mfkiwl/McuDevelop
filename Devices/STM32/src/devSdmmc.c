@@ -45,6 +45,9 @@
 
 static devSdmmc_t       sdmmc;
 
+const static uint8_t devSdmmcSendDmaReqTbl[] = DMA_REQ_SDMMCTX_TBL;
+const static uint8_t devSdmmcRecvDmaReqTbl[] = DMA_REQ_SDMMCRX_TBL;
+
 #if 0
 static uint8_t devSdmmcCmdExtParamTbl[] = {
   SDMMC_CMD_WAITRESP_NO    | SDMMC_CMD_WAITINT_NO | SDMMC_CMD_CPSMEN_YES,     //go idle state
@@ -108,18 +111,25 @@ DevSdmmcInit(int unit, devSdmmcParam_t *param)
   }
 
   psc = &sdmmc.sc[unit];
+  psc->unit = unit;
   psc->dev = (stm32Dev_SDMMC *)tblDevice[unit];
+  memcpy(&psc->param, param, sizeof(psc->param));
+
+#if 1
+  /*
+   * the data transfer speed is very slow, and the data can be
+   * transfer incorrectly. the 125 words of 128 (512bytes) is
+   * used with DMA. the remained 3 words transmit with CPU.
+   * the transfer is finished. however, the first word data of
+   * CPU transfer could be incorrect.
+   *
+   * so, the dma mode is disable yet
+   */
+  psc->param.dma = 0;
+#endif
 
   p = psc->dev;
 
-#if 0
-  val = 128;                    // for backup
-  if(param->clk) {
-    SystemGetClockValue(&clk);
-    val = clk.pll1.Q / DEV_SDMMC_CLOCK_400KHZ;
-    val = (val >= 2)? val-2: 0;
-  }
-#endif
   // 400kHz first
   SystemGetClockValue(&clk);
   val = clk.pll1.Q / DEV_SDMMC_CLOCK_400KHZ;
@@ -136,10 +146,35 @@ DevSdmmcInit(int unit, devSdmmcParam_t *param)
 
   p->CLKCR = clkcr;
   p->POWER = SDMMC_POWER_PWRCTRL_ON;
-  p->MASK  = 0x003fc5ff;
+  p->MASK  = 0;
 
   psc->toutData = 100000000;
-  psc->DCTRL = /*SDMMC_DCTRL_SDIOEN_YES |*/ SDMMC_DCTRL_DTMODE_BLOCK | SDMMC_DCTRL_DBLOCKSIZE_512B;
+  psc->DCTRL = SDMMC_DCTRL_DTMODE_BLOCK | SDMMC_DCTRL_DBLOCKSIZE_512B;
+#if 1
+  if(psc->param.dma) {
+    psc->DCTRL |= SDMMC_DCTRL_DMAEN_YES;
+  }
+#endif
+  if(psc->param.dma) {
+    devDmaParam_t     param;
+    int               chDma;
+    /* start dma */
+    memset(&param, 0, sizeof(param));
+    param.req = DevDmaGetReq(devSdmmcRecvDmaReqTbl[unit]);
+    //param.a = (void *)  NULL;
+    //param.b = (void *) &p->FIFO;
+    //param.cnt = 0;
+    param.dirBA = 1;
+    param.aInc = 1;
+    param.flow = 1;
+    param.aSize = DEVDMA_SIZE_32BITS;
+    param.bSize = DEVDMA_SIZE_32BITS;
+    //param.intrTC = psc->param.intrDma? 1: 0;
+
+    chDma = DevDmaGetCh(devSdmmcRecvDmaReqTbl[unit]);
+    DevDmaInit(DMA2_NUM, chDma, &param);
+  }
+
   psc->up = 1;
 
 end:
@@ -285,11 +320,6 @@ fail:
 }
 
 
-
-
-
-
-
 int
 DevSdmmcWaitSendCmd(int unit, int tout)
 {
@@ -392,38 +422,13 @@ DevSdmmcWaitRecvData(int unit, uint32_t *ptr, int tout)
 
   psc = &sdmmc.sc[unit];
 
-  // wait to finish sending
-  while(1) {
-    val = psc->dev->STA;
-
-    if((val & (SDMMC_STA_DATAEND_MASK | SDMMC_STA_RXFIFOHF_MASK)) == (SDMMC_STA_DATAEND_MASK)) {
-      break;
-    }
-
-    if(val & SDMMC_STA_RXFIFOF_MASK) {
-      for(int i = 0; i < 32; i++) *ptr++ = psc->dev->FIFO;
-    } else if(val & SDMMC_STA_RXFIFOHF_MASK) {
-      for(int i = 0; i < 8; i++) *ptr++ = psc->dev->FIFO;
-    }
-
-    if((val & SDMMC_STA_DTIMEOUT_MASK) || tout-- <= 0) {
-      result = DEV_ERRNO_TIMEOUT;
-      goto fail;
-    }
-    if(val & (SDMMC_STA_DCRCFAIL_MASK|SDMMC_STA_RXOVERR_MASK)) {
-      goto fail;
-    }
+  if(psc->param.dma) {
+    result = DevSdmmcWaitRecvDataDma(psc, ptr, tout);
+  } else {
+    result = DevSdmmcWaitRecvDataPio(psc, ptr, tout);
   }
 
-  result = DEV_ERRNO_SUCCESS;
-
 fail:
-#if DEV_SDMMC_DEBUG_CMDRESP
-  printf("DevSdmmcWaitRecvData() sta:%x, result:%d\n",
-         val, result);
-#endif
-  // claer all interrupt status
-  psc->dev->ICR = SDMMC_ICR_FAILS_MASK;
 
   return result;
 }
@@ -431,67 +436,6 @@ fail:
 
 int
 DevSdmmcReadBlock(int unit, uint32_t lba, uint32_t count, uint32_t *ptr)
-{
-  int                   result = DEV_ERRNO_UNKNOWN;
-  devSdmmcUnit_t        *psc;
-  stm32Dev_SDMMC        *p;
-  uint32_t              val;
-
-#if DEV_SDMMC_DEBUG_CMDRESP
-  printf("# DevSdmmcReadBlock() unit:%d, lba:%x, cnt:%d\n", unit, lba, count);
-#endif
-
-  if(unit >= SDMMC_NUM_MAX) goto fail;
-
-  psc = &sdmmc.sc[unit];
-  p = psc->dev;
-
-  // initialize
-  p->DCTRL = 0;
-
-  // set parameters
-  p->DTIMER = psc->toutData;
-  p->DLEN = SDMMC_DLEN_VAL(count * psc->param.szBlock);
-  val  = psc->DCTRL;
-  val |= SDMMC_DCTRL_DTEN_YES;
-  p->DCTRL = val;
-  p->ARG = lba;
-  p->ICR = SDMMC_ICR_FAILS_MASK;
-
-  // flush
-  for(int i = 0; i < 32; i++) p->FIFO;
-
-  // send command
-  if(count == 1) {
-    p->CMD = SDMMC_CMD_READSINGLE;
-  } else {
-    p->CMD = SDMMC_CMD_READMULTI;
-  }
-
-  // wait the command response
-  DevSdmmcWaitRecvCmd(unit, 10000);
-
-  // wait to finish receiving
-  DevSdmmcWaitRecvData(unit, ptr, 400000);
-
-
-#if 0
-  if(count > 1) {
-    // stop receiving
-    p->ARG = 0;
-    p->CMD = SDMMC_CMD_STOPTRANFERING;
-    DevSdmmcWaitRecvCmd(unit, 10000);
-  }
-#endif
-
-end:
-  result = DEV_ERRNO_SUCCESS;
-
-fail:
-  return result;
-}
-int
-DevSdmmcReadBlock2(int unit, uint32_t lba, uint32_t count, uint32_t *ptr)
 {
   int                   result = DEV_ERRNO_UNKNOWN;
   devSdmmcUnit_t        *psc;
@@ -562,9 +506,9 @@ DevSdmmcIoctl(int unit, int req, void *ptr)
 {
   int                   result = DEV_ERRNO_UNKNOWN;
   devSdmmcUnit_t        *psc;
-  //  systemClockFreq_t     clk;
+  stm32Dev_SDMMC        *p;
 
-  //devSdmmcIoctlTransferInfo_t   *p;
+  devSdmmcIoctlTransferInfo_t   *pInfo;
   uint32_t              reg, val, bs;
 
 #if DEV_SDMMC_DEBUG_CMDRESP
@@ -574,41 +518,48 @@ DevSdmmcIoctl(int unit, int req, void *ptr)
   if(unit >= SDMMC_NUM_MAX) goto fail;
 
   psc = &sdmmc.sc[unit];
+  p = psc->dev;
 
   switch(req) {
   case        DEV_SDMMC_IOCTL_SET_TRANSFER_INFO:
-#if 0
-    p = (devSdmmcIoctlTransferInfo_t *) ptr;
-    psc->DCTRL &= ~SDMMC_DCTRL_DBLOCKSIZE_MASK;
-    psc->DCTRL |=  SDMMC_DCTRL_DBLOCKSIZE_VAL(9);
-#if 0
-    if(p->szBlock == 512) {
-    }
-#endif
-    psc->toutData = p->toutData;
-#endif
+    pInfo = (devSdmmcIoctlTransferInfo_t *) ptr;
+
+    // initialize
+    p->DCTRL = 0;
+
+    // setting for transmitting
     val = *(uint32_t *) ptr;
-    bs = val & SET_TRANSFER_INFO_BLKSIZE_MASK;
+    bs = pInfo->szBlock;
     psc->DCTRL &= ~(SDMMC_DCTRL_DBLOCKSIZE_MASK | SDMMC_DCTRL_DTDIR_SHIFT);
     psc->DCTRL |=   SDMMC_DCTRL_DBLOCKSIZE_VAL(bs);
-    psc->DCTRL |= ((val & SET_TRANSFER_INFO_DIR_MASK)?
-                   SDMMC_DCTRL_DTDIR_CTRL2CARD:
-                   SDMMC_DCTRL_DTDIR_CARD2CTRL);
     psc->param.szBlock = 1<<bs;
 
-    break;
+    p->DTIMER = psc->toutData;
+    p->DLEN = SDMMC_DLEN_VAL(pInfo->cntBlock * psc->param.szBlock);
+    val  = psc->DCTRL;
+    val |= ((pInfo->dir == DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CARD_TO_CTRL)?
+            SDMMC_DCTRL_DTDIR_CARD2CTRL:
+            SDMMC_DCTRL_DTDIR_CTRL2CARD);
+    val |= SDMMC_DCTRL_DTEN_YES;
+    p->DCTRL = val;
+    //p->dev->ARG = lba;
+    p->ICR = SDMMC_ICR_FAILS_MASK;
 
-  case        DEV_SDMMC_IOCTL_TRANSFER:
-#if 0
-    p = (devSdmmcIoctlTransferInfo_t *) ptr;
 
-    p->cntBlock;
-    val = psc->DCTRL;
-    val |= SDMMC_DCTRL_DTMODE_BLOCK | SDMMC_DCTRL_DTEN_YES ;
-    if(p->dir == DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CARD_TO_CTRL) {
-      val |= SDMMC_DCTRL_DTDIR_CARD2CTRL;
+    if(psc->param.dma) {
+      devDmaParam_t     param;
+      int               chDma;
+      /* start dma */
+      //memset(&param, 0, sizeof(param));
+      param.a = (void *)  pInfo->ptrDma;
+      param.b = (void *) &p->FIFO;
+      param.cnt = (pInfo->cntBlock * psc->param.szBlock) >> 2;
+
+      chDma = DevDmaGetCh(devSdmmcRecvDmaReqTbl[unit]);
+      DevDmaInitAddrSize(DMA2_NUM, chDma, &param);
+      DevDmaStart(DMA2_NUM, chDma);
     }
-#endif
+
     break;
 
   case        DEV_SDMMC_IOCTL_SET_CLOCK:
@@ -650,7 +601,6 @@ end:
 fail:
   return result;
 }
-
 
 
 int
@@ -731,13 +681,8 @@ DevSdmmcInterrupt(int unit)
   intr = psc->dev->STA;
   psc->dev->ICR = intr;
 
-  //printf("\nx %x\n", intr);
-
   if(intr & SDMMC_STA_CMDSENT_MASK) {
-    //RtosQueueSend(rtosQueueId id, void *ptr, 100);
   }
-
-
 
   return;
 }
@@ -751,12 +696,98 @@ DevSdmmcChangeClock(devSdmmcUnit_t *psc)
   uint32_t              reg;
 
   SystemGetClockValue(&clk);
-  val = clk.pll1.Q / psc->param.clk;
-  val = (val >= 2)? val-2: 0;
+  val = clk.pll1.Q / (psc->param.clk+1);
   reg  = psc->dev->CLKCR;
-  reg &= ~SDMMC_CLKCR_CLKDIV_MASK;
-  reg |=  SDMMC_CLKCR_CLKDIV_VAL(val);
+  if(val >= 1) {
+    val--;
+    reg &= ~(SDMMC_CLKCR_BYPASS_MASK | SDMMC_CLKCR_CLKDIV_MASK);
+    reg |=   SDMMC_CLKCR_CLKDIV_VAL(val);
+  } else {
+    reg |= SDMMC_CLKCR_BYPASS_YES;
+  }
   psc->dev->CLKCR = reg;
 
   return;
+}
+
+
+/********************************************************
+ * data transfer
+ */
+static int
+DevSdmmcWaitRecvDataPio(devSdmmcUnit_t *psc, uint32_t *ptr, int tout)
+{
+  int           result = DEV_ERRNO_TIMEOUT;
+  stm32Dev_SDMMC        *p;
+
+  uint32_t      val;
+
+  p = psc->dev;
+
+  // wait to finish sending
+  while(1) {
+    val = p->STA;
+
+    if((val & (SDMMC_STA_DATAEND_MASK | SDMMC_STA_RXFIFOHF_MASK)) == (SDMMC_STA_DATAEND_MASK)) {
+      break;
+    }
+
+    if(val & SDMMC_STA_RXFIFOF_MASK) {
+      for(int i = 0; i < 32; i++) *ptr++ = p->FIFO;
+    } else if(val & SDMMC_STA_RXFIFOHF_MASK) {
+      for(int i = 0; i < 8; i++) *ptr++ = p->FIFO;
+    }
+
+    if((val & SDMMC_STA_DTIMEOUT_MASK) || tout-- <= 0) {
+      result = DEV_ERRNO_TIMEOUT;
+      goto fail;
+    }
+    if(val & (SDMMC_STA_DCRCFAIL_MASK|SDMMC_STA_RXOVERR_MASK)) {
+      goto fail;
+    }
+  }
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+#if DEV_SDMMC_DEBUG_CMDRESP
+  printf("DevSdmmcWaitRecvDataPio() sta:%x, result:%d\n",
+         val, result);
+#endif
+  // claer all interrupt status
+  p->ICR = SDMMC_ICR_FAILS_MASK;
+
+  return result;
+}
+static int
+DevSdmmcWaitRecvDataDma(devSdmmcUnit_t *psc, uint32_t *ptr, int tout)
+{
+  int           result = DEV_ERRNO_TIMEOUT;
+  stm32Dev_SDMMC        *p;
+  int                   chDma;
+
+  uint32_t      val;
+  int           pos;
+
+  p = psc->dev;
+
+  chDma = DevDmaGetCh(devSdmmcRecvDmaReqTbl[psc->unit]);
+  while(!DevDmaIsFinished(DMA2_NUM, chDma));
+  pos = DevDmaGetTransferedCount(DMA2_NUM, chDma);
+  while(p->STA & SDMMC_STA_RXDAVL_MASK) {
+    *(ptr + pos) = p->FIFO;
+    pos++;
+  }
+
+  result = DEV_ERRNO_SUCCESS;
+
+ fail:
+#if DEV_SDMMC_DEBUG_CMDRESP
+  printf("DevSdmmcWaitRecvDataDma() sta:%x, result:%d\n",
+         val, result);
+#endif
+  // claer all interrupt status
+  p->ICR = SDMMC_ICR_FAILS_MASK;
+
+  return result;
 }
