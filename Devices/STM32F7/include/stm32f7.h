@@ -174,28 +174,42 @@ typedef int     IRQn_Type;
  */
 #define DMA_NO_CSELR            1
 
-#include        "stm32Dma.h"
+#include        "stm32Dma7.h"
+
+typedef enum  {
+  DMA_NUM_INIT = -1,
+  DMA1_NUM = 0,
+  DMA2_NUM,
+  DMA_NUM_MAX
+} dmaNo_t;
 
 #define DMA1_PTR ((stm32Dev_DMA *)  ((AHB1_BASE) + 0x6000))
 #define DMA2_PTR ((stm32Dev_DMA *)  ((AHB1_BASE) + 0x6400))
 
-#define DMA_MODULE1     (1)
-#define DMA_MODULE2     (2)
 
-/* [7:4]:ch [3:0]:req */
+/* F7xx   [7:4]:req-ch, [3:0]:stream(ch reg number) */
 /*                               SPI1, SPI2, SPI3, SPI4, SPI5 */
-#define DMA_REQ_SPITX_TBL       {0x2b, 0x40, 0x50, 0x0c, 0x4a}
-#define DMA_REQ_SPIRX_TBL       {0x3b, 0x30, 0x00, 0x1c, 0x3a}
+#define DMA_REQ_SPITX_TBL       {0x32, 0x04, 0x05, 0x40, 0x24}
+#define DMA_REQ_SPIRX_TBL       {0x33, 0x03, 0x00, 0x41, 0x23}
 /*                               USART1, USART2, USART6 */
-#define DMA_REQ_USARTTX_TBL     {0x7c,   0x64,   0x6d}
-#define DMA_REQ_USARTRX_TBL     {0x5c,   0x54,   0x1d}
+#define DMA_REQ_USARTTX_TBL     {0x47,   0x46,   0x56}
+#define DMA_REQ_USARTRX_TBL     {0x45,   0x45,   0x51}
 /*                               I2C1,   I2C2,   I2C3 */
 #define DMA_REQ_I2CTX_TBL       {0x16,   0x77,   0x34}
 #define DMA_REQ_I2CRX_TBL       {0x17,   0x73,   0x32}
-#define DMAMUX_REQ_I2CTX_TBL        {0x16,   0x77,   0x34}
-#define DMAMUX_REQ_I2CRX_TBL        {0x17,   0x73,   0x32}
+#if 0
+#define DMAMUX_REQ_I2CTX_TBL        {0x16,   0x77,   0x43}
+#define DMAMUX_REQ_I2CRX_TBL        {0x17,   0x73,   0x23}
 #define DMAMUX_MODULE_I2CTX_TBL {1,   1,   1}
 #define DMAMUX_MODULE_I2CRX_TBL {1,   1,   1}
+#endif
+
+/*                               SDMMC1, SDMMC2 */
+#define DMA_REQ_SDMMCTX_TBL     {0x46, 0x30}
+#define DMA_REQ_SDMMCRX_TBL     {0x43, 0x35}
+
+#define DevDmaGetReq(x)         (((x) >> 4) & 0xf)
+#define DevDmaGetCh(x)          ( (x)       & 0xf)
 
 
 /*************************************************************
