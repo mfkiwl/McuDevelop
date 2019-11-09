@@ -67,6 +67,7 @@ strcpy(char *dst, const char *src)
 {
   char  *dst_bak = dst;
   while(*src) *dst++ = *src++;
+  *dst = '\0';
   return dst_bak;
 }
 int
