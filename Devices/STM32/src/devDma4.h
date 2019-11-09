@@ -62,6 +62,10 @@ struct _stDma {
 };
 
 
+#define DevDmaGetCh(x)          (((x) >> 4) & 0xf)
+#define DevDmaGetStream(x)      ( (x)       & 0xf)
+
+
 int             DevDmaInit(int unit, int ch, devDmaParam_t *param);
 int             DevDmaInitAddrSize(int unit, int ch, devDmaParam_t *param);
 int             DevDmaStart(int unit, int ch);
