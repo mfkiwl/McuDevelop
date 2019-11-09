@@ -28,7 +28,6 @@
 
 #include        "system.h"
 #include        "devErrno.h"
-#include        "devDma4.h"
 
 #include        "devSpi16.h"
 

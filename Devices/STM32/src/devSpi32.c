@@ -27,7 +27,6 @@
 #include        <string.h>
 
 #include        "system.h"
-#include        "devDma.h"
 
 #include        "devSpi32.h"
 
