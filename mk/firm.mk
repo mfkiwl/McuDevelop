@@ -42,6 +42,9 @@ MAKEFILE_DEP	= $(MK_DIR)/firm.gcc.mk
 else ifeq ($(ENV_CC), iar)		### IAR
 MAKEFILE_DEP	= $(MK_DIR)/firm.iar.mk
 
+else ifeq ($(ENV_CC), armclang)		### ARMCLANG
+MAKEFILE_DEP	= $(MK_DIR)/firm.armclang.mk
+
 else					### no environment
 $(error no environment)
 
@@ -132,6 +135,9 @@ $(OBJDIR)/%.o: %.c
 
 else ifeq ($(ENV_CC), iar)		### IAR
 $(OBJDIR)/%.o: %.c
+	$(CC) -o $@ $(CFLAGS) $<
+
+else ifeq ($(ENV_CC), armclang)		### ARMCLANG
 	$(CC) -o $@ $(CFLAGS) $<
 
 else
