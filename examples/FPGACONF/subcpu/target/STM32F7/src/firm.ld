@@ -28,8 +28,8 @@
 /*********************************************************
  * definitons
  */
-szHeap        = 0x4000;
-szStack       = 0xc000;
+szHeap        = 0x100;
+szStack       = 0x1000;
 VECTOR_RAM_SIZE = 0x400;
 
 
