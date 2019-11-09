@@ -67,7 +67,7 @@ const static rtosTaskInfo_t     mainTaskList[] = {
     .pFunc = (rtosTaskFunc)MainFpgaConfigTask,
     .pName = "fpga",
     .priority = RTOS_PRI_HIGH,
-    .szStack = 0x2000,
+    .szStack = 0x400,
   },
   /* end of list */
   {
@@ -120,12 +120,6 @@ MainIdleLoop(void)
 #endif
 
     //printf("idle %d\r\n", i);
-    if(i & 1) {
-      GpioSetPowerLedOn();
-    } else {
-      GpioSetPowerLedOff();
-    }
-
     i++;
   }
   tCnt++;
@@ -175,7 +169,7 @@ MainTask(void const * argument)
   while(pRtos->pFunc) {
     re = RtosTaskCreate(pRtos, RTOS_NULL, RTOS_NULL);
     if(re != RTOS_SUCCESS) {
-      printf("MainTask() rtos entry \"%s\" exec fail\n", pRtos->pName);
+      printf("MainTask() rtos entry \"%s\" exec fail(%d)\n", pRtos->pName, re);
     }
     pRtos++;
   }
@@ -478,8 +472,34 @@ MainInitFmc(void)
                  FMC_BCR_MWID_8BIT |
                  FMC_BCR_MTYP_SRAM |
                  FMC_BCR_MBKEN_YES);
-    pBank->TR = FMC_BTR_DATAST(3);
+    // low term:  DATAST
+    // high term: ADDSET+1
+    // ex  DATAST=3,ADDST=2: 33MHz@HCLK=200MHz
+    pBank->TR = FMC_BTR_DATAST(3) | FMC_BTR_ADDSET(2);
     pBank++;
+  }
+
+  return;
+}
+void
+MainSetFmcWait(int unit, int act, int inact)
+{
+  stm32Dev_FMC_bank     *pBank;
+
+  pBank = &FMC_PTR->B[unit];
+
+  if(inact > 0) {
+    if(inact < 2)       inact = 2;
+    else if(inact > 16) inact = 16;
+    inact--;
+    pBank->TR &= ~FMC_BTR_ADDSET_MASK;
+    pBank->TR |=  FMC_BTR_ADDSET(inact);
+  }
+
+  if(act > 0) {
+    if(act > 16) act = 16;
+    pBank->TR &= ~FMC_BTR_DATAST_MASK;
+    pBank->TR |=  FMC_BTR_DATAST(act);
   }
 
   return;

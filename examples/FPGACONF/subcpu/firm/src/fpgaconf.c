@@ -23,6 +23,7 @@
 
 #define _FPGACONF_C_
 
+
 /*
  * init.txt
  *
@@ -54,6 +55,7 @@
 
 #include        "rtos.h"
 
+#include        "main.h"
 #include        "sdmmc.h"
 #include        "fatfsdio.h"
 
@@ -81,10 +83,19 @@ static const fatfsdioFunc_t func = {
 void
 FpgaconfMain(void)
 {
+  int           result = -1;
+
   while(1) {
     // program, if the card is inserted
     if(GpioIsSdmmc1CardInserted()) {
-      FpgaconfProgram();
+      puts("start\n");
+      result = FpgaconfProgram();
+      if(result == 0) {
+        puts("done\n");
+        GpioSetPowerLedOn();
+      }
+    } else {
+      puts("no_card\n");
     }
 
     // wait, if the power sw is pushed
@@ -95,20 +106,33 @@ FpgaconfMain(void)
 
     // re-program, if the power sw is pushed
     while(1) {
-      if(GpioIsPowerSwPushed()) break;
-      RtosTaskSleep(10);
+      RtosTaskSleep(1);
+      if(GpioIsPowerSwPushed()) {
+        GpioSetPowerLedOff();
+        break;
+      }
+      if(result < 0) {
+        while(1) {
+          FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 1);
+          RtosTaskSleep(100);
+          FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 0);
+          RtosTaskSleep(100);
+        }
+      }
     }
-
   }
 }
 
-void
+
+int
 FpgaconfProgram(void)
 {
+  int           result = -1;
   FATFS         fatfs;
   FIL           fp;
   FRESULT       re;
-  uint8_t       str[128];
+  uint8_t       *recv;
+  uint8_t       str[512];
   UINT          size;
 #define FPGACONF_DELIMIT_ENT    20
   uint8_t       *argv[FPGACONF_DELIMIT_ENT];
@@ -123,26 +147,23 @@ FpgaconfProgram(void)
 
   // read init.txt file
   re = f_mount(&fatfs, "", 1);               // 0: delay mount, 1: mount now
-  //puts("# XXX FpgaconfMain(): call disk_initialize() twice for done\n");
+  puts("# XXX FpgaconfMain(): call disk_initialize() twice for done\n");
   re = f_open(&fp, "0:init.txt", FA_READ);
+
   if(re != FR_OK) {
-    //puts("# XXX FpgaconfMain(): fatfs fail, halt\n");
-    while(1) RtosTaskSleep(10);
-  }
-  // halt, if init.txt can not be opened
-  if(re != FR_OK) {
-    //puts("# XXX FpgaconfMain(): fatfs fail, halt\n");
-    while(1) RtosTaskSleep(10);
+    result = -1;
+    goto fail;
   }
 
   while(1) {
-    //FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 1);
-    f_gets(str, sizeof(str), &fp);
-    //FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 0);
+    FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 1);
+    recv = f_gets(str, sizeof(str), &fp);
+    FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 0);
+    if(recv == 0) goto fail;
     size = strlen(str);
     size = FpgaconfChomp(str, size);
 
-    if(size > 0) {
+    if(size > 0 && str[0] != '#') {
       argc = FpgaconfDelimit(argv, FPGACONF_DELIMIT_ENT, str, size);
       re = FpgaconfParse(argc, argv);
       if(re > 0) break;
@@ -154,7 +175,9 @@ FpgaconfProgram(void)
 
   f_close(&fp);
 
-  return;
+  result = 0;
+fail:
+  return result;
 }
 
 
@@ -171,6 +194,7 @@ FpgaconfInitSdmmc(void)
   param.clkPolNeg = 0;
   param.clkPowerEn = 1;
   param.busWidth = 1;
+  param.dma = 0;
   param.clk = 400000;
 
   DevSdmmcInit(SDMMC1_NUM, &param);
@@ -187,9 +211,42 @@ FpgaconfInitSdmmc(void)
 static int
 FpgaconfSend8bitBus(int unit, uint8_t *ptr, int size)
 {
+#if 0
   for(int i = 0; i < size; i++) {
     *(uint8_t *)FMC_BANK1SRAM0_PTR = *ptr++;
   }
+
+#else
+  devDmaParam_t     param;
+
+  fpgaconfUnit_t        *psc;
+
+  //psc = &fpgaconf.sc[unit];
+  psc = &fpgaconf.sc[0];
+
+  // wait to finish sending
+  if(fpgaconf.fChkDmaFinish) {
+    while(!DevDmaIsFinished(DMA2_NUM, 1));
+  }
+  fpgaconf.fChkDmaFinish = 1;
+
+  /* start dma */
+  memset(&param, 0, sizeof(param));
+  param.a = (void *) FMC_BANK1SRAM0_PTR;
+  param.b = (void *) ptr;
+  param.cnt = size>>2;
+  param.dirBA = 1;
+  param.mem = 1;
+  param.aInc = 1;
+  param.flow = 1;
+  param.aSize = DEVDMA_SIZE_8BITS;
+  param.bSize = DEVDMA_SIZE_32BITS;
+  //param.intrTC = psc->param.intrDma? 1: 0;
+
+  DevDmaInit(DMA2_NUM, 1, &param);
+  DevDmaStart(DMA2_NUM, 1);
+
+#endif
 
   return 0;
 }
@@ -253,20 +310,19 @@ FpgaconfParse(int argc, uint8_t *argv[])
     FpgaconfExecFpga(argc, argv);
 
   } else if(!strcmp(argv[0], "spiclk")) {
-    fpgaconf.spiclk = atoi(argv[1]);
+    fpgaconf.spiclk = strtoul(argv[1], NULL, 10);
 
     // i/f settings
     DevSpiSetSpeed(CONFIG_FPGA_SPI_DEVNUM, fpgaconf.spiclk);
 
-  } else if(!strcmp(argv[0], "wrclk")) {
-    fpgaconf.wrhigh = atoi(argv[1]);
-    fpgaconf.wrlow  = atoi(argv[2]);
-    for(int i = 0; i < STM32FMC_NUMBEROF_BANK; i++) {
-      //SystemChangeBusWrAccess(i, fpgaconf.wrlow, fpgaconf.wrhigh);
-    }
+  } else if(!strcmp(argv[0], "wrclk") && argc >= 3) {
+    fpgaconf.wrhigh = strtoul(argv[1], NULL, 10);
+    fpgaconf.wrlow  = strtoul(argv[2], NULL, 10);
+
+    MainSetFmcWait(0, fpgaconf.wrlow, fpgaconf.wrhigh); // NE1
 
   } else if(!strcmp(argv[0], "delay") && argc >= 2) {
-    RtosTaskSleep(atoi(argv[1]));
+    RtosTaskSleep(strtoul(argv[1], NULL, 10));
 
   } else if(!strcmp(argv[0], "progx") && argc >= 2) {
     if(       argv[1][0] == 'e') {      // enable
@@ -284,45 +340,52 @@ end:
 }
 
 
+static uint32_t      bufBitstream0[32768/sizeof(uint32_t)];
+static uint32_t      bufBitstream1[32768/sizeof(uint32_t)];
 static int
 FpgaconfExecFpga(int argc, uint8_t *argv[])
 {
   int           result = -1;
-  FRESULT       re;
+  FRESULT       re = FR_OK;
   FIL           fpn;
-  uint32_t      buf[512/4];
+  uint32_t      *ptrBitstream;
+  int           pos = 0;
   int           size;
   int           total = 0;
   int           num;
-  uint32_t            id;
+  uint32_t      id;
 
   fpgaconfUnit_t        *psc;
 
-  num = atoi(argv[1]);
+  num = strtoul(argv[1], NULL, 10);
   //psc = &fpgaconf.sc[num];
   psc = &fpgaconf.sc[0];
 
   if(!strcmp(argv[2], "go")) {
-
     if(psc->bus == FPGACONF_BUS_SPI) {
       GpioSetConfSelSpi();
 
       FpgaconfCsControl(num, 1);
       RtosTaskSleep(1);
       FpgaconfCsControl(num, 0);
-
       RtosTaskSleep(1);
 
       if(psc->vendor == ChAscToLong('l', 'a', 't', 't')) {
         re = FpgaLatticeProgramPre(num, psc->id);
+#if 0
       } else if(psc->vendor == ChAscToLong('x', 'i', 'l', 'i')) {
       } else if(psc->vendor == ChAscToLong('a', 'r', 't', 'e')) {
+#endif
+      } else {
+        re = FR_OK;
       }
-      if(re < 0) goto fail;
+      if(re < 0) {
+        printf("# fpga%d: id mismatch\n");
+        goto fail;
+      }
     } else {
       GpioSetConfSel8bit();
     }
-
 
     // open the bit stream
     if(!psc->file[0]) goto fail;
@@ -330,33 +393,39 @@ FpgaconfExecFpga(int argc, uint8_t *argv[])
     if(re != FR_OK) goto fail;
 
     // transmit
+    fpgaconf.fChkDmaFinish = 0;
     FpgaconfCsControl(num, 1);
     while(1) {
-      //FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 1);
-      re = f_read(&fpn, buf, sizeof(buf), &size);
-      //FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 0);
+      ptrBitstream = (pos & 1)? bufBitstream1: bufBitstream0;
+      FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 1);
+      re = f_read(&fpn, ptrBitstream, sizeof(bufBitstream0), &size);
+      FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 0);
       if(re != FR_OK || !size) break;
 
-      //FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 1);
+      FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 1);
       if(psc->bus == FPGACONF_BUS_SPI) {
-        FpgaconfSpiSend(0, (uint8_t *)buf, size);
+        FpgaconfSpiSend(    0, (uint8_t *)ptrBitstream, size);
       } else {
-        FpgaconfSend8bitBus(0, (uint8_t *)buf, size);
+        FpgaconfSend8bitBus(0, (uint8_t *)ptrBitstream, size);
       }
-      //FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 0);
+      FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 0);
 
       total += size;
+      pos++;
     }
     FpgaconfCsControl(num, 0);
     f_close(&fpn);
 
-
     // end
     if(psc->bus == FPGACONF_BUS_SPI) {
       if(psc->vendor == ChAscToLong('l', 'a', 't', 't')) {
-        FpgaLatticeProgramEnd(num);
+        re = FpgaLatticeProgramEnd(num);
+#if 0
       } else if(psc->vendor == ChAscToLong('x', 'i', 'l', 'i')) {
       } else if(psc->vendor == ChAscToLong('a', 'r', 't', 'e')) {
+#endif
+      } else {
+        re = FR_OK;
       }
     }
 
@@ -459,7 +528,6 @@ int
 FpgaconfSpiSendCmd(int unit, uint8_t *ptr, int len)
 {
   int           result = -1;
-  //printf("spi send cmd %x %x\n", ptr, len);
 
   result = DevSpiSend(CONFIG_FPGA_SPI_DEVNUM, ptr, len);
 
@@ -469,7 +537,6 @@ int
 FpgaconfSpiRecv(int unit, uint8_t *ptr, int len)
 {
   int           result;
-  //printf("spi recv cmd %x %x\n", ptr, len);
 
   result = DevSpiRecv(CONFIG_FPGA_SPI_DEVNUM, ptr, len);
 

@@ -31,6 +31,7 @@
 
 void             MainInitI2c(void);
 int             _puts(const char *);
+void            MainSetFmcWait(int unit, int act, int inact);
 
 #ifdef _MAIN_C_
 static void             MainTask(void const * argument);

@@ -47,14 +47,12 @@ MK_DIR		= $(CONFIG_ROOTDIR)/../mk
 # source files
 #
 SOURCESASM = $(COMMON_DIR)/start_gcc.s
-SOURCESASMC = $(LLVM_DIR)/arm/aeabi_uldivmod.S $(LLVM_DIR)/arm/aeabi_ldivmod.S
+SOURCESASMC = #$(LLVM_DIR)/arm/aeabi_uldivmod.S $(LLVM_DIR)/arm/aeabi_ldivmod.S
 
 SOURCES =	\
 		$(COMMON_DIR)/string_gcc.c \
 		$(OPENBSD_DIR)/string/strcmp.c \
 		$(OPENBSD_DIR)/string/ctype_.c \
-		$(OPENBSD_DIR)/stdlib/atoi.c \
-		$(OPENBSD_DIR)/stdlib/strtoimax.c \
 		$(OPENBSD_DIR)/stdlib/strtok.c \
 		$(OPENBSD_DIR)/stdlib/strncpy.c \
 		$(OPENBSD_DIR)/stdlib/strtoul.c \
@@ -70,25 +68,27 @@ SOURCES =	\
 		$(SDMMC_DIR)/src/sdmmc.c \
 		$(FATFS_DIR)/source/ffsystem.c \
 		$(FATFS_DIR)/source/ff.c \
-		$(FATFS_DIR)/source/ffunicode.c \
 		$(DEVICELIB_DIR)/STM32/src/devGpio.c \
-		$(DEVICELIB_DIR)/STM32/src/devDma4.c \
+		$(DEVICELIB_DIR)/STM32/src/devDma7.c \
 		$(DEVICELIB_DIR)/STM32/src/devCounter.c \
 		$(DEVICELIB_DIR)/STM32/src/devUsart.c \
 		$(DEVICELIB_DIR)/STM32/src/devSpi16.c \
 		$(DEVICELIB_DIR)/STM32/src/devSdmmc.c \
 		../target/$(DEVICE_TYPE)/src/system.c \
-		$(LLVM_DIR)/udivmoddi4.c \
-		$(LLVM_DIR)/divmoddi4.c \
-		$(LLVM_DIR)/divdi3.c \
 		src/main.c \
 		src/fifo.c \
 		src/rtos.c \
 		src/intr.c \
 		src/fpgaconf.c \
 		src/fpga_lattice.c \
-		src/fatfsdio.c \
+		src/fatfsdio.c
 
+#		$(LLVM_DIR)/divdi3.c \
+		$(LLVM_DIR)/udivmoddi4.c \
+		$(LLVM_DIR)/divmoddi4.c \
+		$(OPENBSD_DIR)/stdlib/strtoimax.c \
+		$(OPENBSD_DIR)/stdlib/atoi.c \
+		$(FATFS_DIR)/source/ffunicode.c \
 
 
 LIBSEXT		= -L$(LIBAEABI_CORTEXM7_DIR) -laeabi-cortexm7
@@ -100,8 +100,10 @@ INCDIRS		= \
 
 DEFINES		= -DCPU_$(DEVICE_NAME) -D$(DEVICE_NAME) \
 		-DDEVICE_ARCHTYPE=$(DEVICE_ARCHTYPE) \
-		-DARM_MATH_M7 -DPRINTF_LONG_LONG_SUPPORT \
+		-DARM_MATH_M7 \
 		-D_YUGA_LITTLE_ENDIAN=1 -D_YUGA_BIG_ENDIAN=0
+
+#-DPRINTF_LONG_LONG_SUPPORT
 
 
 ROOTDIR			= $(shell pwd | sed 's/\/cygdrive\/\(\w\)/\1:/')

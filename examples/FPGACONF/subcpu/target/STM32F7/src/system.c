@@ -134,6 +134,9 @@ SystemInit(void)
   /* fmc */
   RCC_PTR->AHB3ENR |= RCC_AHB3ENR_FMCEN_YES;
 
+  /* dma */
+  RCC_PTR->AHB1ENR |= RCC_AHB1ENR_DMA1EN_YES | RCC_AHB1ENR_DMA2EN_YES;
+
   /* sdmmc en and 100MHz   SDCLK upto 50MHz */
   RCC_PTR->APB2ENR |= RCC_APB2ENR_SDMMC1EN_YES;
   RCC_PTR->DCKCFGR2 |= RCC_DCKCFGR2_SDMMC1SEL_PLLQ;
@@ -228,8 +231,10 @@ SystemChangeClockHigher(void)
    *  ( 60 -  90]: 2WS
    *  ( 90 - 120]: 3WS
    *  (120 - 150]: 4WS
+   *  (150 - 180]: 5WS
+   *  (180 - 210]: 6WS
    */
-  FLASH_PTR->ACR = FLASH_LATENCY_CLK(3);
+  FLASH_PTR->ACR = FLASH_LATENCY_CLK(6);
 
   /*** select clock sources */
   //RCC_PTR->CR |= RCC_CR_HSEON_YES| RCC_CR_HSEBYP_YES;
@@ -237,12 +242,12 @@ SystemChangeClockHigher(void)
 
   /* pll1 settings  vco range (100-432MHz)
    * HSI=16MHz
-   * M=8(2MHz), N=96(192MHz)
-   * P=2(100MHz), Q=8(25MHz)
+   * M=8(2MHz), N=200(400MHz)
+   * P=4(100MHz), Q=4(100MHz)
    */
   RCC_PTR->PLLCFGR  = (RCC_PLLCFGR_PLLSRC_HSI16 |
                        RCC_PLLCFGR_PLLM_DIV(8) | RCC_PLLCFGR_PLLN_MULX(CONFIG_CLOCK_FREQ_CPU/1000000) |
-                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(4) );
+                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(8) );
 
   RccPll1Enable();
 
@@ -251,7 +256,7 @@ SystemChangeClockHigher(void)
    * APB2 is up to 108MHz
    */
   RCC_PTR->CFGR = (RCC_CFGR_HPRE_DIV1 |
-                   RCC_CFGR_PPRE1_DIV2 | RCC_CFGR_PPRE2_DIV1);
+                   RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2);
 
   /* the system clock is selected to PLL1 */
   RCC_PTR->CFGR |= RCC_CFGR_SW_PLL;
@@ -501,8 +506,6 @@ SystemWaitSystemTimer(uint32_t tout)
 void
 SystemSysTickIntr(void)
 {
-  GpioSetUpdateLedOn();
-  GpioSetUpdateLedOff();
   SysTick->VAL;
 
   return;
@@ -515,10 +518,16 @@ void *
 malloc(int size)
 {
   void *p;
+
+#if 0
   p = ptrMalloc;
+  size +=  0xf;
+  size &= ~0xf;
   ptrMalloc += size;
-  printf("XX malloc %4d %x %x\n", cntMalloc ,&sectHeapStart, ptrMalloc);
-  cntMalloc++;
+#endif
+
+  p = RtosMalloc(size);
+
   return p;
 }
 

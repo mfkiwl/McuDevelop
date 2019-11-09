@@ -31,7 +31,7 @@
 
 #include        "stm32f7.h"
 #include        "devGpio.h"
-#include        "devDma4.h"
+#include        "devDma7.h"
 #include        "devGpio.h"
 #include        "devCounter.h"
 #include        "devUsart.h"

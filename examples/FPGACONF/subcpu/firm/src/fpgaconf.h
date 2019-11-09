@@ -36,6 +36,7 @@ typedef struct {
 } fpgaconfUnit_t;
 
 typedef struct {
+  int           fChkDmaFinish: 1;
   int           wrhigh;         // term of wr high (clocks)
   int           wrlow;          // term of wr high (clocks)
   int           spiclk;         // spi clock (in MHz)
@@ -60,7 +61,7 @@ typedef struct {
 
 
 void            FpgaconfMain(void);
-void            FpgaconfProgram(void);
+int             FpgaconfProgram(void);
 int             FpgaconfSpiSend(int unit, uint8_t *ptr, int len);
 int             FpgaconfSpiSendCmd(int unit, uint8_t *ptr, int len);
 int             FpgaconfSpiRecv(int unit, uint8_t *ptr, int len);
