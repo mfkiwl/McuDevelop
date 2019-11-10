@@ -511,6 +511,7 @@ SystemSysTickIntr(void)
   return;
 }
 
+
 extern void *sectHeapStart;
 static void *ptrMalloc = &sectHeapStart;
 static int      cntMalloc = 0;
@@ -526,7 +527,7 @@ malloc(int size)
   ptrMalloc += size;
 #endif
 
-  p = RtosMalloc(size);
+  p = (void *)RtosMalloc(size);
 
   return p;
 }
