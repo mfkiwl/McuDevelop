@@ -27,6 +27,7 @@
 #ifdef  _FPGACONF_C_
 
 typedef struct {
+  int           unit;
   int           bus;
 #define FPGACONF_BUS_SPI        0
 #define FPGACONF_BUS_8BIT       1
@@ -43,7 +44,7 @@ typedef struct {
   int           tProgx;         // low time of progx (in ms)
   int           tWaitSend;      // wait time before send (in ms)
 
-  fpgaconfUnit_t        sc[1];
+  fpgaconfUnit_t        sc[8];
   uint32_t      access;
 #define FPGACONF_ACCESS_SDMMC_SHIFT     0
 #define FPGACONF_ACCESS_SDMMC_MASK      (1 << FPGACONF_ACCESS_SDMMC_SHIFT)
@@ -80,6 +81,9 @@ static int      FpgaconfDelimit(uint8_t *av[], int ac, char *p, int len);
 static int      FpgaconfParse(int argc, uint8_t *argv[]);     // 0: success, 1: end, -1: fail
 
 static void     FpgaconfAccessLed(int bit, int on);
+
+static int      FpgaconfigExecFpgaGo(fpgaconfUnit_t *psc);
+
 #endif
 
 

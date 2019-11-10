@@ -186,3 +186,8 @@ CONFIG_FATFS_PHYMEDIA_COUNT_MAX                 = 4
 ### fpga
 CONFIG_FPGA_SPI_DEVNUM                          = 0
 CONFIG_FPGA_SPI_STATUS_RETRY                    = 5000
+
+CONFIG_FPGA_8BIT_DMA_MODULE                     = DMA2_NUM
+CONFIG_FPGA_8BIT_DMA_CH                         = 1
+
+CONFIG_FPGA_DATABUF_SIZE                        = 32768
