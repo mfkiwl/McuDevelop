@@ -298,8 +298,17 @@ static int
 FpgaconfParse(int argc, uint8_t *argv[])
 {
   int           result = 0;
+  int           i;
 
   if(argv[0][0] == '#') goto end;
+
+  // remove word which has '#' in top letter
+  for(i = 0; i < argc; i++) {
+    if(argv[i][0] == '#') {
+      argc = i;
+      break;
+    }
+  }
 
 #if 1
   printf("### parse(%d)", argc);
@@ -309,6 +318,7 @@ FpgaconfParse(int argc, uint8_t *argv[])
   }
   puts("\n");
 #endif
+
 
   if(0) {
 
@@ -321,11 +331,23 @@ FpgaconfParse(int argc, uint8_t *argv[])
     // i/f settings
     DevSpiSetSpeed(CONFIG_FPGA_SPI_DEVNUM, fpgaconf.spiclk);
 
-  } else if(!strcmp(argv[0], "wrclk") && argc >= 3) {
-    fpgaconf.wrhigh = strtoul(argv[1], NULL, 10);
-    fpgaconf.wrlow  = strtoul(argv[2], NULL, 10);
+  } else if(!strcmp(argv[0], "wrclk")) {
+    if(argc >= 3) {
+      fpgaconf.wrhigh = strtoul(argv[1], NULL, 10);
+      fpgaconf.wrlow  = strtoul(argv[2], NULL, 10);
+    } else if(argc == 2) {
+      uint32_t  val;
+      val = strtoul(argv[1], NULL, 10);
+      val = (CONFIG_CLOCK_FREQ_CPU + val - 1) / val;
+      if(val < 3) val = 3;
+      fpgaconf.wrlow  = val >> 1;
+      fpgaconf.wrhigh = val - fpgaconf.wrlow;
+    }
 
-    MainSetFmcWait(0, fpgaconf.wrlow, fpgaconf.wrhigh); // NE1
+    //if(fpgaconf.wrhigh > 15) fpgaconf.wrhigh = 15;
+    //if(fpgaconf.wrlow  > 15) fpgaconf.wrlow  = 15;
+    //MainSetFmcWait(0, fpgaconf.wrlow, fpgaconf.wrhigh); // NE1
+    SystemChangeBusWrAccess(0, fpgaconf.wrlow, fpgaconf.wrhigh); // NE1
 
   } else if(!strcmp(argv[0], "delay") && argc >= 2) {
     RtosTaskSleep(strtoul(argv[1], NULL, 10));
@@ -335,6 +357,15 @@ FpgaconfParse(int argc, uint8_t *argv[])
       GpioSetProgx_Act();
     } else if(argv[1][0] == 'd') {      // disable
       GpioSetProgx_Inact();
+    }
+
+  } else if(!strcmp(argv[0], "gpio") && argc >= 3) {
+    int bit;
+    bit = 1<<(argv[1][0] & 0xf);
+    if(!(argv[2][0] & 1)) {
+      SystemGpioReset(0, bit);
+    } else {
+      SystemGpioSet(  0, bit);
     }
 
   } else if(!strcmp(argv[0], "end")) {
@@ -364,6 +395,9 @@ FpgaconfExecFpga(int argc, uint8_t *argv[])
     psc->file[0] = '0';
     psc->file[1] = ':';
     strncpy(psc->file+2, argv[3], sizeof(psc->file)-2);
+
+  } else if(!strcmp(argv[2], "16bit")) {
+    psc->bus = FPGACONF_BUS_16BIT;
 
   } else if(!strcmp(argv[2], "8bit")) {
     psc->bus = FPGACONF_BUS_8BIT;

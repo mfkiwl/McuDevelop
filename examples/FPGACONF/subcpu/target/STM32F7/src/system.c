@@ -434,6 +434,21 @@ SystemChangeBusWrAccess(int unit, int wrlow, int wrhigh)
 }
 
 
+void
+SystemGpioSet(int unit, uint32_t bit)
+{
+  GPIO_PTR[unit].BSRR = bit;
+  return;
+}
+void
+SystemGpioReset(int unit, uint32_t bit)
+{
+  GPIO_PTR[unit].BRR = bit;
+  return;
+}
+
+
+
 
 void
 SystemWdtInit(void)

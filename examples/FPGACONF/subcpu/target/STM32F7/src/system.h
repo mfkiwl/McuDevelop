@@ -94,6 +94,9 @@ void            SystemUpdateClockValue(void);
 
 void            SystemChangeBusWrAccess(int unit, int wrlow, int wrhigh);
 
+void            SystemGpioSet(int unit, uint32_t bit);
+void            SystemGpioReset(int unit, uint32_t bit);
+
 #ifdef  _SYSTEM_C_
 static void             SystemCoreClockUpdate(void);
 static int              SystemFmcInit(void);

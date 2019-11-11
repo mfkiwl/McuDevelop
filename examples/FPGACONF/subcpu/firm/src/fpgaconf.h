@@ -31,6 +31,7 @@ typedef struct {
   int           bus;
 #define FPGACONF_BUS_SPI        0
 #define FPGACONF_BUS_8BIT       1
+#define FPGACONF_BUS_16BIT      2
   uint8_t       file[64];
   uint32_t      id;
   uint32_t      vendor;
@@ -38,6 +39,7 @@ typedef struct {
 
 typedef struct {
   int           fChkDmaFinish: 1;
+  int           wrclk;          // parallel bus clock (in MHz)
   int           wrhigh;         // term of wr high (clocks)
   int           wrlow;          // term of wr high (clocks)
   int           spiclk;         // spi clock (in MHz)
