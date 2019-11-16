@@ -367,7 +367,8 @@ DevUsartInterruptDmaRecv(int unit)
   psc = &usart.sc[unit];
 
   chDma = (devUsartRecvDmaReqTbl[psc->unit] >> 4) & 0xf;
-  DevDmaGetCounterValue(1, chDma, &cnt);
+  //DevDmaGetCounterValue(1, chDma, &cnt);
+  cnt = DevDmaGetTransferedCount(1, chDma);
 
   if(psc->posFifoRx != cnt) {
     size = (psc->posFifoRx - cnt) & ((1<<psc->param.szFifoRx)-1);

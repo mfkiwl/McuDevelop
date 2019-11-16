@@ -249,6 +249,21 @@ end:
 
 
 int
+DevDmaGetTransferedCount(int unit, int ch)
+{
+  int           result = 0;
+  uint32_t      val;
+
+  result = DevDmaGetCounterValue(unit, ch, &val);
+  if(result == SUCCESS) {
+    result = val;
+  }
+
+  return result;
+}
+
+
+int
 DevDmaGetCounterValue(int unit, int ch, uint32_t *pSize)
 {
   int           result = DEV_ERRNO_UNKNOWN;
