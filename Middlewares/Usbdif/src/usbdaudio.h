@@ -70,6 +70,14 @@
 #define AUDIO_OUT_STREAMING_CTRL                      0x02
 
 
+// adhoc
+#define CONFIG_AUDIO_FS_96K000                  96000
+#define CONFIG_AUDIO_FS_48K000                  48000
+#define CONFIG_AUDIO_FS_44K100                  44100
+#define CONFIG_AUDIO_FS_32K000                  32000
+#define CONFIG_AUDIO_FS_16K000                  16000
+
+
 /*#define AUDIO_OUT_PACKET                              (uint32_t)(((CONFIG_AUDIO_FS_48K000 * 2 * 2) /1000)) */
 #define AUDIO_INOUT_PACKET_SIZE                       (uint32_t)(((CONFIG_AUDIO_FS_48K000 * 2 * 2) /1000))
 #define AUDIO_DEFAULT_VOLUME                          70
