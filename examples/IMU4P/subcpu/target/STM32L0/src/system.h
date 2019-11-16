@@ -32,6 +32,7 @@
 
 #include        "stm32l0.h"
 #include        "stm32l0Rcc.h"
+#include        "devDma4.h"
 #include        "system_STM32L0.h"
 #include        "intr.h"
 #include        "intrvec.h"

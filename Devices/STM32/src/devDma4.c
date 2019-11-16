@@ -255,7 +255,7 @@ DevDmaGetTransferedCount(int unit, int ch)
   uint32_t      val;
 
   result = DevDmaGetCounterValue(unit, ch, &val);
-  if(result == SUCCESS) {
+  if(result == DEV_ERRNO_SUCCESS) {
     result = val;
   }
 

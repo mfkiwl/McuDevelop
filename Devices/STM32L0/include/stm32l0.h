@@ -196,10 +196,10 @@ typedef int     IRQn_Type;
 #define DMA_CH7         (7)
 
 /* [7:4]:ch [3:0]:req */
-#define DMA_REQ_SPITX_TBL       {0, 0x31, 0x52}
-#define DMA_REQ_SPIRX_TBL       {0, 0x21, 0x42}
-#define DMA_REQ_USARTTX_TBL     {0x43, 0x74}
-#define DMA_REQ_USARTRX_TBL     {0x53, 0x64}
+#define DMAMUX_REQ_SPITX_TBL       {0, 0x31, 0x52}
+#define DMAMUX_REQ_SPIRX_TBL       {0, 0x21, 0x42}
+#define DMAMUX_REQ_USARTTX_TBL     {0x43, 0x74}
+#define DMAMUX_REQ_USARTRX_TBL     {0x53, 0x64}
 
 
 /*************************************************************

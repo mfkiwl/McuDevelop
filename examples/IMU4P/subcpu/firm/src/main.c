@@ -326,6 +326,8 @@ MainEntry(void)
 
   extern const uint16_t gpioDefaultTbl[];
 
+  SystemInit();
+
   DevGpioInit();
   DevGpioSets(gpioDefaultTbl);
   IntrInit(0);
