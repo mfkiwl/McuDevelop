@@ -125,8 +125,8 @@ Reset_Init:
     blx     r7
 
     // clock init
-    ldr     r7, =SystemInit
-    blx     r7
+//    ldr     r7, =SystemInit
+//    blx     r7
 
     mov     r0, r4
     ldr     r7, =MainEntry
