@@ -32,7 +32,6 @@
 #include        "usb_def.h"
 #include        "usbdif.h"
 #include        "usbdcore.h"
-#include        "devGpio.h"
 
 #include        "devUsb320a.h"
 
@@ -45,19 +44,7 @@ struct _stDevUsb           devUsb;
 #define LPM_L0          0
 #define LPM_L1          1
 #define USBD_HS_TRDT_VALUE      9
-#if 1
-/*       adhoc   it also defined in usbdcore.c */
-usbdifStatus_t
-UsbdevInit(int dev, usbdifInitParam_t *pUsbInit)
-{
-  return 0;
-}
-usbdifStatus_t
-UsbdevStart(int dev)
-{
-  return 0;
-}
-#endif
+
 
 int
 DevUsbInit(int unit, devUsbParam_t *param)
@@ -72,8 +59,8 @@ DevUsbInit(int unit, devUsbParam_t *param)
   if(unit == -1) {
     memset(&devUsb, 0, sizeof(devUsb));
 
-    devUsb.sc[1].dev = USB1_HS;
-    devUsb.sc[2].dev = USB2_FS;
+    devUsb.sc[USBHS_NUM].dev = USB1_HS;
+    devUsb.sc[USBFS_NUM].dev = USB2_FS;
     devUsb.sc[0].dev = USB2_FS;
 
     goto end;
@@ -82,18 +69,51 @@ DevUsbInit(int unit, devUsbParam_t *param)
   psc = &devUsb.sc[unit];
   p   = psc->dev;
   psc->unit = unit;
+  memcpy(&psc->cb, &param->cb, sizeof(psc->cb));
 
-  printf("# USBOTG Product ID: %x, Core ID: %x\r\n", p->CID, p->GSNPSID);
-
-
-  p->GUSBCFG |= USB_GUSBCFG_PHYSEL_YES;
-
-  /* reset the module */
-  DevUsbResetModule(psc);
-
+  printf("# USBOTG Product ID: %x, Core ID: %x, GUSBCFG: %x\r\n", p->CID, p->GSNPSID, p->GUSBCFG);
 
   /* deactivate the power down mode */
-  p->GCCFG = USB_GCCFG_PWRDWN_YES;
+  p->GCCFG &= ~USB_GCCFG_PWRDWN_MASK;
+
+#ifdef USB_HS_INTPHY
+  DevUsbInitPhy();
+  RtosTaskSleep(10);
+
+
+  p->GUSBCFG &= ~( USB_GUSBCFG_MOD_MASK |
+                   USB_GUSBCFG_PHYSEL_MASK |
+                   USB_GUSBCFG_TRDT_MASK |
+                   USB_GUSBCFG_TSDPS_MASK |
+                   USB_GUSBCFG_ULPISEL_MASK );
+
+  p->GUSBCFG |=  ( /* USB_GUSBCFG_FDMOD_YES |*/
+                   USB_GUSBCFG_PHYSEL_FS |
+                   USB_GUSBCFG_TRDT_HS   |
+                   //USB_GUSBCFG_TSDPS_TERMSEL |
+                   USB_GUSBCFG_ULPISEL_INT );
+
+
+  p->GCCFG |= USB_GCCFG_PHYHSEN_YES;
+
+#else
+  p->GUSBCFG |= USB_GUSBCFG_PHYSEL_FS;
+#endif
+
+
+  if(0) {
+    p->GUSBCFG |= USB_GUSBCFG_ULPIEVBUSD_EXT;
+  }
+
+
+  /* reset the module */
+  RtosTaskSleep(1);
+  while(!(p->GRSTCTL & USB_GRSTCTL_AHBIDL_MASK));
+  RtosTaskSleep(1);
+  DevUsbResetModule(psc);
+
+  p->GRSTCTL  = USB_GRSTCTL_HSRST_EN;
+  p->GOTGCTL |= USB_GOTGCTL_OTGVER_YES;
 
   if(param->dma) {
     psc->dma = 1;
@@ -101,16 +121,19 @@ DevUsbInit(int unit, devUsbParam_t *param)
     p->GAHBCFG |= USB_GAHBCFG_DMAEN_YES;
   }
 
-  /* the mode is chagned to the device */
-  p->GUSBCFG &= ~(USB_GUSBCFG_FHMOD_MASK | USB_GUSBCFG_FDMOD_MASK);
-  p->GUSBCFG |=   USB_GUSBCFG_FDMOD_YES;
+
+  p->GUSBCFG &= ~USB_GUSBCFG_MOD_MASK;
+  p->GUSBCFG |=  USB_GUSBCFG_FDMOD_YES;        // force device mode
+  RtosTaskSleep(25);
 
 
-  for(i = 0; i < 15; i++) {             /* adhoc */
-    psc->in[i].epnum  = 0x80 | i;       /* adhoc */
-    psc->in[i].maxsize = 0x40;          /*adhoc */
-    psc->out[i].epnum =        i;
-    psc->out[i].maxsize = 0x40;          /*adhoc */
+  for(i = 0; i < USB_EPOUT_COUNTS; i++) {       /* adhoc */
+    psc->out[i].epnum   =        i;             /* adhoc */
+    psc->out[i].maxsize = 0x40;                 /* adhoc */
+  }
+  for(i = 0; i < USB_EPIN_COUNTS; i++) {        /* adhoc */
+    psc->in[i].epnum    = 0x80 | i;             /* adhoc */
+    psc->in[i].maxsize  = 0x40;                 /* adhoc */
     p->DIEPTXF[i] = 0;
   }
 
@@ -119,20 +142,25 @@ DevUsbInit(int unit, devUsbParam_t *param)
   if(0) {
     p->GCCFG |= USB_GCCFG_VBDEN_YES;
   } else {
-    p->GCCFG &= ~USB_GCCFG_VBDEN_MASK;
-    p->GOTGCTL |= USB_GOTGCTL_BVALOEN_YES;
-    p->GOTGCTL |= USB_GOTGCTL_BVALOVAL_YES;
+    p->GCCFG   &= ~USB_GCCFG_VBDEN_MASK;
+    p->GOTGCTL |=  USB_GOTGCTL_BVALOEN_YES;
+    p->GOTGCTL |=  USB_GOTGCTL_BVALOVAL_YES;
   }
+
 
   /* phy clock restarting */
   p->PCGCCTL = 0;
 
   /* Device mode configuration */
   /*p->DCFG |= DCFG_FRAME_INTERVAL_80;          defined 0 */
+  p->DCFG = 0;
 
   /* device speed */
-  /*p->DCFG |= USB_SPEED_FULL;*/
+#if 0
+  p->DCFG |= USB_DCFG_DSPD_HS;
+#else
   p->DCFG |= USB_DCFG_DSPD_FS;
+#endif
 
   /* flush all fifos */
   DevUsbFlushFifoRx(psc, 0x10);
@@ -201,6 +229,7 @@ DevUsbInit(int unit, devUsbParam_t *param)
 
 end:
   result = 0;
+
 fail:
   return result;
 }
@@ -373,6 +402,7 @@ void
 DevUsbInterruptUsb1(void)
 {
   DevUsbInterrupt(&devUsb.sc[1]);
+
   return;
 }
 void
@@ -389,6 +419,7 @@ static void
 DevUsbInterrupt(devUsbSc_t *psc)
 {
   stm32Dev_USB          *p;
+  devUsbCb_t            *cb;
 
   uint32_t              i = 0, ep_intr = 0, epint = 0, epnum = 0;
   uint32_t              epbit = 0;
@@ -406,6 +437,8 @@ DevUsbInterrupt(devUsbSc_t *psc)
 
   if(!intr) goto fail;
 
+  cb = &psc->cb;
+
   /* ep out/in interrupt */
   if(intr & USB_GINTSTS_OEPINT_MASK) DevUsbInterruptEpOut(psc);
   if(intr & USB_GINTSTS_IEPINT_MASK) DevUsbInterruptEpIn(psc);
@@ -420,7 +453,7 @@ DevUsbInterrupt(devUsbSc_t *psc)
       /* LPM_Callback(hpcd, LPM_L0_ACTIVE);*/  /* return immediatly */
     } else {
       p->PCGCCTL &= ~USB_PCGCCTL_STOPCLK_MASK;
-      UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_RESUME);
+      if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_RESUME);
     }
   }
 
@@ -430,7 +463,7 @@ DevUsbInterrupt(devUsbSc_t *psc)
     if((p->DSTS & USB_DSTS_SUSPSTS_MASK) == USB_DSTS_SUSPSTS_YES) {
 
       p->PCGCCTL |= USB_PCGCCTL_STOPCLK_YES;
-      UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_SUSPEND);
+      if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_SUSPEND);
     }
   }
 
@@ -446,21 +479,20 @@ DevUsbInterrupt(devUsbSc_t *psc)
     DevUsbInterruptEnumerate(psc);
   }
 
-
   /* LPM interrupt */
   if(intr & USB_GINTSTS_LPMINT_MASK) {
     if(psc->lpmState == LPM_L0) {
       psc->lpmState = LPM_L1;
       /*LPM_Callback(hpcd, PCD_LPM_L1_ACTIVE);*/  /* return immediatly */
     } else {
-      UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_SUSPEND);
+      if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_SUSPEND);
     }
   }
 
 
   /* reset interrupt */
   if(intr & USB_GINTSTS_USBRST_MASK) {
-    UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_RESET);
+    if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_RESET);
 
     p->DCTL &= ~USB_DCTL_RWUSIG_MASK;
 
@@ -491,7 +523,7 @@ DevUsbInterrupt(devUsbSc_t *psc)
 
   /* connect interrupt */
   if(intr & USB_GINTSTS_SRQINT_MASK) {
-    UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_CONNECT);
+    if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_CONNECT);
   }
 
 
@@ -500,7 +532,7 @@ DevUsbInterrupt(devUsbSc_t *psc)
     temp = p->GOTGINT;
 
     if(temp & USB_GOTGINT_SEDET_MASK) {
-      UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_DISCONNECT);
+      if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_DISCONNECT);
     }
     p->GOTGINT |= temp;
   }
@@ -567,8 +599,10 @@ static int
 DevUsbInterruptEnumerate(devUsbSc_t *psc)
 {
   stm32Dev_USB          *p;
+  devUsbCb_t            *cb;
 
   p = psc->dev;
+  cb = &psc->cb;
 
   /* enable setup interface */
   p->in[0].CTL &= ~USB_EPCTL_MPSIZ_MASK;
@@ -597,13 +631,20 @@ DevUsbInterruptEnumerate(devUsbSc_t *psc)
   DevUsbOpenEp(psc->unit, DEVUSB_EPNUM_DIR_IN  | 0, USBIF_EP_CTRL, psc->ep0Mps);
 
 #if 0
+  p->in[0].CTL |=  USB_EPCTL_EPENA_YES;  // enable
+  p->in[0].CTL &= ~USB_EPCTL_MPSIZ_MASK; // clear size
+  p->in[0].CTL |=  USB_EPCTL_CNAK;       // clear NAK
+#endif
+
+
+
+#if 0
   /* disconnect */
   p->DCTL |= USB_DCTL_SDIS_DISCONNECT;
   /*p->DCTL &= ~USB_DCTL_SDIS_MASK;*/
 #endif
 
-  UsbdcoreCbBusState(psc->unit, USBDIF_BUSSTATE_ENUMERATED | psc->speed);
-
+  if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_ENUMERATED | psc->speed);
 
   return 0;
 }
@@ -613,10 +654,12 @@ static void
 DevUsbInterruptEpOut(devUsbSc_t *psc)
 {
   stm32Dev_USB          *p;
+  devUsbCb_t            *cb;
 
   uint32_t              epintr, epnum, epbit;
 
   p = psc->dev;
+  cb = &psc->cb;
 
   epnum   = 0;
   epbit   = p->DAINT & USB_DAINT_OEPINT_MASK;  /* MSB 16bit is ep out */
@@ -637,7 +680,8 @@ DevUsbInterruptEpOut(devUsbSc_t *psc)
           psc->out[epnum].size = (psc->out[epnum].maxsize - size);
           psc->out[epnum].ptr += psc->out[epnum].maxsize;
 
-          UsbdcoreCbDataOut(psc->unit, epnum, psc->out[epnum].size);
+          if(cb->dataOut) cb->dataOut(psc->unit, epnum, psc->out[epnum].size);
+
 
           if(epnum == 0) {
             if(psc->out[epnum].size == 0) {
@@ -659,7 +703,7 @@ DevUsbInterruptEpOut(devUsbSc_t *psc)
               UsbdcoreCbSetup(psc->unit, &psc->setup);
               psc->waitSetupPayload = 0;
             } else {
-              /*UsbdcoreCbDataOut(psc->unit, epnum, size);*/
+              /*if(cb->dataOut) cb->dataOut(psc->unit, num, size);*/
             }
           }
         }
@@ -695,10 +739,12 @@ static void
 DevUsbInterruptEpIn(devUsbSc_t *psc)
 {
   stm32Dev_USB          *p;
+  devUsbCb_t            *cb;
 
   uint32_t              epintr, epnum, epbit;
 
   p = psc->dev;
+  cb = &psc->cb;
 
   epnum = 0;
   epbit   = p->DAINT & USB_DAINT_IEPINT_MASK;  /* LSB 16bit is ep in */
@@ -721,7 +767,7 @@ DevUsbInterruptEpIn(devUsbSc_t *psc)
       if(epintr & USB_EPINT_XFRC_MASK) {
         if(psc->in[epnum].fSent) {
           p->DIEPEMPMSK &= ~(1 << epnum);
-          UsbdcoreCbDataInDone(psc->unit, epnum);
+          if(cb->dataInDone) cb->dataInDone(psc->unit, epnum);
         } else {
           DevUsbWritePacket(psc, epnum);
         }
@@ -790,8 +836,10 @@ DevUsbInterruptRecvData(devUsbSc_t *psc)
   uint32_t              *ptr;
 
   stm32Dev_USB          *p;
+  devUsbCb_t            *cb;
 
   p = psc->dev;
+  cb = &psc->cb;
 
   p->GINTMSK &= ~USB_GINTSTS_RXFLVL_MASK;        /* mask intr */
 
@@ -815,13 +863,13 @@ DevUsbInterruptRecvData(devUsbSc_t *psc)
     }
 
     if((p->out[num].CTL & USB_EPCTL_EPTYP_MASK) == USB_EPCTL_EPTYP_ISOC) {
-      UsbdcoreCbDataOut(psc->unit, num, size);
+      if(cb->dataOut) cb->dataOut(psc->unit, num, size);
 
     } else {
       if(ep->cnt < ep->maxsize) {
-        UsbdcoreCbDataOut(psc->unit, num, size);
+        if(cb->dataOut) cb->dataOut(psc->unit, num, size);
       } else if(ep->cnt >= ep->size) {
-        UsbdcoreCbDataOut(psc->unit, num, ep->size);
+        if(cb->dataOut) cb->dataOut(psc->unit, num, ep->size);
       } else {
         /*p->out[num].SIZ  = (USB_EPSIZ_PKTCNT_ONE | USB_EPSIZ_XFRSIZ_VAL(ep->maxsize));*/
         p->out[num].CTL  |= (USB_EPCTL_CNAK | USB_EPCTL_EPENA_YES);
@@ -844,15 +892,46 @@ DevUsbInterruptRecvData(devUsbSc_t *psc)
 
 
 static int
+DevUsbInitPhy(void)
+{
+  /* usb phy controller,  enable LDO, enable CTRLer */
+  int         tout = 0x400000;
+
+  USBPHYC_PTR->LDO |= USBPHYC_LDO_ENABLE_YES;
+  while(!(USBPHYC_PTR->LDO & USBPHYC_LDO_STATUS_MASK)) {
+    if(tout-- <= 0) break;
+  }
+
+  switch(CONFIG_CLOCK_HSE) {
+  case 12000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_12MHZ; break;
+  case 12500000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_12_5MHZ; break;
+  case 16000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_16MHZ; break;
+  case 24000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_24MHZ; break;
+  case 25000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_25MHZ; break;
+  }
+
+  USBPHYC_PTR->TUNE =
+    USBPHYC_TUNE_HSDRVCHKITRM_20_94MA |
+    USBPHYC_TUNE_HSDRVRFRED_INC20PER |
+    USBPHYC_TUNE_HSDRVDCCUR_DEC5MV |
+    /*USBPHYC_TUNE_LFSCAPEN_YES |*/  USBPHYC_TUNE_INCURRINT_YES | USBPHYC_TUNE_INCURREN_YES;
+
+  USBPHYC_PTR->PLL1 |= USBPHYC_PLL1_EN_YES;
+
+  return 0;
+}
+
+
+static int
 DevUsbResetModule(devUsbSc_t *psc)
 {
   stm32Dev_USB          *p;
 
   p = psc->dev;
 
-  /* Core Soft Reset */
-  p->GRSTCTL |= USB_GRSTCTL_CSRST_MASK;
-
+  /* Core Soft Reset and wait*/
+  p->GRSTCTL |= USB_GRSTCTL_CSRST_EN;
+  RtosTaskSleep(1);
   while(p->GRSTCTL & USB_GRSTCTL_CSRST_MASK);
 
   return 0;
@@ -897,6 +976,9 @@ DevUsbSetTurnArroundTime(devUsbSc_t *psc)
   SystemGetClockValue(&clk);
   hclk = clk.core;
 
+#ifdef USB_HS_INTPHY
+  val = USB_GUSBCFG_TRDT_HS;
+#else
   if(/*(clk.core >= 14200000)&&*/ (clk.core < 15000000)) {
     val = USB_GUSBCFG_TRDT_14_2TO15_0MHZ;
   } else if(clk.core < 16000000) {
@@ -918,6 +1000,7 @@ DevUsbSetTurnArroundTime(devUsbSc_t *psc)
   } else /* if(clk.core >= 32000000) */ {
     val = USB_GUSBCFG_TRDT_OVER32_0MHZ;
   }
+#endif
 
   val |= p->GUSBCFG & ~USB_GUSBCFG_TRDT_MASK;
   p->GUSBCFG |= val;
@@ -935,9 +1018,9 @@ DevUsbGetBusSpeed(devUsbSc_t *psc)
   p = psc->dev;
 
   switch(p->DSTS & USB_DSTS_ENUMSPD_MASK) {
-  case USB_DSTS_ENUMSPD_HIGH: speed = USB_SPEED_HIGH; break;
+  case USB_DSTS_ENUMSPD_HIGH_HS: speed = USB_SPEED_HIGH; break;
   default:
-  case USB_DSTS_ENUMSPD_FULL: speed = USB_SPEED_FULL; break;
+  case USB_DSTS_ENUMSPD_FULL:    speed = USB_SPEED_FULL; break;
   }
 
   return speed;
@@ -1158,7 +1241,7 @@ DevUsbStartPacketIn(devUsbSc_t *psc, uint8_t epnum)
 
   if(size <= 0) {
     /* store the size and the control info to register */
-    p->in[num].SIZ = epsiz;
+    p->in[num].SIZ  = epsiz;
     p->in[num].CTL &= ~USB_EPCTL_STALL_MASK;
     p->in[num].CTL |= epctl;
   }
@@ -1244,7 +1327,7 @@ DevUsbDisconnect(devUsbSc_t *psc)
   stm32Dev_USB          *p;
   p = psc->dev;
 
-  p->DCTL &= ~USB_DCTL_SDIS_MASK;
+  p->DCTL |= USB_DCTL_SDIS_DISCONNECT;
 
   return 0;
 }

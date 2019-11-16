@@ -28,10 +28,28 @@
 #define STM320A_MAX_EPIN                8
 #define STM320A_MAX_EPOUT               8
 
+#ifndef USB_EPOUT_COUNTS
+#define USB_EPOUT_COUNTS        (STM320A_MAX_EPOUT+1)
+#endif
+#ifndef USB_EPIN_COUNTS
+#define USB_EPIN_COUNTS         (STM320A_MAX_EPIN+1)
+#endif
+
+
+typedef struct {
+  usbdifStatus_t        (*setup)(int unit, usbifSetup_t *s);
+  usbdifStatus_t        (*dataInDone)(int, uint8_t);
+  usbdifStatus_t        (*dataOut)(int, uint8_t, int);
+  usbdifStatus_t        (*busState)(int, int);
+
+} devUsbCb_t;
+
 typedef struct {
   uint8_t               dma: 1;
   uint8_t               sof: 1;
   uint8_t               vbus: 1;
+
+  devUsbCb_t            cb;
 
 } devUsbParam_t;
 
@@ -57,6 +75,7 @@ typedef struct {
 
   uint8_t               unit;
   stm32Dev_USB          *dev;
+  devUsbCb_t            cb;
 
   usbifSetup_t          setup;
   uint8_t               lpmState;
@@ -64,8 +83,8 @@ typedef struct {
   uint16_t              ep0Mps;
   uint8_t               speed;
 
-  devUsbEp_t            out[16];
-  devUsbEp_t            in[16];
+  devUsbEp_t            out[USB_EPOUT_COUNTS];
+  devUsbEp_t            in[USB_EPIN_COUNTS];
 } devUsbSc_t;
 
 struct _stDevUsb {
@@ -98,6 +117,7 @@ static void     DevUsbInterruptEpIn(devUsbSc_t *psc);
 static void     DevUsbInterruptSof(devUsbSc_t *psc);
 static int      DevUsbInterruptRecvData(devUsbSc_t *psc);
 
+static int      DevUsbInitPhy(void);
 static int      DevUsbResetModule(devUsbSc_t *psc);
 static int      DevUsbResetPort(devUsbSc_t *psc);
 
