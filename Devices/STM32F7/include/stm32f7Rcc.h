@@ -350,7 +350,7 @@ typedef struct {
 #define RCC_GPIOIEN_YES                 (RCC_AHB1ENR_GPIOIEN_YES)
 
   __IO uint32_t         AHB2ENR;        /* 0x34 */
-#define RCC_AHB2ENR_OTGEN_SHIFT         22
+#define RCC_AHB2ENR_OTGEN_SHIFT         7
 #define RCC_AHB2ENR_OTGEN_MASK		(1 << (RCC_AHB2ENR_OTGEN_SHIFT))
 #define RCC_AHB2ENR_OTGEN_NO		(0 << (RCC_AHB2ENR_OTGEN_SHIFT))
 #define RCC_AHB2ENR_OTGEN_YES		(1 << (RCC_AHB2ENR_OTGEN_SHIFT))
