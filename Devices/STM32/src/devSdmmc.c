@@ -45,8 +45,8 @@
 
 static devSdmmc_t       sdmmc;
 
-const static uint8_t devSdmmcSendDmaReqTbl[] = DMA_REQ_SDMMCTX_TBL;
-const static uint8_t devSdmmcRecvDmaReqTbl[] = DMA_REQ_SDMMCRX_TBL;
+const static uint8_t devSdmmcSendDmaReqTbl[] = DMAMUX_REQ_SDMMCTX_TBL;
+const static uint8_t devSdmmcRecvDmaReqTbl[] = DMAMUX_REQ_SDMMCRX_TBL;
 
 #if 0
 static uint8_t devSdmmcCmdExtParamTbl[] = {

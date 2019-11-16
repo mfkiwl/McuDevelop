@@ -44,7 +44,7 @@
 
 struct _stSpi         spi;
 static devDmaParam_t       paramDmaRx;
-const static uint8_t    devSpiRecvDmaReqTbl[]    = DMA_REQ_SPIRX_TBL;
+const static uint8_t    devSpiRecvDmaReqTbl[]    = DMAMUX_REQ_SPIRX_TBL;
 
 /**
   * @brief  initilize the devcie
@@ -376,7 +376,7 @@ fail:
 /*********************************
  * dma
  */
-const static uint8_t    devSpiSendDmaReqTbl[]    = DMA_REQ_SPITX_TBL;
+const static uint8_t    devSpiSendDmaReqTbl[]    = DMAMUX_REQ_SPITX_TBL;
 /**
   * @brief  send routine DMA
   * @param  psc   pointer of internal descriptor

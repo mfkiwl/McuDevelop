@@ -34,8 +34,8 @@
 
 struct _stUsart         usart;
 
-const static uint8_t    devUsartSendDmaReqTbl[]    = DMA_REQ_USARTTX_TBL;
-const static uint8_t    devUsartRecvDmaReqTbl[]    = DMA_REQ_USARTRX_TBL;
+const static uint8_t    devUsartSendDmaReqTbl[]    = DMAMUX_REQ_USARTTX_TBL;
+const static uint8_t    devUsartRecvDmaReqTbl[]    = DMAMUX_REQ_USARTRX_TBL;
 
 int
 DevUsartInit(int unit, devUsartParam_t *param)
