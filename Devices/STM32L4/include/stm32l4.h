@@ -181,10 +181,12 @@ typedef struct {
 #define DMA_CH6         (6)
 #define DMA_CH7         (7)
 
+/* L4xx     [7:4]:req  [3:0]:ch  */
+#define DMAMUX_REQ_SPITX_TBL   {0, 0x13, 0x15, 0x3a}
+#define DMAMUX_REQ_SPIRX_TBL   {0, 0x12, 0x14, 0x39}
 
-#define DMA_REQ_SPITX_TBL   {0, 0x31, 0x51, 0xa3}
-#define DMA_REQ_SPIRX_TBL   {0, 0x21, 0x41, 0x93}
-
+#define DevDmaGetReq(x)         (((x) >> 4) & 0xf)
+#define DevDmaGetCh(x)          ( (x)       & 0xf)
 
 
 /*******************************************
