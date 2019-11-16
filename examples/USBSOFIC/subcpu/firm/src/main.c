@@ -55,12 +55,8 @@ char            strVersionText[] = CONFIG_VERSION_FIRM_TEXT;
 
 void            MainUartLoop(void);
 
-
-
-/*rtosThreadId defaultTaskHandle;*/
 rtosTaskId      idMain;
 
-/*extern UART_HandleTypeDef huart3;*/
 
 void
 MainIncSystemTimer(void)
@@ -76,16 +72,16 @@ const static rtosTaskInfo_t     mainTaskList[] = {
   /*** main task */
   {
     .pFunc = (rtosTaskFunc)MainTask,
-    .pName = NULL,
+    .pName = "main",
     .priority = RTOS_PRI_IDLE,
     .szStack = 0x400,
   },
   /*** usb task */
   {
     .pFunc = (rtosTaskFunc)MainUsbdifTask,
-    .pName = NULL,
+    .pName = "usbd",
     .priority = RTOS_PRI_NORMAL,
-    .szStack = 0x100,
+    .szStack = 0x1000,
   },
   /* end of list */
   {
@@ -126,7 +122,7 @@ MainUartLoop(void)
   UsbCdcAcmLoop(dUsbCdc);
 #endif
 
-#if 0
+#if 1
   {
     uint8_t           str[256];
     int               len;
@@ -157,6 +153,20 @@ MainIdleLoop(void)
     tCnt = 0;
     i++;
     printf("idle %d\r\n", i);
+
+    GpioSetUpdateLedOn();
+    RtosTaskSleep(1);
+    GpioSetUpdateLedOff();
+    RtosTaskSleep(1);
+
+#if CONFIG_RTOS_DEBUG_SHOW_STACK
+    {
+      uint8_t   strTaskList[512];
+      vTaskList(strTaskList);
+      puts(strTaskList);
+    }
+#endif
+
 #if 0
     SystemGetClockValue(&p);
     SystemDebugShowClockValue(&p);
@@ -183,19 +193,18 @@ MainTask(void const * argument)
   }
   //MainInitCounter();
 
+
   /* start all tasks */
-  const static rtosTaskInfo_t     *p;
-  p = mainTaskList+1;   /* skip index 0 which is main task, already executed */
+  const static rtosTaskInfo_t     *pRtos;
+  pRtos = mainTaskList+1;   /* skip index 0 which is main task, already executed */
   while(1) {
-    if(!p->pFunc) break;
-    RtosTaskCreate(p, NULL);
-    p++;
+    if(!pRtos->pFunc) break;
+    RtosTaskCreate(pRtos, RTOS_NULL, RTOS_NULL);
+    pRtos++;
   }
 
   puts("\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n#-----\r\n");
   puts("# " CONFIG_PRODUCT_NAME_TEXT " was started\r\n");
-
-
 
   /* Infinite loop */
   while(1) {
@@ -213,6 +222,12 @@ MainEntry(void)
   systemClockFreq_t   clk;
   uint32_t            systick;
 
+  SystemInit();
+
+  /* start system timer */
+  DevCounterInit(-1, NULL);
+  SystemInitSystemTimer();
+
   //MainInitSi5351();
   //SystemChangeClockHigher();
   //SystemUpdateClockValue();
@@ -228,9 +243,8 @@ MainEntry(void)
   SysTick_Config(systick/1000);
 #endif
 
-  //  NVIC_SetPriority(SysTick_IRQn, 15);
   NVIC_SetPriority(PendSV_IRQn, 0);
-  NVIC_SetPriority(SysTick_IRQn, 0);
+  NVIC_SetPriority(SysTick_IRQn, 1);
 
   /* System interrupt init*/
   NVIC_SetPriority(MemoryManagement_IRQn, 0);
@@ -239,21 +253,13 @@ MainEntry(void)
   NVIC_SetPriority(SVCall_IRQn, 0);
   NVIC_SetPriority(DebugMonitor_IRQn, 0);
 
-#if 0
-  /* adhoc */
-  extern uint32_t       sectVectorStart[];
-  SCB->VTOR = (uint32_t)&sectVectorStart;
-#endif
-
   /* Start the first task */
-  idMain = RtosTaskCreate(&mainTaskList[0], NULL);
+  RtosTaskCreate(&mainTaskList[0], RTOS_NULL, RTOS_NULL);
 
   RtosKernelStart();
 
   while (1);
 }
-
-
 
 
 static void
@@ -359,6 +365,7 @@ MainInitCounter(void)
 #endif
 
 
+#if 0
   /********************************************************
    * TIM5   freerun counter
    */
@@ -370,6 +377,7 @@ MainInitCounter(void)
   param.clktrg.reload = 0xffffffff;
   param.clktrg.down = 1;
   DevCounterInit(5, &param);
+#endif
 
 
   /********************************************************
@@ -523,20 +531,20 @@ MainInitUsb(void)
 
     param.dma = 0;
 
+    /* call back setting */
+    param.cb.setup = UsbdcoreCbSetup;
+    param.cb.dataInDone = UsbdcoreCbDataInDone;
+    param.cb.dataOut = UsbdcoreCbDataOut;
+    param.cb.busState = UsbdcoreCbBusState;
+
     DevUsbInit(unit, &param);
     DevUsbSetTRxFifo(unit, (usbdifDevFifo_t *)&fifo);
 
     GpioSetUsbEnable();
 
-#if 0
-    /* power control usb phy 3.3V power enable
-     * see document section 6 PWR, PWR_CR3 */
-    PWR_PTR->CR3 |= PWR_CR3_USB33DEN_YES;
-#endif
-
     /* interrupt enable */
-    NVIC_SetPriority(OTG_FS_IRQn, 5);
-    NVIC_EnableIRQ(OTG_FS_IRQn);
+    NVIC_SetPriority(OTG_HS_IRQn, 5);
+    NVIC_EnableIRQ(OTG_HS_IRQn);
   }
 
   return;

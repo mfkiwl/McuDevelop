@@ -31,6 +31,7 @@
 #include        "config.h"
 #include        "system.h"
 #include        "devGpio.h"
+#include        "devCounter.h"
 #include        "stm32f7Rcc.h"
 #include        "devCrs.h"
 
@@ -47,7 +48,7 @@ uint32_t                        SystemCoreClock; /* used in the CMSIS */
 void
 SystemInit(void)
 {
-  SystemChangeClockDefault();
+  //SystemChangeClockDefault();
 
   /*********************************
    * cache control
@@ -94,6 +95,9 @@ SystemInit(void)
    * clock gate control
    */
 
+  /* pwr */
+  RCC_PTR->APB1ENR |= RCC_APB1ENR_PWREN_YES;
+
   /* gpio */
   RCC_PTR->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN_YES | RCC_AHB1ENR_GPIOBEN_YES |
                        RCC_AHB1ENR_GPIOCEN_YES | RCC_AHB1ENR_GPIODEN_YES |
@@ -102,6 +106,9 @@ SystemInit(void)
                        RCC_AHB1ENR_GPIOIEN_YES);
   /* i2c */
   RCC_PTR->APB1ENR |= RCC_APB1ENR_I2C2EN_YES;
+
+  /* usart */
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_USART1EN_YES;
 
   /*********************************
    * gpio initialize
@@ -122,18 +129,18 @@ SystemInit(void)
   SystemChangeClockHigher();
   SystemUpdateClockValue();
 
-  /* usart */
-  RCC_PTR->APB2ENR |= RCC_APB2ENR_USART1EN_YES;
-
   /* timer */
+  RCC_PTR->APB1ENR |= RCC_APB1ENR_TIM5EN_YES;
 
   /* usb, otg */
   RCC_PTR->AHB1ENR |= RCC_AHB1ENR_OTGHSEN_YES;
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_OTGPHYCEN_YES;
 
+#if 0
   /* usb phy controller,  enable LDO, enable CTRLer */
   int         tout = 0x400000;
   USBPHYC_PTR->LDO |= USBPHYC_LDO_DISABLE_YES;  /* errata: 1 is enable */
-  while((USBPHYC_PTR->LDO & USBPHYC_LDO_STATUS_MASK)) {
+  while(!(USBPHYC_PTR->LDO & USBPHYC_LDO_STATUS_MASK)) {
     if(tout-- <= 0) break;
   }
 
@@ -147,18 +154,12 @@ SystemInit(void)
 
   USBPHYC_PTR->TUNE =
     USBPHYC_TUNE_HSDRVCHKITRM_20_94MA |
-    USBPHYC_TUNE_HSDRVRFRED_SHIFT |
+    USBPHYC_TUNE_HSDRVRFRED_INC20PER |
     USBPHYC_TUNE_HSDRVDCCUR_DEC5MV |
-    USBPHYC_TUNE_LFSCAPEN_YES | USBPHYC_TUNE_INCURREN_YES | USBPHYC_TUNE_INCURRINT_YES;
+    /*USBPHYC_TUNE_LFSCAPEN_YES |*/ USBPHYC_TUNE_INCURREN_YES | USBPHYC_TUNE_INCURRINT_YES;
 
   USBPHYC_PTR->PLL1 |= USBPHYC_PLL1_EN_YES;
-
-
-  /*********************************
-   * set interrupt vector pointer
-   */
-  extern uint32_t       sectVectorStart[];
-  SCB->VTOR = (uint32_t)&sectVectorStart;
+#endif
 
   return;
 }
@@ -195,8 +196,20 @@ SystemChangeClockHigher(void)
 {
   uint32_t              val;
 
+  /* change flash access time */
+  /* 2.7V -- 3.6V
+   *  (  0 -  30]: 0WS
+   *  ( 30 -  60]: 1WS
+   *  ( 60 -  90]: 2WS
+   *  ( 90 - 120]: 3WS
+   *  (120 - 150]: 4WS
+   *  (150 - 180]: 5WS
+   *  (180 - 210]: 6WS
+   */
+  FLASH_PTR->ACR = FLASH_LATENCY_CLK(CONFIG_CLOCK_FREQ_CPU/30000001);
+
   /** change core voltage */
-  PWR_PTR->CR1 |= PWR_CR1_VOS_RANGE3_144MHZ;
+  //PWR_PTR->CR1 |= PWR_CR1_VOS_RANGE3_144MHZ;
   //while(!(PWR_PTR->D3CR & PWR_D3CR_VOSRDY_MASK));
 
   /*** select clock sources */
@@ -205,21 +218,21 @@ SystemChangeClockHigher(void)
 
   /* pll1 settings  vco range (100-432MHz)
    * HSE=24MHz
-   * M=13(2MHz), N=60(120MHz)
-   * P=2(60MHz), Q=2(60MHz)
+   * M=12(2MHz), N=96(192MHz)
+   * P=2(96MHz), Q=8(48MHz)
    */
   RCC_PTR->PLLCFGR  = (RCC_PLLCFGR_PLLSRC_HSE |
-                       RCC_PLLCFGR_PLLM_DIV(12) | RCC_PLLCFGR_PLLN_MULX(60) |
-                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(5) );
-
+                       RCC_PLLCFGR_PLLM_DIV((CONFIG_CLOCK_HSE)/2000000) |
+                       RCC_PLLCFGR_PLLN_MULX((CONFIG_CLOCK_FREQ_CPU)/1000000) |
+                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(8) );
   RccPll1Enable();
 
   /* clock divider */
   /* APB1 is up to  54MHz
    * APB2 is up to 108MHz
    */
-  RCC_PTR->CFGR = (RCC_CFGR_HPRE_DIV2 |
-                   RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1);
+  RCC_PTR->CFGR = (RCC_CFGR_HPRE_DIV1 |
+                   RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2);
 
   /* the system clock is selected to PLL1 */
   RCC_PTR->CFGR |= RCC_CFGR_SW_PLL;
@@ -430,6 +443,23 @@ fail:
 }
 
 
+void
+SystemInitSystemTimer(void)
+{
+  devCounterParam_t     param;
+
+  memset(&param, 0, sizeof(param));
+  param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG);
+  param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
+                       DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
+  param.clktrg.prescaler = 0;
+  param.clktrg.reload = 0xffffffff;
+  param.clktrg.down = 1;
+  DevCounterInit(TIM5_NUM, &param);
+
+  return;
+}
+
 uint32_t
 SystemGetSystemTimer(void)
 {
@@ -462,7 +492,7 @@ malloc(int size)
 {
   void *p;
   p = ptrMalloc;
-  ptrMalloc += size;
+  ptrMalloc += (size + 0xf) & ~0xf;
   return p;
 }
 

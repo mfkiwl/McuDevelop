@@ -62,28 +62,27 @@ SOURCES =	\
 		$(USBDIF_DIR)/src/usbdif.c \
 		$(USBDIF_DIR)/src/usbdcdc.c \
 		$(USBDIF_DIR)/src/usbdcore.c \
-		src/main.c \
-		src/fifo.c \
-		src/usb_desc.c \
-		src/usb_cdcacm.c \
-		src/rtos.c \
-		src/intr.c \
 		$(DEVICELIB_DIR)/STM32/src/devUsb320a.c \
 		$(DEVICELIB_DIR)/STM32/src/devGpio.c \
-		$(DEVICELIB_DIR)/STM32/src/devDma4.c \
+		$(DEVICELIB_DIR)/STM32/src/devDma7.c \
 		$(DEVICELIB_DIR)/STM32/src/devSpi16.c \
 		$(DEVICELIB_DIR)/STM32/src/devI2c.c \
 		$(DEVICELIB_DIR)/STM32/src/devCounter.c \
 		$(DEVICELIB_DIR)/STM32/src/devUsart.c \
 		$(DEVICELIB_DIR)/STM32/src/si5351.c \
 		../target/$(DEVICE_TYPE)/src/system.c \
-
-#		$(DEVICELIB_DIR)/STM32/src/devI2c.c \
+		src/main.c \
+		src/fifo.c \
+		src/rtos.c \
+		src/intr.c \
+		src/usb_desc.c \
+		src/usb_cdcacm.c
 
 
 LIBSEXT		= -L$(LIBAEABI_CORTEXM7_DIR) -laeabi-cortexm7
 
-INCDIRS		= -I src -I ../include \
+INCDIRS		= \
+		-I src -I ../include \
 		-I obj/$(DEVICE_TYPE)_$(ENV_CC) \
 
 
@@ -201,5 +200,5 @@ clean:
 	/bin/$(RM) -fr obj
 
 prog:
-#	$(PROGMCU) --force --stm32 --uart -e -p -k -f obj/STM32L0_gcc/firmware.bin --uartdev=/dev/ttyUSB0 -R
-	$(DFUUTIL) -D obj/STM32L0_gcc/firm/firm.bin -a 0 --dfuse-address 0x8000000
+	$(PROGMCU) --allarea --force --stm32 --uart -e -p -k -B -f obj/STM32F7_gcc/firmware.bin --uartdev=/dev/ttyUSB0 -R
+#	$(DFUUTIL) -D obj/STM32L0_gcc/firm/firm.bin -a 0 --dfuse-address 0x8000000

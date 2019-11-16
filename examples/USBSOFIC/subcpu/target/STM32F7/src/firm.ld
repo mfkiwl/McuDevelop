@@ -28,8 +28,8 @@
 /*********************************************************
  * definitons
  */
-szHeap        = 0x10000;
-szStack       = 0x4000;
+szHeap        = 0x100;
+szStack       = 0x1000;
 VECTOR_RAM_SIZE = 0x400;
 
 
@@ -39,16 +39,16 @@ VECTOR_RAM_SIZE = 0x400;
 MEMORY {
   /* flash area */
   FLASH1                (rx) : ORIGIN = 0x08000000, LENGTH =   64K
-  FLASH_INTERRUPTS      (rx) : ORIGIN = 0x08004000, LENGTH = 0x00040
-  FLASH_INTERRUPTS_USR  (rx) : ORIGIN = 0x08004040, LENGTH = 0x003c0
-  FLASH_CONFIG          (rx) : ORIGIN = 0x08004400, LENGTH = 0x00020
-  FLASH_TEXT            (rx) : ORIGIN = 0x08004420, LENGTH = 0xbfbe0
+  FLASH_INTERRUPTS      (rx) : ORIGIN = 0x08000000, LENGTH = 0x00040
+  FLASH_INTERRUPTS_USR  (rx) : ORIGIN = 0x08000040, LENGTH = 0x003c0
+  FLASH_CONFIG          (rx) : ORIGIN = 0x08000400, LENGTH = 0x00020
+  FLASH_TEXT            (rx) : ORIGIN = 0x08000420, LENGTH = 0xbfbe0
 
   /* ram area */
   RAM_DTCM             (xrw) : ORIGIN = 0x20000000, LENGTH =   64K
-  RAM_D1               (xrw) : ORIGIN = 0x20010000, LENGTH =  172K
+  RAM_D1               (xrw) : ORIGIN = 0x20010000, LENGTH =  176K
   RAM_D2               (xrw) : ORIGIN = 0x2003c000, LENGTH =   16K
-  RAM_ITCM             (xrw) : ORIGIN = 0x00000000, LENGTH =   64K
+  RAM_ITCM             (xrw) : ORIGIN = 0x00000000, LENGTH =   16K
 }
 
 /*********************************************************

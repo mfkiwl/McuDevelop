@@ -36,12 +36,13 @@ void DMA1_Stream3_IRQHandler(void);
 void DMA1_Stream4_IRQHandler(void);
 void DevI2c1Interrupt(void);
 void DevI2c2Interrupt(void);
+void DevUsbInterruptUsb1(void);
 void DevUsbInterruptUsb2(void);
 
 enum interruptLines {
   INTR_MAIN_STACK =            0, /* Main Stack                   */
   INTR_RESETI =                1, /* Reset                        */
-  INTR_NMII =                  2, /* Non-maskable Intr       */
+  INTR_NMII =                  2, /* Non-maskable Intr            */
   INTR_HFI =                   3, /* Hard Fault                   */
   INTR_MMI =                   4, /* Memory Management            */
   INTR_BFI =                   5, /* Bus Fault                    */
@@ -107,18 +108,18 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /*  46                              */
   IntrException,                        /*  47                              */
   IntrException,                        /*  48                              */
-  IntrException,                        /*  49                              */
+  IntrException,                        /*  49 SDMMC1                       */
   IntrException,                        /*  50                              */
   IntrException,                        /*  51                              */
   IntrException,                        /*  52                              */
   IntrException,                        /*  53                              */
   IntrException,                        /*  54                              */
   IntrException,                        /*  55                              */
-  IntrException,                        /*  56                              */
-  IntrException,                        /*  57                              */
-  IntrException,                        /*  58                              */
-  IntrException,                        /*  59                              */
-  IntrException,                        /*  60                              */
+  IntrException,                        /*  56 DMA2 Stream0                 */
+  IntrException,                        /*  57 DMA2 Stream1                 */
+  IntrException,                        /*  58 DMA2 Stream2                 */
+  IntrException,                        /*  59 DMA2 Stream3                 */
+  IntrException,                        /*  60 DMA2 Stream4                 */
   IntrException,                        /*  61                              */
   IntrException,                        /*  62                              */
   IntrException,                        /*  63                              */
@@ -126,16 +127,16 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /*  65                              */
   IntrException,                        /*  66                              */
   IntrException,                        /*  67                              */
-  IntrException,                        /*  68                              */
-  IntrException,                        /*  69                              */
-  IntrException,                        /*  70                              */
+  IntrException,                        /*  68 DMA2 Stream5                 */
+  IntrException,                        /*  69 DMA2 Stream6                 */
+  IntrException,                        /*  70 DMA2 Stream7                 */
   IntrException,                        /*  71                              */
   IntrException,                        /*  72                              */
   IntrException,                        /*  73                              */
   IntrException,                        /*  74                              */
   IntrException,                        /*  75                              */
   IntrException,                        /*  76                              */
-  IntrException,                        /*  77                              */
+  DevUsbInterruptUsb1,                  /*  77 USB                          */
   IntrException,                        /*  78                              */
   IntrException,                        /*  79                              */
   IntrException,                        /*  80                              */
@@ -161,7 +162,7 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /* 100                              */
   DevUsbInterruptUsb2,                  /* 101 USB FS                       */
   IntrException,                        /* 102                              */
-  IntrException,                        /* 103                              */
+  IntrException,                        /* 103 SDMMC2                       */
   IntrException,                        /* 104                              */
   IntrException,                        /* 105                              */
   IntrException,                        /* 106                              */

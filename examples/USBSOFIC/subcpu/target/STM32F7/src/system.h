@@ -31,7 +31,7 @@
 
 #include        "stm32f7.h"
 #include        "devGpio.h"
-#include        "devDma4.h"
+#include        "devDma7.h"
 #include        "gpio.usbsofic.h"
 
 #if (DEVICE_ARCHTYPE == CONFIG_ARCHTYPE_CORTEX_M0)
@@ -46,6 +46,11 @@
 #error "DEVICE_ARCHTYPE is not definited"
 #endif
 
+
+#define SYSTEM_TIMER_1M000S     (CONFIG_CLOCK_FREQ_PERI/1000)
+#define SYSTEM_TIMER_10M00S     (CONFIG_CLOCK_FREQ_PERI/100)
+#define SYSTEM_TIMER_100M0S     (CONFIG_CLOCK_FREQ_PERI/10)
+#define SYSTEM_TIMER_1S000      (CONFIG_CLOCK_FREQ_PERI)
 
 
 typedef struct {
@@ -79,9 +84,14 @@ void            SystemGpioInit(void);
 void            *SystemMallocStreamBuf(int type, int size, void *vp);
 void            SystemSysTickIntr(void);
 
-void             SystemChangeClockHigher(void);
-void             SystemChangeClockDefault(void);
-void             SystemUpdateClockValue(void);
+void            SystemChangeClockHigher(void);
+void            SystemChangeClockDefault(void);
+void            SystemUpdateClockValue(void);
+
+void            SystemInitSystemTimer(void);
+uint32_t        SystemGetSystemTimer(void);
+void            SystemWaitSystemTimer(uint32_t tout);
+
 #ifdef  _SYSTEM_C_
 static void             SystemCoreClockUpdate(void);
 static int              SystemFmcInit(void);
