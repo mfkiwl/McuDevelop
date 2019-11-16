@@ -193,6 +193,8 @@ MainEntry(void)
   systemClockFreq_t   clk;
   uint32_t            systick;
 
+  SystemInit();
+
   SystemChangeClockHigher();
   SystemUpdateClockValue();
 
@@ -490,14 +492,14 @@ MainSetFmcWait(int unit, int act, int inact)
 
   if(inact > 0) {
     if(inact < 2)       inact = 2;
-    else if(inact > 16) inact = 16;
+    else if(inact > 15) inact = 15;
     inact--;
     pBank->TR &= ~FMC_BTR_ADDSET_MASK;
     pBank->TR |=  FMC_BTR_ADDSET(inact);
   }
 
   if(act > 0) {
-    if(act > 16) act = 16;
+    if(act > 15) act = 15;
     pBank->TR &= ~FMC_BTR_DATAST_MASK;
     pBank->TR |=  FMC_BTR_DATAST(act);
   }

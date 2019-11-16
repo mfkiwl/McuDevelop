@@ -234,7 +234,7 @@ SystemChangeClockHigher(void)
    *  (150 - 180]: 5WS
    *  (180 - 210]: 6WS
    */
-  FLASH_PTR->ACR = FLASH_LATENCY_CLK(6);
+  FLASH_PTR->ACR = FLASH_LATENCY_CLK(CONFIG_CLOCK_FREQ_CPU/30000000);
 
   /*** select clock sources */
   //RCC_PTR->CR |= RCC_CR_HSEON_YES| RCC_CR_HSEBYP_YES;
