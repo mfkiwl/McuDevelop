@@ -45,13 +45,10 @@ uint32_t                        SystemCoreClock; /* used in the CMSIS */
 void
 SystemInit(void)
 {
-
-#if 1
   /*********************************
    * set normal clock setting
    */
   SystemChangeClockDefault();
-#endif
 
 
   /*********************************
@@ -69,12 +66,10 @@ SystemInit(void)
   /*********************************
    * fpu control
    */
-#if 1
 #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
   SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
   __DSB();
   __ISB();      /* reset the instruction pipe line and enable FPU */
-#endif
 #endif
 
 #if 0
@@ -140,6 +135,9 @@ SystemInit(void)
   /* sdmmc en and 100MHz   SDCLK upto 50MHz */
   RCC_PTR->APB2ENR |= RCC_APB2ENR_SDMMC1EN_YES;
   RCC_PTR->DCKCFGR2 |= RCC_DCKCFGR2_SDMMC1SEL_PLLQ;
+
+  /* adc, dac */
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_ADC1EN_YES;
 
 #if 0
   /* usb, otg */
@@ -247,6 +245,76 @@ SystemChangeClockHigher(void)
    */
   RCC_PTR->PLLCFGR  = (RCC_PLLCFGR_PLLSRC_HSI16 |
                        RCC_PLLCFGR_PLLM_DIV(8) | RCC_PLLCFGR_PLLN_MULX(CONFIG_CLOCK_FREQ_CPU/1000000) |
+                       RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(8) );
+
+  RccPll1Enable();
+
+  /* clock divider */
+  /* APB1 is up to  54MHz
+   * APB2 is up to 108MHz
+   */
+  RCC_PTR->CFGR = (RCC_CFGR_HPRE_DIV1 |
+                   RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2);
+
+  /* the system clock is selected to PLL1 */
+  RCC_PTR->CFGR |= RCC_CFGR_SW_PLL;
+  while((RCC_PTR->CFGR & RCC_CFGR_SWS_MASK) != RCC_CFGR_SWS_PLL);
+
+
+  /*** MCO setting */
+#if CONFIG_MCO_ENABLE
+  val = RCC_PTR->CFGR;
+  val &= ~(RCC_CFGR_MCO2SEL_MASK | RCC_CFGR_MCO2PRE_MASK |
+           RCC_CFGR_MCO1SEL_MASK | RCC_CFGR_MCO1PRE_MASK);
+  val |= RCC_CFGR_MCO1SEL_PLL | RCC_CFGR_MCO1PRE_DIV2;
+  val |= RCC_CFGR_MCO2SEL_SYSCLK | RCC_CFGR_MCO2PRE_DIV2;
+  RCC_PTR->CFGR = val;
+#endif
+
+  return;
+}
+void
+SystemChangeClock180MHz(void)
+{
+  uint32_t              val;
+
+  /** change core voltage */
+#if 0
+  /* already enabled */
+  PWR_PTR->CR1 |= PWR_CR1_ODSWEN_YES;
+  while(!(PWR_PTR->CSR1 & PWR_CSR1_ODSWRDY_MASK));
+  PWR_PTR->CR1 |= PWR_CR1_ODEN_YES;
+  while(!(PWR_PTR->CSR1 & PWR_CSR1_ODRDY_MASK));
+  /* already selected range1 */
+  PWR_PTR->CR1 |= PWR_CR1_VOS_RANGE1_180MHZ;
+  while(!(PWR_PTR->CSR1 & PWR_CSR1_VOSRDY_MASK));
+#endif
+
+  /* change flash access time */
+  /* 1.7V -- 2.1V
+   *  (  0 -  20]: 0WS
+   *  ( 20 -  40]: 1WS
+   *  ( 40 -  60]: 2WS
+   *  ( 60 -  80]: 3WS
+   *  ( 80 - 100]: 4WS
+   *  (100 - 120]: 5WS
+   *  (120 - 140]: 6WS
+   *  (140 - 160]: 7WS
+   *  (160 - 180]: 8WS
+   */
+  FLASH_PTR->ACR = FLASH_LATENCY_CLK(CONFIG_CLOCK_FREQ_CPU/20000000);
+
+  /*** select clock sources */
+  //RCC_PTR->CR |= RCC_CR_HSEON_YES| RCC_CR_HSEBYP_YES;
+  //while(!(RCC_PTR->CR & (RCC_CR_HSERDY_MASK)));
+
+  /* pll1 settings  vco range (100-432MHz)
+   * HSI=16MHz
+   * M=8(2MHz), N=200(400MHz)
+   * P=4(100MHz), Q=4(100MHz)
+   */
+  RCC_PTR->PLLCFGR  = (RCC_PLLCFGR_PLLSRC_HSI16 |
+                       RCC_PLLCFGR_PLLM_DIV(8) | RCC_PLLCFGR_PLLN_MULX(CONFIG_CLOCK_FREQ_CPU180/1000000) |
                        RCC_PLLCFGR_PLLP_DIV2 | RCC_PLLCFGR_PLLQ_DIV(8) );
 
   RccPll1Enable();
@@ -383,6 +451,40 @@ SystemDebugShowClockValue(systemClockFreq_t *p)
 
   return;
 }
+
+
+int
+SystemGetVddValue(void)
+{
+  int           val, voltage;
+
+  /* adc, dac */
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_ADC1EN_YES;
+
+  ADC1_PTR->CR2  = ADC_CR2_ALIGN_LEFT | ADC_CR2_ADON_YES;
+  ADC1_PTR->CR1  = ADC_CR1_RES_12BIT;
+  ADC1_PTR->SMPR1 = ADC_SMPR1_SMP_ALLSLOW;
+  ADC1_PTR->SMPR2 = ADC_SMPR2_SMP_ALLSLOW;
+
+  ADC1_PTR->SQR1 = 0;
+  ADC1_PTR->SQR3 = ADC_SQR_VREFINT;
+
+  ADC1_PTR->CCR = (ADC_CCR_TSVREFE_YES |
+                   ADC_CCR_ADCPRE_PCLK2_DIV8 |
+                   ADC_CCR_DELAY_VAL(2));
+
+  /* start AD and wait done */
+  ADC1_PTR->CR2 |= ADC_CR2_SWSTART_YES;
+  for(int i = 0; i < 20000; i++) {
+    if(ADC1_PTR->SR & ADC_SR_EOC_MASK) break;
+  }
+
+  val = ADC1_PTR->DR;
+  voltage = (1200 << 16) / val;     // "<< 16" is intead of *65535 */
+
+  return voltage;
+}
+
 
 /*
  * see the AN4838 document

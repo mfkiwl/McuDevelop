@@ -25,15 +25,7 @@
 #define _INTRVEC_H_
 
 #include        "devUsart.h"
-void TIM2_IRQHandler(void);
-void TIM3_IRQHandler(void);
-void TIM4_IRQHandler(void);
-void ADC_IRQHandler(void);
-void DMA1_Stream0_IRQHandler(void);
-void DMA1_Stream1_IRQHandler(void);
-void DMA1_Stream2_IRQHandler(void);
-void DMA1_Stream3_IRQHandler(void);
-void DMA1_Stream4_IRQHandler(void);
+
 void DevSdmmcInterrupt0(void);
 void DevSdmmcInterrupt1(void);
 void MainIntrruptSpi1Rx(void);
@@ -77,7 +69,7 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /*  15 DMA1 Stream4                 */
   IntrException,                        /*  16 DMA1 Stream5                 */
   IntrException,                        /*  17 DMA1 Stream6                 */
-  IntrException,                        /*  18 ADC                          */
+  DevAdcInterrupt1,                     /*  18 ADC                          */
   IntrException,                        /*  19 FDCAN1 intr0                 */
   IntrException,                        /*  20 FDCAN2 intr0                 */
   IntrException,                        /*  21 FDCAN1 intr1                 */

@@ -38,6 +38,7 @@
 //#include        "devI2c.h"
 #include        "devSpi16.h"
 #include        "devSdmmc.h"
+#include        "devAdcF730.h"
 #include        "fpgaconf.h"
 
 #include        "gpio.fpgaconf.h"
@@ -96,6 +97,8 @@ void            SystemChangeBusWrAccess(int unit, int wrlow, int wrhigh);
 
 void            SystemGpioSet(int unit, uint32_t bit);
 void            SystemGpioReset(int unit, uint32_t bit);
+
+int             SystemGetVddValue(void);
 
 #ifdef  _SYSTEM_C_
 static void             SystemCoreClockUpdate(void);

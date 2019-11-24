@@ -69,6 +69,13 @@ const static rtosTaskInfo_t     mainTaskList[] = {
     .priority = RTOS_PRI_HIGH,
     .szStack = 0x400,
   },
+  /*** ad converter task */
+  {
+    .pFunc = (rtosTaskFunc)MainAdcTask,
+    .pName = "adc",
+    .priority = RTOS_PRI_LOW,
+    .szStack = 0x100,
+  },
   /* end of list */
   {
     .pFunc = NULL,
@@ -186,16 +193,47 @@ MainTask(void const * argument)
 }
 
 
+static void
+MainAdcTask(void const * argument)
+{
+  uint16_t      vrefAdc, tempAdc;
+  int           vref, temp4;
+  const uint8_t str[][4] = {"00", "25", "50", "75"};
+
+  MainInitAdc();
+  //DevAdcGetData(ADC1_NUM, DEVADC_CH_VREFINT, &vref);
+
+  while(1) {
+    DevAdcGetData(ADC1_NUM, DEVADC_CH_VREFINT, &vrefAdc);
+    DevAdcGetData(ADC1_NUM, DEVADC_CH_TEMPERATURE, &tempAdc);
+    vref  = (1200 << 16) / vrefAdc;
+    temp4 = (((3300 * tempAdc) >> 16) - 760) * 4*4 / 10 + 25*4;
+    printf("vref/temp %x %x  %dmV %d.%sdeg\n",
+           vrefAdc, tempAdc,
+           vref, temp4>>2, str[temp4&3]);
+    RtosTaskSleep(1000);
+  }
+
+  return;
+}
+
+
 int
 MainEntry(void)
 {
   extern const uint16_t gpioDefaultTbl[];
-  systemClockFreq_t   clk;
-  uint32_t            systick;
+  systemClockFreq_t     clk;
+  uint32_t              systick;
+  int                   vcc;
 
   SystemInit();
 
-  SystemChangeClockHigher();
+  vcc = SystemGetVddValue();
+  if(vcc >= 2700) {
+    SystemChangeClockHigher();
+  } else {
+    SystemChangeClock180MHz();
+  }
   SystemUpdateClockValue();
 
 #if 0
@@ -454,6 +492,30 @@ MainInitSdmmc(void)
   NVIC_SetPriority(SDMMC1_IRQn, 0);
   NVIC_EnableIRQ(SDMMC1_IRQn);
 #endif
+
+  return;
+}
+
+
+static void
+MainInitAdc(void)
+{
+  devAdcParam_t       param;
+  DevAdcInit(-1, 0, NULL);
+
+  memset(&param, 0, sizeof(param));
+  param.trgsel = 0;
+  param.trgpol = 0;
+  param.resolution = 16;
+  param.continuous = 1;
+  param.chbit = DEVADC_CH_TEMPERATURE_BIT | DEVADC_CH_VREFINT_BIT;
+  param.intr = 1;
+  DevAdcInit(ADC1_NUM, 0, &param);
+
+  NVIC_SetPriority(ADC1_IRQn, 0);
+  NVIC_EnableIRQ(ADC1_IRQn);
+
+  DevAdcStartConvert(ADC1_NUM);
 
   return;
 }

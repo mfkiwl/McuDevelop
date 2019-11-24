@@ -35,6 +35,7 @@ void            MainSetFmcWait(int unit, int act, int inact);
 
 #ifdef _MAIN_C_
 static void             MainTask(void const * argument);
+static void             MainAdcTask(void const * argument);
 static void             MainFpgaConfigTask(void const * argument);
 static void             MainUsbdifTask(void const * argument);
 static void             MainIdleLoop(void);
@@ -42,6 +43,7 @@ static void             MainInitUsart(void);
 static void             MainInitCounter(void);
 static void             MainInitSpi(void);
 static void             MainInitSdmmc(void);
+static void             MainInitAdc(void);
 static void             MainInitFmc(void);
 static void             MainShowClockValue(void);
 

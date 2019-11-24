@@ -74,6 +74,7 @@ SOURCES =	\
 		$(DEVICELIB_DIR)/STM32/src/devUsart.c \
 		$(DEVICELIB_DIR)/STM32/src/devSpi16.c \
 		$(DEVICELIB_DIR)/STM32/src/devSdmmc.c \
+		$(DEVICELIB_DIR)/STM32/src/devAdcF730.c \
 		../target/$(DEVICE_TYPE)/src/system.c \
 		src/main.c \
 		src/fifo.c \
