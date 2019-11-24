@@ -59,7 +59,6 @@ enum irqNumbers {
   DMA1_CH4_IRQn,
   DMA1_CH5_IRQn,
   DMA1_CH6_IRQn,
-  DMA1_CH7_IRQn,
   ADC1_IRQn,
 
   TIM1_BRK_TIM9_IRQn    =  24,
@@ -81,6 +80,7 @@ enum irqNumbers {
   EXTI15_10_IRQn,
 
   OTG_FS_WAKE_IRQn      =  42,
+  DMA1_CH7_IRQn         =  47,
   SDMMC1_IRQn           =  49,
 
   DMA2_CH0_IRQn         =  56,
@@ -225,6 +225,25 @@ typedef enum  {
 #define FMC_BANK4_PTR   ((void *) (0x90000000))
 #define FMC_BANK1SDRAM_PTR      ((void *) (0xc0000000))
 #define FMC_BANK2SDRAM_PTR      ((void *) (0xd0000000))
+
+
+/*************************************************************
+ * 14 ADC
+ */
+#include        "stm32AdcF730.h"
+
+typedef enum  {
+  ADC_NUM_INIT = -1,
+  ADC1_NUM = 0,
+  ADC2_NUM,
+  ADC3_NUM,
+  ADC_NUM_MAX,
+} adcNo_t;
+
+#define ADC1_PTR        ((stm32Dev_ADC *) ((APB2_BASE) + 0x2000))
+#define ADC2_PTR        ((stm32Dev_ADC *) ((APB2_BASE) + 0x2100))
+#define ADC3_PTR        ((stm32Dev_ADC *) ((APB2_BASE) + 0x2200))
+#define ADC3COM_PTR     ((stm32Dev_ADC_COM *) ((APB2_BASE) + 0x2300))
 
 
 /*************************************************************
@@ -386,10 +405,13 @@ typedef enum  {
 #define USB_MODULE_TBL                  {USB2_OTG_FS, USB1_OTG_HS, USB2_OTG_FS}
 typedef enum  {
   USB_NUM_INIT = -1,
+  USBFS_NUM = 0,
   USBHS_NUM = 1,
-  USBFS_NUM,
   USB_NUM_MAX
 } usbNo_t;
+
+#define IS_USB_FS(unit)         ((unit)==USBFS_NUM)
+#define IS_USB_HS(unit)         ((unit)==USBHS_NUM)
 
 
 /*******************************************
