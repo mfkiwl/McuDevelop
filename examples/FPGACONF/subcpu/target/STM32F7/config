@@ -110,6 +110,9 @@ CONFIG_MCO_ENABLE                       = 0
 
 CONFIG_SYSTEM_SWD_ENABLE                = 0
 
+CONFIG_SYSTEM_MALLOC_HEAP               = 0
+CONFIG_SYSTEM_MALLOC_RTOS               = 1
+
 
 ###############################
 # bootloader

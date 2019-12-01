@@ -81,6 +81,8 @@ typedef struct {
   uint32_t              pclk4;  /* D3 APB4 clock */
 } systemClockFreq_t;
 
+void            SystemInit(void);
+
 void            SystemMpuConfig(void);
 int             SystemGetClockValue(systemClockFreq_t *p);
 void            SystemDebugShowClockValue(systemClockFreq_t *p);
@@ -90,6 +92,7 @@ void            *SystemMallocStreamBuf(int type, int size, void *vp);
 void            SystemSysTickIntr(void);
 
 void            SystemChangeClockHigher(void);
+void            SystemChangeClock180MHz(void);
 void            SystemChangeClockDefault(void);
 void            SystemUpdateClockValue(void);
 

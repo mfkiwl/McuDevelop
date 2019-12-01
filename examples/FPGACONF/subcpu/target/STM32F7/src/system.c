@@ -629,6 +629,7 @@ SystemSysTickIntr(void)
 }
 
 
+#if CONFIG_SYSTEM_MALLOC_HEAP
 extern void *sectHeapStart;
 static void *ptrMalloc = &sectHeapStart;
 static int      cntMalloc = 0;
@@ -637,21 +638,38 @@ malloc(int size)
 {
   void *p;
 
-#if 0
   p = ptrMalloc;
   size +=  0xf;
   size &= ~0xf;
   ptrMalloc += size;
-#endif
 
+#if CONFIG_SYSTEM_MALLOC_RTOS
   p = (void *)RtosMalloc(size);
+#endif
 
   return p;
 }
-
 void
 free(void *ptr)
 {
   printf("XX free %x %x\n", ptr);
   return;
 }
+#endif
+#if CONFIG_SYSTEM_MALLOC_RTOS
+void *
+malloc(int size)
+{
+  void *p;
+
+  p = (void *)RtosMalloc(size);
+
+  return p;
+}
+void
+free(void *ptr)
+{
+  printf("XX free %x %x\n", ptr);
+  return;
+}
+#endif
