@@ -29,6 +29,95 @@
 
 
 
+typedef struct {
+  // bit 128 -- bit 96
+  uint8_t       csdStructure;   // 0: Ver1.0, 1: Ver2.0
+  uint8_t       reserved120;
+  uint8_t       rdAccessTime;
+  uint8_t       rdAccessTime2;
+  uint8_t       maxDataTransfer;
+
+  // bit 95 -- bit 48
+  uint16_t      cardCmdCls;
+  uint8_t       blkLength;
+  uint8_t       partialBlk: 1;
+  uint8_t       wrBlkMisalign: 1;
+  uint8_t       rdBlkMisalign: 1;
+  uint8_t       dsrImpliment: 1;
+  uint8_t       reserved70;
+  uint32_t      deviceSize;             // read value + 1
+
+  // bit 47 -- 32
+  uint8_t       reserved47: 1;
+  uint8_t       eraseSingleEn: 1;
+  uint8_t       eraseSectSize;
+  uint8_t       wrProtectGrpSz;
+
+  // bit 31 -- bit 0
+  uint8_t       wrProtectGrpEn: 1;
+  uint8_t       reserved29;
+  uint8_t       wrSpeedFactor;
+  uint8_t       maxWrDataBlkLen;
+  uint8_t       partialBlkWrAllow;
+  uint8_t       reserved16;
+  uint8_t       fileFormatGrp: 1;
+  uint8_t       copyFlagp:     1;
+  uint8_t       permWrProtect: 1;
+  uint8_t       tempWrProtect: 1;
+  uint8_t       fileFormat;
+  uint8_t       reserved8;
+  uint8_t       crc;
+  uint8_t       reserved0: 1;
+} sdmmcCsd2_t;
+
+
+typedef struct {
+  uint8_t       manufacturerId;
+  uint16_t      oemAppId;
+  uint8_t       productName[6];         // with terminator
+  uint8_t       productRevision;
+  uint32_t      productSerial;
+  uint8_t       reserved20;
+  uint16_t      date;
+  uint8_t       crc;
+  uint8_t       reserved0: 1;
+} sdmmcCid_t;
+
+
+typedef struct {
+  uint8_t       scrStructure;
+  uint8_t       sdSpec;
+  uint8_t       eraseStatus: 1;
+  uint8_t       cprmSupport;
+  uint8_t       busWidth;
+#define SDMMC_SCR_BUSWIDTH_1BIT (1<<0)
+#define SDMMC_SCR_BUSWIDTH_2BIT (1<<1)
+#define SDMMC_SCR_BUSWIDTH_4BIT (1<<2)
+#define SDMMC_SCR_BUSWIDTH_8BIT (1<<3)
+  uint8_t       sdSpec3: 1;
+  uint8_t       extSecurity;
+  uint16_t      reserved34;
+  uint8_t       cmdSupport;
+  uint32_t      reservedManufacturer;
+
+  uint32_t      busWidth1bit: 1;
+  uint32_t      busWidth2bit: 1;
+  uint32_t      busWidth4bit: 1;
+  uint32_t      busWidth8bit: 1;
+
+  uint32_t      supportCMD6:  1;
+  uint32_t      supportCMD8:  1;
+  uint32_t      supportCMD20: 1;
+  uint32_t      supportCMD23: 1;
+  uint32_t      supportCMD42: 1;
+
+  uint32_t      sdSpecV10x: 1;
+  uint32_t      sdSpecV110: 1;
+  uint32_t      sdSpecV200: 1;
+  uint32_t      sdSpecV30x: 1;
+
+} sdmmcScr_t;
+
 
 typedef struct {
   int                   supportCmd23: 1;
@@ -49,9 +138,15 @@ typedef struct {
 
   uint32_t              rca;
   uint32_t              ocr;
-  uint32_t              cid[4];
-  uint32_t              csd[4];
-  uint32_t              scr[8];
+  uint32_t              bufCid[4];
+  uint32_t              bufCsd[4];
+  uint32_t              bufScr[8];
+
+  //sdmmcCsd1_t            csd1;
+  sdmmcCsd2_t            csd2;
+  sdmmcCid_t             cid;
+  sdmmcScr_t             scr;
+
 
   int                   maxclk;
   uint8_t               xxx;
@@ -120,7 +215,20 @@ static sdmmcResult      SdmmcSubRecvCmdResp7(int unit);
 static sdmmcResult      SdmmcSubWaitSendCmd(int unit);
 static sdmmcResult      SdmmcSubWaitRecvCmd(int unit);
 
+static void             SdmmcSplitCsd2(sdmmcCsd2_t *pcsd, uint32_t *ptr);
+static void             SdmmcSplitCid(sdmmcCid_t *pcid, uint32_t *ptr);
+static void             SdmmcSplitScr(sdmmcScr_t *pscr, uint32_t *ptr);
+
+static void             SdmmcCpy32To8(uint8_t *pDst, uint32_t *pSrc, int count);
+
 static void             SdmmcDump(int unit, uint32_t lba, int count, uint8_t *ptr);
+static void             SdmmcDebugShowCsd2(sdmmcCsd2_t *pcsd, uint32_t *ptr);
+static void             SdmmcDebugShowCid(sdmmcCid_t *pcid, uint32_t *ptr);
+static void             SdmmcDebugShowScr(sdmmcScr_t *pscr, uint32_t *ptr);
+static void             SdmmcDebugShowOcr(uint32_t *ptr);
+
+static void             SdmmcDebugShowHex(uint32_t addr, uint8_t *ptr, int size);
+
 #endif
 
 

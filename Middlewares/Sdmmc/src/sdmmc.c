@@ -37,6 +37,7 @@
 #define SDMMC_DEBUG_CMD         0
 #define SDMMC_DEBUG_TRANSFER    0
 #define SDMMC_DEBUG_INFO        0
+#define SDMMC_DEBUG_DETAIL      0
 #define SDMMC_DEBUG_DUMP        0
 
 
@@ -655,6 +656,11 @@ SdmmcAppCmd51SendSCR(int unit, uint32_t arg, uint32_t *pScr)
   sdmmcResult           result = SDMMC_ERRNO_UNKNOWN;
   sdmmcSc_t     *psc;
   uint32_t      val;
+  uint32_t      bufScr[2];
+  union {
+    uint8_t     b8[8];
+    uint32_t    b32[2];
+  } buf;
 
   psc = &sdmmc.sc[unit];
 
@@ -663,7 +669,14 @@ SdmmcAppCmd51SendSCR(int unit, uint32_t arg, uint32_t *pScr)
 
   SdmmcSubSendCommand(unit, SDMMC_ACMD51_SEND_SCR, NULL);
   result = SdmmcSubRecvCmdResp1(unit, &val);
-  DevSdmmcReadData(unit, pScr, 8, 1000000);
+  DevSdmmcReadData(unit, bufScr, 8, 1000000);
+#if 1
+  pScr[0] = __REV(bufScr[0]);
+  pScr[1] = __REV(bufScr[1]);
+#else
+  pScr[0] = bufScr[0];
+  pScr[1] = bufScr[1];
+#endif
 
 #if SDMMC_DEBUG_CMD
   printf("# SdmmcAppCmd51SendSCR() unit:%d, addr:%x\n",
@@ -707,6 +720,7 @@ SdmmcSubGetCapability(int unit)
     result = SdmmcAppCmd41SdSendOpCond(unit, cap, &ocr);      // ACMD41
     if(result == SDMMC_ERRNO_TOUT) goto fail;
   } while(!(ocr & SDMMC_ACMD41_READY_MASK));
+  SdmmcDebugShowOcr(&ocr);
 
   /* voltage */
   psc->vccio = SDMMC_VCCIO_3300MV;
@@ -757,14 +771,23 @@ SdmmcSubInitCard(int unit)
   psc = &sdmmc.sc[unit];
 
   // get the CID info
-  result = SdmmcCmd2AllSendCID(unit, psc->cid); // CMD2
+  result = SdmmcCmd2AllSendCID(unit, psc->bufCid); // CMD2
+#if SDMMC_DEBUG_DETAIL
+  SdmmcSplitCid(&sdmmc.sc[unit].cid, psc->bufCid);
+  SdmmcDebugShowCid(&sdmmc.sc[unit].cid, psc->bufCid);
+#endif
 
   // get the relative card address
   SdmmcCmd3SendRelativeAddr(unit, &rca);        // CMD3
 
   // set the relative card address
   psc->rca = rca & 0xffff0000;
-  SdmmcCmd9SendCSD(unit, psc->rca, psc->csd);   // cmd9
+  SdmmcCmd9SendCSD(unit, psc->rca, psc->bufCsd);   // cmd9
+#if SDMMC_DEBUG_DETAIL
+  SdmmcSplitCsd2(&psc->csd2, psc->bufCsd);
+  SdmmcDebugShowCsd2(&psc->csd2, psc->bufCsd);
+#endif
+
   //psc->class = psc->csd[1] >> 20;
   SdmmcCmd7SelDeselCard(unit, psc->rca);        // cmd7
 
@@ -776,10 +799,12 @@ SdmmcSubInitCard(int unit)
   info.cntBlock = 1;
   info.szBlock = SET_TRANSFER_INFO_BLKSIZE_8B;
   info.dir = DEV_SDMMC_IOCTL_TRANSTERINFO_DIR_CARD_TO_CTRL;
-  info.ptrDma = psc->scr;
+  info.ptrDma = psc->bufScr;
   DevSdmmcIoctl(unit, DEV_SDMMC_IOCTL_SET_TRANSFER_INFO, &info);
 
-  SdmmcAppCmd51SendSCR(unit, psc->rca, psc->scr); // ACMD51 get scr
+  SdmmcAppCmd51SendSCR(unit, psc->rca, psc->bufScr); // ACMD51 get scr
+  SdmmcSplitScr(&psc->scr, psc->bufScr);
+  SdmmcDebugShowScr(&psc->scr, psc->bufScr);
 
 #if 0
   // unlock, if the card is locked
@@ -923,6 +948,135 @@ SdmmcSubWaitRecvCmd(int unit)
 
 
 static void
+SdmmcSplitCsd2(sdmmcCsd2_t *pcsd, uint32_t *ptr)
+{
+  // bit 128 -- bit 96
+  pcsd->csdStructure     = (ptr[0] >> 30) & 0x03;
+  pcsd->reserved120      = (ptr[0] >> 24) & 0x3f;
+  pcsd->rdAccessTime     = (ptr[0] >> 16) & 0xff;
+  pcsd->rdAccessTime2    = (ptr[0] >>  8) & 0xff;
+  pcsd->maxDataTransfer  = (ptr[0]      ) & 0xff;
+
+  // bit 95 -- bit 48
+  pcsd->cardCmdCls       = (ptr[1] >> 20) & 0xfff;
+  pcsd->blkLength        = (ptr[1] >> 16) & 0x0f;
+  pcsd->partialBlk       = (ptr[1] >> 15) &    1;
+  pcsd->wrBlkMisalign    = (ptr[1] >> 14) &    1;
+  pcsd->rdBlkMisalign    = (ptr[1] >> 13) &    1;
+  pcsd->dsrImpliment     = (ptr[1] >> 12) &    1;
+  pcsd->reserved70       = (ptr[1] >>  6) & 0x3f;
+  pcsd->deviceSize       = ((ptr[1] << 16) & 0x3f0000) | ((ptr[2] >> 16) & 0xffff);
+
+  // bit 47 -- bit 32
+  pcsd->reserved47       = (ptr[2] >> 15)    & 1;
+  pcsd->eraseSingleEn    = (ptr[2] >> 14)    & 1;
+  pcsd->eraseSectSize    = (ptr[2] >>  7) & 0x7f;
+  pcsd->wrProtectGrpSz   = (ptr[2]      ) & 0x7f;
+
+  pcsd->wrProtectGrpEn   = (ptr[3] >> 31)    & 1;
+  pcsd->reserved29       = (ptr[3] >> 29)    & 3;
+  pcsd->wrSpeedFactor    = (ptr[3] >> 26)    & 7;
+  pcsd->maxWrDataBlkLen  = (ptr[3] >> 22)    & 4;
+  pcsd->partialBlkWrAllow= (ptr[3] >> 21)    & 1;
+  pcsd->reserved16       = (ptr[3] >> 16) & 0x1f;
+  pcsd->fileFormatGrp    = (ptr[3] >> 15)    & 1;
+  pcsd->copyFlagp        = (ptr[3] >> 14)    & 1;
+  pcsd->permWrProtect    = (ptr[3] >> 13)    & 1;
+  pcsd->tempWrProtect    = (ptr[3] >> 12)    & 1;
+  pcsd->fileFormat       = (ptr[3] >> 10)    & 3;
+  pcsd->reserved8        = (ptr[3] >>  8)    & 3;
+  pcsd->crc              = (ptr[3] >>  1) & 0x7f;
+  pcsd->reserved0        =  ptr[3]           & 1;
+
+  return;
+}
+
+
+static void
+SdmmcSplitCid(sdmmcCid_t *pcid, uint32_t *ptr)
+{
+  pcid->manufacturerId  = (ptr[0] >> 24) & 0xff;
+  pcid->oemAppId        = (ptr[0] >>  8) & 0xffff;
+  pcid->productName[0]  = (ptr[0]      ) & 0xff;
+  pcid->productName[1]  = (ptr[1] >> 24) & 0xff;
+  pcid->productName[2]  = (ptr[1] >> 16) & 0xff;
+  pcid->productName[3]  = (ptr[1] >>  8) & 0xff;
+  pcid->productName[4]  = (ptr[1]      ) & 0xff;
+  pcid->productRevision = (ptr[2] >> 24) & 0xff;
+  pcid->productSerial   = ((ptr[2] << 8) & 0xffffff00) | ((ptr[3] >> 24) & 0xff);
+  pcid->reserved20      = (ptr[3] >> 20) & 0x4;
+  pcid->date            = (ptr[3] >>  8) & 0xfff;
+  pcid->crc             = (ptr[3] >>  1) & 0x7f;
+  pcid->reserved0       = (ptr[3]      ) & 1;
+
+  return;
+}
+static void
+SdmmcSplitScr(sdmmcScr_t *pscr, uint32_t *ptr)
+{
+  pscr->scrStructure = (ptr[0] >> 28) & 0x0f;
+  pscr->sdSpec       = (ptr[0] >> 24) & 0x0f;
+  pscr->eraseStatus  = (ptr[0] >> 23) &    1;
+  pscr->cprmSupport  = (ptr[0] >> 20) & 0x07;
+  pscr->busWidth     = (ptr[0] >> 16) & 0x0f;
+  pscr->sdSpec3      = (ptr[0] >> 15) &    1;
+  pscr->extSecurity  = (ptr[0] >> 11) & 0x0f;
+  pscr->reserved34   = (ptr[0] >>  2) & 0x1ff;
+  pscr->cmdSupport   =  ptr[0]        &    3;
+  pscr->reservedManufacturer = ptr[1];
+
+  // extra bits
+  pscr->busWidth1bit = (pscr->busWidth >> 0) & 1;
+  pscr->busWidth2bit = (pscr->busWidth >> 1) & 1;
+  pscr->busWidth4bit = (pscr->busWidth >> 2) & 1;
+  pscr->busWidth8bit = (pscr->busWidth >> 3) & 1;
+
+  pscr->sdSpecV10x = 0;
+  pscr->sdSpecV110 = 0;
+  pscr->sdSpecV200 = 0;
+  pscr->sdSpecV30x = 0;
+  if(       pscr->sdSpec == 0) {
+    pscr->sdSpecV10x = 1;
+  } else if(pscr->sdSpec == 1) {
+    pscr->sdSpecV110 = 1;
+  } else if(pscr->sdSpec == 2) {
+    if(pscr->sdSpec == 0) {
+      pscr->sdSpecV200 = 1;
+    } else {
+      pscr->sdSpecV30x = 1;
+    }
+  }
+
+  return;
+}
+
+
+static void
+SdmmcCpy32To8(uint8_t *pDst, uint32_t *pSrc, int count)
+{
+  for(int i = 0; i < count/4; i++) {
+    *pDst++ = (*pSrc >> 24) & 0xff;
+    *pDst++ = (*pSrc >> 16) & 0xff;
+    *pDst++ = (*pSrc >>  8) & 0xff;
+    *pDst++ =  *pSrc        & 0xff;
+    pSrc++;
+  }
+
+  switch(count & 3) {
+  case        0: break;
+  case        3:
+    *pDst++ = (*pSrc >> 16) & 0xff;
+  case        2:
+    *pDst++ = (*pSrc >>  8) & 0xff;
+  case        1:
+    *pDst++ =  *pSrc        & 0xff;
+  }
+
+  return;
+}
+
+
+static void
 SdmmcDump(int unit, uint32_t lba, int count, uint8_t *ptr)
 {
   printf("unit: %d, lba:%x, count:%d", unit, lba, count);
@@ -933,6 +1087,334 @@ SdmmcDump(int unit, uint32_t lba, int count, uint8_t *ptr)
     }
   }
   puts("\n");
+
+  return;
+}
+
+
+#if 0
+static void
+SdmmcDebugShowCsd(int unit, uint32_t *pCsd)
+{
+  uint8_t       buf[16], *pBuf;
+  uint32_t      *p;
+
+  if((pCsd[0] >> 30) == 0) {
+    SdmmcDebugShowCsd1(unit, pCsd);
+  } else {
+    SdmmcDebugShowCsd22(unit, pCsd);
+  }
+  return;
+}
+static void
+SdmmcDebugShowCsd1(int unit, uint32_t *pCsd)
+{
+  uint8_t       buf[16], *pBuf;
+  uint32_t      *p;
+
+  p = pCsd;
+  pBuf = buf;
+  SdmmcCpy32To8(pBuf, p, sizeof(buf));
+#if 0
+  for(int i = 0; i < sizeof(buf)/4; i++) {
+    *pBuf++ = (*p >> 24) & 0xff;
+    *pBuf++ = (*p >> 16) & 0xff;
+    *pBuf++ = (*p >>  8) & 0xff;
+    *pBuf++ =  *p        & 0xff;
+    p++;
+  }
+#endif
+  printf("### unit%d CSD\n", unit);
+
+  SdmmcDebugShowHex(0, buf, sizeof(buf));
+
+  puts(" CSD v1.0 is not decoded yet\n");
+
+  return;
+}
+#endif
+static void
+SdmmcDebugShowCsd2(sdmmcCsd2_t *pcsd, uint32_t *ptr)
+{
+  uint8_t       buf[16], *pBuf;
+  uint32_t      *p;
+  uint32_t      val;
+  uint32_t      deviceSize;
+  uint32_t      eraseSectSize;
+
+  p = ptr;
+  pBuf = buf;
+  SdmmcCpy32To8(pBuf, p, sizeof(buf));
+#if 0
+  for(int i = 0; i < sizeof(buf)/4; i++) {
+    *pBuf++ = (*p >> 24) & 0xff;
+    *pBuf++ = (*p >> 16) & 0xff;
+    *pBuf++ = (*p >>  8) & 0xff;
+    *pBuf++ =  *p        & 0xff;
+    p++;
+  }
+#endif
+
+  printf("### CSD\n");
+  puts("# hex dump\n");
+  SdmmcDebugShowHex(0, buf, sizeof(buf));
+
+  puts("# descriptions\n");
+
+  printf("CSD structure:           %x  Ver%d.0\n",  pcsd->csdStructure, pcsd->csdStructure+1);
+  printf("Reserved:               %2x\n",   pcsd->reserved120);
+  printf("read access time:       %2x  %3d(d)\n",  pcsd->rdAccessTime,  pcsd->rdAccessTime);
+  printf("read access time2:      %2x  %3d(d)\n",  pcsd->rdAccessTime2, pcsd->rdAccessTime2);
+  printf("max data transfer:      %2x  %3d(d)\n",  pcsd->maxDataTransfer, pcsd->maxDataTransfer);
+
+  printf("card command classes:  %03x\n",  pcsd->cardCmdCls);
+  printf("block length:           %2x  %3d(d)\n",  pcsd->blkLength, pcsd->blkLength);
+  printf("partial block (read):    %x\n",  pcsd->partialBlk);
+  printf("write block misalign:    %x\n",  pcsd->wrBlkMisalign);
+  printf("read block misalign:     %x\n",  pcsd->rdBlkMisalign);
+  printf("DSR implemented:         %x\n",  pcsd->dsrImpliment);
+  printf("reserved:               %2x\n",  pcsd->reserved70);
+
+  printf("device size:        %6x  %d(d), %dMB\n",
+         pcsd->deviceSize, pcsd->deviceSize, pcsd->deviceSize >> 1);
+  printf("erase single blk en:     %x\n", pcsd->eraseSingleEn);
+  printf("erase sect size:        %2x\n",  pcsd->eraseSectSize);
+  printf("write protect grp sz:   %2x\n",  pcsd->wrProtectGrpSz);
+
+  printf("write protect grp en:   %2x\n", pcsd->wrProtectGrpEn);
+  printf("reserved                 %x\n", pcsd->reserved29);
+  printf("write speed factor:      %x\n", pcsd->wrSpeedFactor);
+  printf("max wr data blk len:     %x\n", pcsd->maxWrDataBlkLen);
+  printf("part blks write allow:   %x\n", pcsd->partialBlkWrAllow);
+  printf("reserved16:              %x\n", pcsd->reserved16);
+  printf("file format grp:         %x\n", pcsd->fileFormatGrp);
+  printf("copy flag:               %x\n", pcsd->copyFlagp);
+  printf("perm wr protect:         %x\n", pcsd->permWrProtect);
+  printf("temp wr protect:         %x\n", pcsd->tempWrProtect);
+  printf("file format:             %x\n", pcsd->fileFormat);
+  printf("reserved:                %x\n", pcsd->reserved8);
+  printf("CRC7:                   %02x\n", pcsd->crc);
+  printf("reserved0:               %x\n", pcsd->reserved0);
+
+  puts("\n");
+
+  return;
+}
+
+
+#if 0
+static void
+SdmmcDebugShowCid(int unit, uint32_t *pCid)
+{
+  uint8_t       buf[16], *pBuf;
+  uint32_t      *p;
+
+  p = pCid;
+  pBuf = buf;
+  for(int i = 0, j = 0; i < sizeof(buf)/4; i++) {
+    *pBuf++ = (*p >> 24) & 0xff;
+    *pBuf++ = (*p >> 16) & 0xff;
+    *pBuf++ = (*p >>  8) & 0xff;
+    *pBuf++ =  *p        & 0xff;
+    p++;
+  }
+
+  printf("### unit%d CID\n", unit);
+
+  puts("# hex dump\n");
+  SdmmcDebugShowHex(0, buf, sizeof(buf));
+
+  puts("# descriptions\n");
+  printf("Manufacturer ID:    %02x\n", buf[0]);
+  printf("OEM/Application ID: %02x%02\n", buf[1], buf[2]);
+  printf("Product name:       %02x %02x %02x %02x %02x", buf[3], buf[4], buf[5], buf[6], buf[7]);
+  printf("  \"%c%c%c%c%c\"\n", buf[3], buf[4], buf[5], buf[6], buf[7]);
+  printf("Product revision:   %02x\n", buf[8]);
+  printf("Product serial num: %02x%02x%02x%02x\n", buf[9], buf[10], buf[11], buf[12]);
+  printf("Reserved:           %x\n", buf[13]>>4);
+  printf("Manufacturing dat:  %02x%02x  %4d/%02d\n",
+         buf[13], buf[14],
+         2000+(((buf[13]<<4) & 0xf0)|((buf[14]>>4) & 0xf)), buf[14] & 0xf);
+  printf("CRC7:               %02x\n", buf[15]>>1);
+  puts("\n");
+
+  return;
+}
+#endif
+static void
+SdmmcDebugShowCid(sdmmcCid_t *pcid, uint32_t *ptr)
+{
+  uint8_t       buf[16], *pBuf;
+  uint32_t      *p;
+
+  p = ptr;
+  pBuf = buf;
+  SdmmcCpy32To8(pBuf, p, sizeof(buf));
+#if 0
+  for(int i = 0, j = 0; i < sizeof(buf)/4; i++) {
+    *pBuf++ = (*p >> 24) & 0xff;
+    *pBuf++ = (*p >> 16) & 0xff;
+    *pBuf++ = (*p >>  8) & 0xff;
+    *pBuf++ =  *p        & 0xff;
+    p++;
+  }
+#endif
+
+  printf("### CID\n");
+
+  puts("# hex dump\n");
+  SdmmcDebugShowHex(0, buf, sizeof(buf));
+
+  puts("# descriptions\n");
+  printf("Manufacturer ID:        %02x\n", pcid->manufacturerId);
+  printf("OEM/Application ID:   %04x\n", pcid->oemAppId);
+  printf("Product name:           %02x %02x %02x %02x %02x",
+         pcid->productName[0], pcid->productName[1], pcid->productName[2],
+         pcid->productName[3], pcid->productName[4]);
+  printf("  \"%s\"\n", pcid->productName);
+  printf("Product revision:       %02x\n", pcid->productRevision);
+  printf("Product serial num:   %08x\n", pcid->productSerial);
+  printf("Reserved:                %x\n", pcid->reserved20);
+  printf("Manufacturing dat:     %03x  %4d/%02d\n",
+         pcid->date,
+         2000+((pcid->date >> 4) & 0xff), pcid->date & 0xf);
+  printf("CRC7:                   %02x\n", pcid->crc);
+  printf("Reserved0:               %x\n", pcid->reserved0);
+  puts("\n");
+
+  return;
+}
+
+
+static void
+SdmmcDebugShowScr(sdmmcScr_t *pscr, uint32_t *ptr)
+{
+  uint8_t       buf[8], *pBuf;
+  uint32_t      *p;
+  uint32_t      val;
+  uint32_t      deviceSize;
+  uint32_t      eraseSectSize;
+
+  p = ptr;
+  pBuf = buf;
+
+  SdmmcCpy32To8(pBuf, p, sizeof(buf));
+
+  puts("### SCR\n");
+  puts("# hex dump\n");
+  SdmmcDebugShowHex(0, buf, sizeof(buf));
+
+  puts("# descriptions\n");
+
+  printf("SCR structure:           %x  Ver%d.0\n",  pscr->scrStructure, pscr->scrStructure+1);
+  printf("SD spec:                 %x  %s\n",   pscr->sdSpec,
+         (pscr->sdSpec == 0)? "Ver1.0x":
+         (pscr->sdSpec == 1)? "Ver1.10":
+         (pscr->sdSpec == 2)? "Ver2.00 or 3.0x": "");
+  printf("data sta after erases:   %x\n",   pscr->eraseStatus);
+  printf("CPRM security support:   %x  %s\n",   pscr->cprmSupport,
+         (pscr->cprmSupport == 0)? "No security":
+         (pscr->cprmSupport == 1)? "Not used":
+         (pscr->cprmSupport == 2)? "SDSC security v1.01":
+         (pscr->cprmSupport == 3)? "SDHC security v2.00":
+         (pscr->cprmSupport == 4)? "SDXC security v3.xx": "???");
+  printf("DAT bus width:           %x %s%s%s%s\n",   pscr->busWidth,
+         (pscr->busWidth1bit)? " 1bit": "",
+         (pscr->busWidth2bit)? " 2bit": "",
+         (pscr->busWidth4bit)? " 4bit": "",
+         (pscr->busWidth8bit)? " 8bit": "" );
+  printf("SD spec3:                %x  %s\n",   pscr->sdSpec3,
+         (pscr->sdSpec == 0)? "":
+         (pscr->sdSpec3 == 0)? "Ver2.00":
+         (pscr->sdSpec3 == 1)? "Ver3.0x": "");
+  printf("ext security support:    %x\n",   pscr->extSecurity);
+  printf("reserved34:            %3x\n",    pscr->reserved34);
+  printf("command support bits:    %x\n",   pscr->cmdSupport);
+  printf("reserved manufactorer:   %x\n",   pscr->reservedManufacturer);
+  puts("\n");
+
+  return;
+}
+
+static void
+SdmmcDebugShowOcr(uint32_t *ptr)
+{
+  uint8_t       buf[4], *pBuf;
+  uint32_t      *p;
+  uint32_t      val;
+  uint32_t      deviceSize;
+  uint32_t      eraseSectSize;
+
+  p = ptr;
+  pBuf = buf;
+
+  SdmmcCpy32To8(pBuf, p, sizeof(buf));
+
+  puts("### OCR\n");
+  puts("# hex dump\n");
+  SdmmcDebugShowHex(0, buf, sizeof(buf));
+
+  puts("# descriptions\n");
+
+  printf("voltage profile:      %s%s%s%s%s%s%s%s%s",
+         (ptr[0] & (1<<15))? " 2.7": "",
+         (ptr[0] & (1<<16))? " 2.8": "",
+         (ptr[0] & (1<<17))? " 2.9": "",
+         (ptr[0] & (1<<18))? " 3.0": "",
+         (ptr[0] & (1<<19))? " 3.1": "",
+         (ptr[0] & (1<<20))? " 3.2": "",
+         (ptr[0] & (1<<21))? " 3.3": "",
+         (ptr[0] & (1<<22))? " 3.4": "",
+         (ptr[0] & (1<<23))? " 3.5": "");
+  puts("\n");
+  printf("switched to 1.8V:        %x  %s",
+         (ptr[0] & (1<<24))? 1: 0,
+         (ptr[0] & (1<<24))? " yes": "no");
+  puts("\n\n");
+
+  return;
+}
+
+
+static void
+SdmmcDebugShowHex(uint32_t addr, uint8_t *ptr, int size)
+{
+  uint8_t     *pBuf;
+  uint8_t     bufChar[24], *pBufChar;
+  uint8_t     c;
+
+  pBuf = ptr;
+  pBufChar = bufChar+4;
+  bufChar[0] = ' ';
+  bufChar[1] = ' ';
+  bufChar[2] = ' ';
+  bufChar[3] = '|';
+
+  for(int i = 0; i < size; i++) {
+    if(!(i & 0xf)) {
+      if(i) {
+        *pBufChar++ = '|';
+        *pBufChar++ = '\n';
+        *pBufChar   = '\0';
+        puts(bufChar);
+        pBufChar = bufChar + 4;
+      }
+      printf("%08x: ", addr);
+    }
+
+    c = *pBuf++;
+    if( (c >= 0x20 && c < 0x7f) || c == ' ') {
+      *pBufChar++ = c;
+    } else {
+      *pBufChar++ = '.';
+    }
+    printf(" %02x", c);
+  }
+
+  *pBufChar++ = '|';
+  *pBufChar++ = '\n';
+  *pBufChar   = '\0';
+  puts(bufChar);
 
   return;
 }
