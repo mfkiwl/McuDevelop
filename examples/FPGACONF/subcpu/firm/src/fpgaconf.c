@@ -117,12 +117,10 @@ FpgaconfMain(void)
         break;
       }
       if(result < 0) {
-        while(1) {
-          FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 1);
-          RtosTaskSleep(100);
-          FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 0);
-          RtosTaskSleep(100);
-        }
+        FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 1);
+        RtosTaskSleep(100);
+        FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 0);
+        RtosTaskSleep(100);
       }
     }
   }
