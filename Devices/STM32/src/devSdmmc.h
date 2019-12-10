@@ -28,7 +28,9 @@
 
 typedef struct {
   int           pio: 1;
+  int           intr: 1;
   int           dma: 1;
+  int           nonblock: 1;
 
   int           hwFlow: 1;
   int           clkPolNeg: 1;
@@ -38,6 +40,8 @@ typedef struct {
   int           szBlock;
   int           clk;
 #define DEV_SDMMC_CLOCK_400KHZ          400000
+
+  void          (*cb)(int unit, int req);
 } devSdmmcParam_t;
 
 
@@ -61,6 +65,7 @@ typedef struct {
   stm32Dev_SDMMC        *dev;
 
   int                   up: 1;
+  int                   rxDone: 1;
   devSdmmcParam_t       param;
 
   uint32_t              DCTRL;
@@ -143,6 +148,7 @@ int             DevSdmmcReadData(int unit, uint32_t *ptr, int len, int tout);
 static void     DevSdmmcInterrupt(int unit);
 static void     DevSdmmcChangeClock(devSdmmcUnit_t *psc);
 static int      DevSdmmcWaitRecvDataPio(devSdmmcUnit_t *psc, uint32_t *ptr, int tout);
+static int      DevSdmmcWaitRecvDataIntr(devSdmmcUnit_t *psc, uint32_t *ptr, int tout);
 static int      DevSdmmcWaitRecvDataDma(devSdmmcUnit_t *psc, uint32_t *ptr, int tout);
 #endif
 

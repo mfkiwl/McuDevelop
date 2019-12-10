@@ -29,6 +29,10 @@
 #include        "config.h"
 #include        "system.h"
 #include        "devErrno.h"
+#include        "intr.h"
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS
+#include        "rtos.h"
+#endif
 
 #include        "sdmmc.h"
 #include        "sdmmc_def.h"
@@ -42,7 +46,9 @@
 
 
 static sdmmc_t  sdmmc;
-
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS
+static rtosQueueId idQueue;
+#endif
 
 /********************************************************
  *
@@ -86,6 +92,10 @@ SdmmcInit(int unit)
   result = SdmmcSubInitCard(unit);
   if(result != SDMMC_SUCCESS) goto fail;
 
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS
+  idQueue = RtosQueueCreate(15, sizeof(uint32_t));
+#endif
+
   result = SDMMC_SUCCESS;  // !!!!!!!!!!!!!!!!!! adhoc
 
 fail:
@@ -97,7 +107,7 @@ sdmmcResult
 SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
 {
   sdmmcResult           result = SDMMC_ERRNO_UNKNOWN;
-  int                   re;
+  sdmmcResult           re;
   uint32_t              val;
   uint32_t              status;
 
@@ -116,7 +126,7 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
 #endif
 
   // set the block size
-  val = 1<<SET_TRANSFER_INFO_BLKSIZE_512B;
+  val = count<<SET_TRANSFER_INFO_BLKSIZE_512B;
   SdmmcCmd16SetBlockLength(unit, val);          // CMD16  the block size is set 512
 
   // set the recv count and block size to the module
@@ -128,7 +138,7 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
 
   // send the read command
   if(count == 1) {
-    SdmmcCmd17ReadSingleBlock(unit, lba);
+    re = SdmmcCmd17ReadSingleBlock(unit, lba);
   } else {
     if(psc->supportCmd23) {
        result = SdmmcCmd23SetBlockCount(unit, count);
@@ -136,11 +146,29 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
         psc->supportCmd23 = 0;
       }
     }
-    SdmmcCmd18ReadMultiBlock(unit, lba);
+    re = SdmmcCmd18ReadMultiBlock(unit, lba);
   }
 
   // data recv
   result = DevSdmmcWaitRecvData(unit, (uint32_t *)ptr, 400000);
+  if(result == DEV_ERRNO_WOULDBLOCK) {
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS
+    RtosQueueRecv(idQueue, &val, 2);
+#else
+    psc->fRecvDone = 0;
+    while(1) {
+      INTR_DISABLE();
+      if(psc->fRecvDone) {
+        psc->fRecvDone = 0;
+        INTR_ENABLE();
+        break;
+      }
+      INTR_ENABLE();
+    }
+#endif
+
+    result = DEV_ERRNO_SUCCESS;
+  }
 
   // stop sending
   if(!psc->supportCmd23 && count > 1) {
@@ -191,6 +219,25 @@ SdmmcIoctl(int unit, int req, void *ptr)
   }
 
   return result;
+}
+
+
+void
+SdmmcCallback(int unit, int req, void *ptr)
+{
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS
+  uint32_t      val;
+
+  val = 1;
+  RtosQueueSendIsr(idQueue, &val, 12);
+#else
+  sdmmcSc_t             *psc;
+
+  psc = &sdmmc.sc[unit];
+  psc->fRecvDone = 1;
+#endif
+
+  return;
 }
 
 

@@ -121,6 +121,7 @@ typedef struct {
 
 typedef struct {
   int                   supportCmd23: 1;
+  int                   fRecvDone: 1;
 
   uint8_t               cardVersion;
 #define SDMMC_CARDVERSIONE_1_X          0x10
@@ -149,7 +150,6 @@ typedef struct {
 
 
   int                   maxclk;
-  uint8_t               xxx;
 
 } sdmmcSc_t;
 
@@ -173,6 +173,7 @@ sdmmcResult     SdmmcInit(int unit);
 sdmmcResult     SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr);
 sdmmcResult     SdmmcWriteBlock(int unit, uint32_t lba, int count, uint8_t *ptr);
 sdmmcResult     SdmmcIoctl(int unit, int req, void *ptr);
+void            SdmmcCallback(int unit, int req, void *ptr);
 
 
 
