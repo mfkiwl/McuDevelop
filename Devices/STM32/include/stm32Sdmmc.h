@@ -215,6 +215,8 @@ typedef struct {
                                          )
   //  (SDMMC_STA_CCRCFAIL_MASK)
 
+#define SDMMC_STA_VALIDBIT_MASK         0x007ffdff
+
   __IO uint32_t         ICR;            // 0x38
 #define SDMMC_STA_SDIOITC_SHIFT         22
 #define SDMMC_STA_SDIOITC_MASK          (1 << (SDMMC_STA_SDIOITC_SHIFT))
