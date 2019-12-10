@@ -66,7 +66,7 @@ const static rtosTaskInfo_t     mainTaskList[] = {
   {
     .pFunc = (rtosTaskFunc)MainFpgaConfigTask,
     .pName = "fpga",
-    .priority = RTOS_PRI_HIGH,
+    .priority = RTOS_PRI_NORMAL,
     .szStack = 0x400,
   },
   /*** ad converter task */
@@ -159,7 +159,6 @@ MainTask(void const * argument)
 
   MainInitUsart();
   MainInitSpi();
-  //MainInitSdmmc();
   MainInitFmc();
 
   //MainInitI2c();
@@ -465,32 +464,6 @@ MainInitSpi(void)
   // dummy send
   DevSpiSend(CONFIG_FPGA_SPI_DEVNUM, "", 1);
   DevSpiSend(CONFIG_FPGA_SPI_DEVNUM, "", 1);
-#endif
-
-  return;
-}
-
-
-static void
-MainInitSdmmc(void)
-{
-  devSdmmcParam_t       param;
-
-  DevSdmmcInit(SDMMC_NUM_INIT, NULL);
-
-  memset(&param, 0, sizeof(param));
-
-  param.hwFlow = 1;
-  param.clkPolNeg = 0;
-  param.clkPowerEn = 1;
-  param.busWidth = 1;
-  param.clk = 400000;
-
-  DevSdmmcInit(SDMMC1_NUM, &param);
-
-#if 0
-  NVIC_SetPriority(SDMMC1_IRQn, 0);
-  NVIC_EnableIRQ(SDMMC1_IRQn);
 #endif
 
   return;

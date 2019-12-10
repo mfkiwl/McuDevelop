@@ -113,6 +113,9 @@ CONFIG_SYSTEM_SWD_ENABLE                = 0
 CONFIG_SYSTEM_MALLOC_HEAP               = 0
 CONFIG_SYSTEM_MALLOC_RTOS               = 1
 
+CONFIG_INTR_ENABLE                      = __enable_irq
+CONFIG_INTR_DISABLE                     = __disable_irq
+
 
 ###############################
 # bootloader
@@ -195,3 +198,7 @@ CONFIG_FPGA_8BIT_DMA_MODULE                     = DMA2_NUM
 CONFIG_FPGA_8BIT_DMA_CH                         = 1
 
 CONFIG_FPGA_DATABUF_SIZE                        = 32768
+
+###############################
+# sdmmc
+CONFIG_SDMMC_MIDDLE_USE_RTOS                    = 0

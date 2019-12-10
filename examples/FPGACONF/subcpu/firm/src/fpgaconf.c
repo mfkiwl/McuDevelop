@@ -200,13 +200,16 @@ FpgaconfInitSdmmc(void)
   param.busWidth = 1;
   param.dma = 0;
   param.clk = 400000;
+  param.cb = SdmmcCallback;
 
-  DevSdmmcInit(SDMMC1_NUM, &param);
-
-#if 0
+#if 1
+  param.intr = 1;
+  param.nonblock = 0;
   NVIC_SetPriority(SDMMC1_IRQn, 0);
   NVIC_EnableIRQ(SDMMC1_IRQn);
 #endif
+
+  DevSdmmcInit(SDMMC1_NUM, &param);
 
   return 0;
 }
@@ -503,7 +506,11 @@ FpgaconfigExecFpgaGo(fpgaconfUnit_t *psc)
     FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 1);
     re = f_read(&fpn, ptrBitstream, sizeof(bufBitstream0), &size);
     FpgaconfAccessLed(FPGACONF_ACCESS_SDMMC_SHIFT, 0);
-    if(re != FR_OK || !size) break;
+    if(re != FR_OK) {
+      puts("send fail\n");
+      break;
+    }
+    if(!size) break;
 
     FpgaconfAccessLed(FPGACONF_ACCESS_FPGA_SHIFT, 1);
     if(psc->bus == FPGACONF_BUS_SPI) {
