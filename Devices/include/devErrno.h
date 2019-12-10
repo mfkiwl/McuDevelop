@@ -32,6 +32,7 @@ enum sdmmc_cmd {
   DEV_ERRNO_NONBLOCK            = -4,
   DEV_ERRNO_RECV_ERROR          = -5,
   DEV_ERRNO_PARAM_EXCEEDED      = -6,
+  DEV_ERRNO_WOULDBLOCK          = -7,
 
   DEV_ERRNO_NOTREADY            = -10,
   DEV_ERRNO_NODISK              = -11,
