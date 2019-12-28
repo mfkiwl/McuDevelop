@@ -245,7 +245,7 @@ DevSdmmcSendCommand(int unit, int cmd, void *param)
   p->ICR = SDMMC_ICR_FAILS_MASK;
 
 #if DEV_SDMMC_DEBUG_CMDRESP
-  printf("#  DevSdmmcSendCommand() cmd:%2d cmd:%x, arg:%x\n", cmd, reg, val);
+  printf("#  DevSdmmcSendCommand() cmd:%2d reg:%x, arg:%x\n", cmd, reg, val);
 #endif
 
   // send the command
@@ -437,6 +437,7 @@ fail:
 }
 
 
+#if 0
 int
 DevSdmmcReadBlock(int unit, uint32_t lba, uint32_t count, uint32_t *ptr)
 {
@@ -486,6 +487,7 @@ DevSdmmcWriteBlock(int unit, uint32_t lba, uint32_t count, uint32_t *ptr)
 fail:
   return result;
 }
+#endif
 
 
 int
@@ -640,6 +642,65 @@ fail:
          val, result);
 #endif
   // claer all interrupt status
+  p->DLEN = 0;
+  p->DCOUNT = 0;
+
+  return result;
+}
+
+
+int
+DevSdmmcWriteData(int unit, uint32_t *ptr, int len, int tout)
+{
+  int                   result = DEV_ERRNO_TIMEOUT;
+
+  devSdmmcUnit_t        *psc;
+  stm32Dev_SDMMC        *p;
+  uint32_t              val;
+  uint32_t              cnt;
+
+  if(unit >= SDMMC_NUM_MAX) goto fail;
+  if((uint32_t)ptr & 3) goto fail;
+
+  psc = &sdmmc.sc[unit];
+  p = psc->dev;
+
+  cnt = (len + 3) >> 2;
+
+  p->DTIMER = psc->toutData;
+  p->DLEN = SDMMC_DLEN_VAL(len);
+  val  = psc->DCTRL;
+  val |= SDMMC_DCTRL_DTDIR_CTRL2CARD | SDMMC_DCTRL_DTEN_YES;
+  p->DCTRL = val;
+
+  // wait to finish sending
+  while(1) {
+    val = psc->dev->STA;
+    if(val & SDMMC_STA_TXFIFOHE_MASK) {
+      for(int j = 0; j < 8; j++) {
+        psc->dev->FIFO = *ptr++;
+      }
+    }
+
+    if((val & SDMMC_STA_DTIMEOUT_MASK) || tout-- <= 0) {
+      result = DEV_ERRNO_TIMEOUT;
+      goto fail;
+    }
+
+    if(val & (SDMMC_STA_DCRCFAIL_MASK|SDMMC_STA_TXUNDERR_MASK|SDMMC_STA_DTIMEOUT_MASK)) {
+      goto fail;
+    }
+
+  }
+
+  result = DEV_ERRNO_SUCCESS;
+
+fail:
+#if DEV_SDMMC_DEBUG_CMDRESP
+  printf("DevSdmmcWriteData() sta:%x, result:%d\n",
+         val, result);
+#endif
+  // claer all interrupt status
 
   return result;
 }
@@ -770,7 +831,7 @@ DevSdmmcWaitRecvDataPio(devSdmmcUnit_t *psc, uint32_t *ptr, int tout)
 
 fail:
 #if DEV_SDMMC_DEBUG_CMDRESP
-  printf("DevSdmmcWaitRecvDataPio() sta:%x, result:%d\n",
+  printf("#  DevSdmmcWaitRecvDataPio() sta:%x, result:%d\n",
          val, result);
 #endif
   // claer all interrupt status
@@ -821,7 +882,7 @@ DevSdmmcWaitRecvDataIntr(devSdmmcUnit_t *psc, uint32_t *ptr, int tout)
 
  fail:
 #if DEV_SDMMC_DEBUG_CMDRESP
-  printf("DevSdmmcWaitRecvDataPio() sta:%x, result:%d\n",
+  printf("#  DevSdmmcWaitRecvDataPioIntr() sta:%x, result:%d\n",
          val, result);
 #endif
   // claer all interrupt status

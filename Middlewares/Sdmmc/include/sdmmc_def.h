@@ -67,6 +67,10 @@ enum {
 };
 
 
+// RESP1
+#define     SDMMC_RESP1_LOCKED_SHIFT    (25)
+#define     SDMMC_RESP1_LOCKED_MASK     (1 << (SDMMC_RESP1_LOCKED_SHIFT))
+
 // ACMD41
 #define     SDMMC_ACMD41_BUSY_SHIFT      (31)
 #define     SDMMC_ACMD41_BUSY_MASK       (1<<(SDMMC_ACMD41_BUSY_SHIFT))

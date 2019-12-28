@@ -37,6 +37,9 @@
 #include        "sdmmc.h"
 #include        "sdmmc_def.h"
 
+#define SDMMC_SLEEP(x)          CONFIG_SDMMC_SLEEP(x)
+
+
 #define SDMMC_DEBUG_API         0
 #define SDMMC_DEBUG_CMD         0
 #define SDMMC_DEBUG_TRANSFER    0
@@ -120,10 +123,8 @@ SdmmcReadBlock(int unit, uint32_t lba, int count, uint8_t *ptr)
   printf("# SdmmcReadBlock() unit:%d, lba:%x, cnt:%x\n", unit, lba, count);
 #endif
 
-#if 0
   // get status
-  SdmmcCmd13SendStatus(unit, psc->rca, &status);
-#endif
+  SdmmcCmd13SendStatus(unit, psc->rca, &status);        // cmd 13
 
   // set the block size
   val = count<<SET_TRANSFER_INFO_BLKSIZE_512B;
@@ -626,10 +627,19 @@ SdmmcCmd42LockUnlock(int unit, uint32_t arg)
 {
   sdmmcResult           result = SDMMC_ERRNO_UNKNOWN;
   uint32_t              val;
+  uint32_t              buf[512/4];
 
-  SdmmcSubSendCommand(unit, SDMMC_CMD42_LOCK_UNLOCK, &arg);
+  val = 0;
+  SdmmcSubSendCommand(unit, SDMMC_CMD42_LOCK_UNLOCK, &val);
   result = SdmmcSubRecvCmdResp1(unit, &val);
 
+  memset(buf, 0, sizeof(buf));
+  DevSdmmcWriteData(unit, buf, sizeof(buf), 100000000);
+
+#if SDMMC_DEBUG_CMD
+  printf("# SdmmcCmd42LockUnlock() unit:%d, arg:%x, result %d\n",
+         unit, arg, result);
+#endif
   return result;
 }
 
@@ -704,10 +714,6 @@ SdmmcAppCmd51SendSCR(int unit, uint32_t arg, uint32_t *pScr)
   sdmmcSc_t     *psc;
   uint32_t      val;
   uint32_t      bufScr[2];
-  union {
-    uint8_t     b8[8];
-    uint32_t    b32[2];
-  } buf;
 
   psc = &sdmmc.sc[unit];
 
@@ -766,13 +772,19 @@ SdmmcSubGetCapability(int unit)
   do {
     result = SdmmcAppCmd41SdSendOpCond(unit, cap, &ocr);      // ACMD41
     if(result == SDMMC_ERRNO_TOUT) goto fail;
+    SDMMC_SLEEP(50);
   } while(!(ocr & SDMMC_ACMD41_READY_MASK));
+#if SDMMC_DEBUG_DETAIL
   SdmmcDebugShowOcr(&ocr);
+#endif
 
   /* voltage */
   psc->vccio = SDMMC_VCCIO_3300MV;
   if((ocr & SDMMC_ACMD41_S18_MASK) == SDMMC_ACMD41_S18R_1800MV) {
     psc->vccio = SDMMC_VCCIO_1800MV;
+#if 0
+    SdmmcCmd11VoltageSwitch();          // CMD11 changed to 1.8V
+#endif
   }
 
   /* card type */
@@ -808,6 +820,7 @@ static sdmmcResult
 SdmmcSubInitCard(int unit)
 {
   sdmmcResult   result = SDMMC_ERRNO_UNKNOWN;
+  int           re;
   sdmmcSc_t     *psc;
 
   uint32_t      rca = 1;
@@ -818,29 +831,35 @@ SdmmcSubInitCard(int unit)
   psc = &sdmmc.sc[unit];
 
   // get the CID info
-  result = SdmmcCmd2AllSendCID(unit, psc->bufCid); // CMD2
+  result = SdmmcCmd2AllSendCID(unit, psc->bufCid);     // CMD2
 #if SDMMC_DEBUG_DETAIL
   SdmmcSplitCid(&sdmmc.sc[unit].cid, psc->bufCid);
   SdmmcDebugShowCid(&sdmmc.sc[unit].cid, psc->bufCid);
 #endif
 
   // get the relative card address
-  SdmmcCmd3SendRelativeAddr(unit, &rca);        // CMD3
-
+  SdmmcCmd3SendRelativeAddr(unit, &rca);                // CMD3
   // set the relative card address
   psc->rca = rca & 0xffff0000;
-  SdmmcCmd9SendCSD(unit, psc->rca, psc->bufCsd);   // cmd9
+
+  SdmmcCmd9SendCSD(unit, psc->rca, psc->bufCsd);        // cmd9
 #if SDMMC_DEBUG_DETAIL
   SdmmcSplitCsd2(&psc->csd2, psc->bufCsd);
   SdmmcDebugShowCsd2(&psc->csd2, psc->bufCsd);
 #endif
 
   //psc->class = psc->csd[1] >> 20;
-  SdmmcCmd7SelDeselCard(unit, psc->rca);        // cmd7
+  SdmmcCmd7SelDeselCard(unit, psc->rca);                // cmd7
+
+#if 0
+  // change the bus width 4-bits
+  val = SdmmcGetBusWidthExp(psc);
+  re = SdmmcAppCmd6SetBusWidth(unit, val);              // ACMD6  0:1bit, 1:2bit, 2:4bit, 3:8bit
+#endif
 
   // the block size is set 8
   val = 1<<SET_TRANSFER_INFO_BLKSIZE_8B;
-  SdmmcCmd16SetBlockLength(unit, val);          // CMD16  the block size is set 8
+  SdmmcCmd16SetBlockLength(unit, val);                  // CMD16  the block size is set 8
 
   // the block size, count, destination address are set to the sdmodule
   info.cntBlock = 1;
@@ -851,20 +870,34 @@ SdmmcSubInitCard(int unit)
 
   SdmmcAppCmd51SendSCR(unit, psc->rca, psc->bufScr); // ACMD51 get scr
   SdmmcSplitScr(&psc->scr, psc->bufScr);
+#if SDMMC_DEBUG_DETAIL
   SdmmcDebugShowScr(&psc->scr, psc->bufScr);
-
-#if 0
-  // unlock, if the card is locked
-  SdmmcCmdLockUnlock(unit, 0);                  // CMD42  unlock card
 #endif
 
+  if(SdmmcIsLocked(unit) != SDMMC_SUCCESS) {
+    result = SDMMC_ERRNO_LOCKED;
+    goto fail;
+  }
+
+#if 0
+  // the block size is set 8
+  val = 1<<SET_TRANSFER_INFO_BLKSIZE_512B;
+  SdmmcCmd16SetBlockLength(unit, val);          // CMD16  the block size is set 8
+  // unlock, if the card is locked
+  SdmmcCmd42LockUnlock(unit, 0);                // CMD42  unlock card
+#endif
+
+#if 1
   // change the bus width 4-bits
-  SdmmcAppCmd6SetBusWidth(unit, 2);             // ACMD6
+  val = SdmmcGetBusWidthExp(psc);
+  re = SdmmcAppCmd6SetBusWidth(unit, val);           // ACMD6  0:1bit, 1:2bit, 2:4bit, 3:8bit
+#endif
 
   // clock change
   val = psc->maxclk;
   result = DevSdmmcIoctl(unit, DEV_SDMMC_IOCTL_SET_CLOCK, &val);
 
+fail:
   return result;
 }
 
@@ -989,6 +1022,21 @@ SdmmcSubWaitRecvCmd(int unit)
   re = DevSdmmcWaitRecvCmd(unit, 1000000);
   if(re == DEV_ERRNO_SUCCESS) result = SDMMC_SUCCESS;
   printf("SdmmcSubWaitRecvCmd  %d %d\n", re, result);
+
+  return result;
+}
+
+
+static sdmmcResult
+SdmmcIsLocked(int unit)
+{
+  int           result = SDMMC_SUCCESS;
+  uint32_t      val;
+
+  DevSdmmcRecvResponse1(unit, &val);
+  if(val & SDMMC_RESP1_LOCKED_MASK) {
+    result = SDMMC_ERRNO_LOCKED;
+  }
 
   return result;
 }
@@ -1120,6 +1168,21 @@ SdmmcCpy32To8(uint8_t *pDst, uint32_t *pSrc, int count)
   }
 
   return;
+}
+
+
+static int
+SdmmcGetBusWidthExp(sdmmcSc_t *psc)
+{
+  int   val = 0;
+
+  if(     psc->scr.busWidth8bit) val = 3;
+  else if(psc->scr.busWidth4bit) val = 2;
+  /*else if(psc->scr.busWidth1bit) val = 0; */
+
+  val = 2;
+
+  return val;
 }
 
 
@@ -1403,7 +1466,7 @@ SdmmcDebugShowOcr(uint32_t *ptr)
 
   puts("# descriptions\n");
 
-  printf("voltage profile:      %s%s%s%s%s%s%s%s%s",
+  printf("voltage profile:      %s%s%s%s%s%s%s%s%s\n",
          (ptr[0] & (1<<15))? " 2.7": "",
          (ptr[0] & (1<<16))? " 2.8": "",
          (ptr[0] & (1<<17))? " 2.9": "",
@@ -1413,11 +1476,11 @@ SdmmcDebugShowOcr(uint32_t *ptr)
          (ptr[0] & (1<<21))? " 3.3": "",
          (ptr[0] & (1<<22))? " 3.4": "",
          (ptr[0] & (1<<23))? " 3.5": "");
-  puts("\n");
-  printf("switched to 1.8V:        %x  %s",
+  printf("switched to 1.8V:        %x  %s\n",
          (ptr[0] & (1<<24))? 1: 0,
          (ptr[0] & (1<<24))? " yes": "no");
-  puts("\n\n");
+  printf("Card cap Status:         %x\n", (ptr[0] & (1<<30))? 1: 0);
+  printf("Card pwr Status:         %x\n\n", (ptr[0] & (1<<31))? 1: 0);
 
   return;
 }

@@ -143,6 +143,7 @@ void            DevSdmmcInterrupt0(void);
 void            DevSdmmcInterrupt1(void);
 
 int             DevSdmmcReadData(int unit, uint32_t *ptr, int len, int tout);
+int             DevSdmmcWriteData(int unit, uint32_t *ptr, int len, int tout);
 
 #ifdef  _DEV_SDMMC_C_
 static void     DevSdmmcInterrupt(int unit);

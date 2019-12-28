@@ -163,6 +163,7 @@ typedef enum  enumSdmmcResult {
   SDMMC_ERRNO_TOUT              = -2,
   SDMMC_ERRNO_DEVICE_NOT_READY  = -3,
   SDMMC_ERRNO_INVALID_ARG       = -4,
+  SDMMC_ERRNO_LOCKED            = -5,
 } sdmmcResult;
 
 
@@ -215,12 +216,14 @@ static sdmmcResult      SdmmcSubRecvCmdResp6(int unit, uint32_t *ptr);
 static sdmmcResult      SdmmcSubRecvCmdResp7(int unit);
 static sdmmcResult      SdmmcSubWaitSendCmd(int unit);
 static sdmmcResult      SdmmcSubWaitRecvCmd(int unit);
+static sdmmcResult      SdmmcIsLocked(int unit);
 
 static void             SdmmcSplitCsd2(sdmmcCsd2_t *pcsd, uint32_t *ptr);
 static void             SdmmcSplitCid(sdmmcCid_t *pcid, uint32_t *ptr);
 static void             SdmmcSplitScr(sdmmcScr_t *pscr, uint32_t *ptr);
 
 static void             SdmmcCpy32To8(uint8_t *pDst, uint32_t *pSrc, int count);
+static int              SdmmcGetBusWidthExp(sdmmcSc_t *psc);
 
 static void             SdmmcDump(int unit, uint32_t lba, int count, uint8_t *ptr);
 static void             SdmmcDebugShowCsd2(sdmmcCsd2_t *pcsd, uint32_t *ptr);
