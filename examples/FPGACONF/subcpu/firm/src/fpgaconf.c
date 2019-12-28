@@ -149,7 +149,7 @@ FpgaconfProgram(void)
   FatfsdioRegsiterFunc(0, (fatfsdioFunc_t *)&func);
 
   // read init.txt file
-  re = f_mount(&fatfs, "", 1);               // 0: delay mount, 1: mount now
+  re = f_mount(&fatfs, "", 0);               // 0: delay mount, 1: mount now
   puts("# XXX FpgaconfMain(): call disk_initialize() twice for done\n");
   re = f_open(&fp, "0:init.txt", FA_READ);
 
