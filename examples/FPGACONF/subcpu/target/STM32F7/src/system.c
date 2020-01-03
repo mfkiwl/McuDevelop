@@ -657,6 +657,8 @@ free(void *ptr)
 }
 #endif
 #if CONFIG_SYSTEM_MALLOC_RTOS
+#include        "rtos.h"
+
 void *
 malloc(int size)
 {
