@@ -37,8 +37,9 @@
 #include        "sdmmc.h"
 #include        "sdmmc_def.h"
 
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS
 #define SDMMC_SLEEP(x)          CONFIG_SDMMC_SLEEP(x)
-
+#endif
 
 #define SDMMC_DEBUG_API         0
 #define SDMMC_DEBUG_CMD         0
@@ -851,12 +852,6 @@ SdmmcSubInitCard(int unit)
   //psc->class = psc->csd[1] >> 20;
   SdmmcCmd7SelDeselCard(unit, psc->rca);                // cmd7
 
-#if 0
-  // change the bus width 4-bits
-  val = SdmmcGetBusWidthExp(psc);
-  re = SdmmcAppCmd6SetBusWidth(unit, val);              // ACMD6  0:1bit, 1:2bit, 2:4bit, 3:8bit
-#endif
-
   // the block size is set 8
   val = 1<<SET_TRANSFER_INFO_BLKSIZE_8B;
   SdmmcCmd16SetBlockLength(unit, val);                  // CMD16  the block size is set 8
@@ -887,11 +882,10 @@ SdmmcSubInitCard(int unit)
   SdmmcCmd42LockUnlock(unit, 0);                // CMD42  unlock card
 #endif
 
-#if 1
   // change the bus width 4-bits
+  // 0:1bit, 1:2bit, 2:4bit, 3:8bit
   val = SdmmcGetBusWidthExp(psc);
-  re = SdmmcAppCmd6SetBusWidth(unit, val);           // ACMD6  0:1bit, 1:2bit, 2:4bit, 3:8bit
-#endif
+  re = SdmmcAppCmd6SetBusWidth(unit, val);      // ACMD6
 
   // clock change
   val = psc->maxclk;
