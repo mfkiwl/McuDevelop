@@ -35,6 +35,8 @@
 #define RtosPendSvEntry         xPortPendSVHandler
 #define RtosSysTickEntry        SysTick_Handler
 
+#define RtosGetCounter          xTaskGetTickCount
+
 
 #ifdef  _RTOS_C_
 void    vPortSVCHandler(void);
@@ -46,14 +48,15 @@ void    xPortSysTickHandler(void);
 #define RTOS_NULL       ((void *) 0)
 
 typedef enum {
-  RTOS_PRI_IDLE           = 0,
-  RTOS_PRI_LOWER,
-  RTOS_PRI_LOW,
-  RTOS_PRI_NORMAL,
-  RTOS_PRI_HIGH,
+  RTOS_PRI_HIGHEST      = 0,
   RTOS_PRI_HIGHER,
-  RTOS_PRI_HIGHEST,
+  RTOS_PRI_HIGH,
+  RTOS_PRI_NORMAL       = 5,
+  RTOS_PRI_LOW,
+  RTOS_PRI_LOWER,
+  RTOS_PRI_IDLE         = 15,
   RTOS_PRI_END,
+
 } rtosTaskPriority;
 
 /* definitions */

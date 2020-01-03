@@ -254,6 +254,7 @@ RtosQueueSendIsr(rtosQueueId id, void *ptr, int pri)
 
   if(xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
     if(pri) xHigherPriorityTaskWoken = pdTRUE;
+    //xHigherPriorityTaskWoken = pdFALSE;
     re = xQueueSendFromISR(id, ptr, &xHigherPriorityTaskWoken);
     if(xHigherPriorityTaskWoken) {
       portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
