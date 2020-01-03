@@ -200,7 +200,7 @@ FpgaconfInitSdmmc(void)
   param.busWidth = 1;
   param.dma = 0;
   param.clk = 400000;
-  param.cb = SdmmcCallback;
+  param.cb = (void *)SdmmcCallback;
 
 #if 1
   param.intr = 1;
