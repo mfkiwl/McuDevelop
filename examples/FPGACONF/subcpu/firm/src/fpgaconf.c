@@ -150,10 +150,11 @@ FpgaconfProgram(void)
 
   // read init.txt file
   re = f_mount(&fatfs, "", 0);               // 0: delay mount, 1: mount now
-  puts("# XXX FpgaconfMain(): call disk_initialize() twice for done\n");
+  //puts("# XXX FpgaconfMain(): call disk_initialize() twice for done\n");
   re = f_open(&fp, "0:init.txt", FA_READ);
 
   if(re != FR_OK) {
+    if(re == FR_NO_FILESYSTEM) puts("no_fs # exFAT is not supported\n");
     result = -1;
     goto fail;
   }
