@@ -201,5 +201,5 @@ CONFIG_FPGA_DATABUF_SIZE                        = 32768
 
 ###############################
 # sdmmc
-CONFIG_SDMMC_MIDDLE_USE_RTOS                    = 1
+CONFIG_SDMMC_MIDDLE_USE_RTOS                    = 0
 CONFIG_SDMMC_SLEEP                              = RtosTaskSleep
