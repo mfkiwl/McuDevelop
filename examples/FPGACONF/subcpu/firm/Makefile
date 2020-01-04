@@ -68,6 +68,7 @@ SOURCES =	\
 		$(SDMMC_DIR)/src/sdmmc.c \
 		$(FATFS_DIR)/source/ffsystem.c \
 		$(FATFS_DIR)/source/ff.c \
+		$(FATFS_DIR)/source/ffunicode.c \
 		$(DEVICELIB_DIR)/STM32/src/devGpio.c \
 		$(DEVICELIB_DIR)/STM32/src/devDma7.c \
 		$(DEVICELIB_DIR)/STM32/src/devCounter.c \

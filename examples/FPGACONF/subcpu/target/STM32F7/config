@@ -187,6 +187,7 @@ CONFIG_I2C_ADDR_SI5351                          = SI5351_I2C_ADDR0
 ###############################
 ### fatfs
 CONFIG_FATFS_PHYMEDIA_COUNT_MAX                 = 4
+CONFIG_FATFS_EXFAT_ENABLE                       = 1
 
 
 ###############################
