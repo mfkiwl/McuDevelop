@@ -37,7 +37,7 @@
 #include        "sdmmc.h"
 #include        "sdmmc_def.h"
 
-#if CONFIG_SDMMC_MIDDLE_USE_RTOS
+#if CONFIG_SDMMC_MIDDLE_USE_RTOS || 1
 #define SDMMC_SLEEP(x)          CONFIG_SDMMC_SLEEP(x)
 #endif
 
