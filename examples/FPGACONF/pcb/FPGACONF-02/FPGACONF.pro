@@ -1,4 +1,4 @@
-update=2019年09月23日 19時41分03秒
+update=2019年12月02日 05時35分58秒
 version=1
 last_client=kicad
 [cvpcb]
@@ -25,16 +25,6 @@ SolderMaskMinWidth=0
 DrawSegmentWidth=0.2
 BoardOutlineThickness=0.15
 ModuleOutlineThickness=0.15
-[schematic_editor]
-version=1
-PageLayoutDescrFile=/home/buggy/lib/Kicad/templates/sheet-zhtlab-a2.kicad_wks
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=Pcbnew
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
 [eeschema]
 version=1
 LibDir=/home/buggy/lib/Kicad/libraries/zhtlab/library
@@ -90,3 +80,13 @@ LibName48=opto
 LibName49=atmel
 LibName50=contrib
 LibName51=valves
+[schematic_editor]
+version=1
+PageLayoutDescrFile=/home/buggy/lib/Kicad/templates/sheet-zhtlab-a2.kicad_wks
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=Pcbnew
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60

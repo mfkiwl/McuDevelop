@@ -66,7 +66,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 Text Notes 1900 2400 0    500  ~ 100
-FPGACONF\n
+FPGACONF-02\n
 $Sheet
 S 2600 3550 700  200 
 U 5D80F8F0
@@ -91,4 +91,6 @@ U 5BFF71CE
 F0 "SPI FLASH, CS CONTROL" 60
 F1 "022.sch" 60
 $EndSheet
+Text Notes 10150 2350 0    200  ~ 0
+202001040
 $EndSCHEMATC
