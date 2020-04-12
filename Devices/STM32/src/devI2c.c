@@ -309,9 +309,17 @@ DevI2cTransmit(int unit, devI2cPkt *p)
   psc = &i2c.sc[unit];
   if(!psc->up) goto fail;
 
+#if 0
   while((psc->dev->ISR & I2C_ISR_BUSY_MASK) ||
         (psc->seq != DEVI2C_SEQ_IDLE &&
-         !(psc->seq & DEVI2C_SEQ_STAT_NACK_MASK)));
+         !(psc->seq & DEVI2C_SEQ_STAT_NACK_MASK))) {
+    printf("%x %x %x\n",
+           (psc->dev->ISR & I2C_ISR_BUSY_MASK),
+           psc->seq != DEVI2C_SEQ_IDLE ,
+           !(psc->seq & DEVI2C_SEQ_STAT_NACK_MASK)
+           );
+  }
+#endif
 
   if(psc->param.intr) {
     psc->dev->CR1  |= (I2C_CR1_TXIE_YES | I2C_CR1_RXIE_YES);
@@ -531,27 +539,32 @@ DevI2cSendPio(devI2cSc_t *psc, uint32_t addr, uint8_t *ptr, int size)
   //SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
 
   /* send the slave address */
-  tout = SystemGetSysCounter() - psc->param.tout * 1000;
-  while((p->ISR & I2C_ISR_TXIS_MASK)) {
-    if(tout - SystemGetSysCounter() > 0) goto fail;
-  }
+  if(DevI2cWaitISR(p, I2C_ISR_TXIS_MASK, 0, 100) < 0) goto fail;
+
   SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
-  while(!(p->ISR & I2C_ISR_TXE_MASK));
+  if(DevI2cWaitISR(p, I2C_ISR_TXE_MASK, I2C_ISR_TXE_MASK, 100) < 0) goto fail;
   if(p->ISR & I2C_ISR_NACKF_MASK) goto fail;
 
 
   /* send data */
   for(int i = 0; i < size; i++) {
-    while(!(p->ISR & I2C_ISR_TXIS_MASK));
+    if(DevI2cWaitISR(p, I2C_ISR_TXIS_MASK, I2C_ISR_TXIS_MASK, 100) < 0) goto fail;
     p->TXDR = *ptr++;
   }
+#if 0
   while(!(p->ISR & I2C_ISR_TC_MASK));
+#endif
+  if(DevI2cWaitISR(p, I2C_ISR_TC_MASK, I2C_ISR_TC_MASK, 100) < 0) goto fail;
 
   p->CR2 |= I2C_CR2_STOP;
 
   sz = size;
 
 fail:
+  if(sz < 0) {
+    p->CR1  &= ~I2C_CR1_PE_MASK;
+    p->CR1  |=  I2C_CR1_PE_YES;
+  }
   return sz;
 }
 /**
@@ -625,8 +638,10 @@ DevI2cTransmitPio(devI2cSc_t *psc, devI2cPkt *pkt)
   uint8_t               *ptr;
 
   int                   sz = -1;
+  int                   re;
   uint32_t              val;
   int                   cntCmdSend;
+  int                   tout;
 
   p = psc->dev;
 
@@ -645,23 +660,27 @@ DevI2cTransmitPio(devI2cSc_t *psc, devI2cPkt *pkt)
       p->CR2 |= I2C_CR2_START;
 
       /* send the slave address */
-      while((p->ISR & I2C_ISR_TXIS_MASK));
+      if(DevI2cWaitISR(p, I2C_ISR_TXIS_MASK, 0, 100) < 0) goto fail;
+
+      SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
+
+      if(DevI2cWaitISR(p, I2C_ISR_TXE_MASK, I2C_ISR_TXE_MASK, 100) < 0) goto fail;
       if(p->ISR & I2C_ISR_NACKF_MASK) goto fail;
 
       /* send data */
       ptr = pkt->ptrCmd;
       for(int i = 0; i < pkt->lenCmd; i++) {
-        while(!(p->ISR & I2C_ISR_TXIS_MASK));
+        if(DevI2cWaitISR(p, I2C_ISR_TXIS_MASK, I2C_ISR_TXIS_MASK, 100) < 0) goto fail;
         p->TXDR = *ptr++;
       }
       ptr = pkt->ptrSend;
       for(int i = 0; i < pkt->lenSend; i++) {
-        while(!(p->ISR & I2C_ISR_TXIS_MASK));
+        if(DevI2cWaitISR(p, I2C_ISR_TXIS_MASK, I2C_ISR_TXIS_MASK, 100) < 0) goto fail;
         p->TXDR = *ptr++;
       }
 
       /* wait to finish sending */
-      while(!(p->ISR & I2C_ISR_TC_MASK));
+      if(DevI2cWaitISR(p, I2C_ISR_TC_MASK, I2C_ISR_TC_MASK, 100) < 0) goto fail;
 
       sz = pkt->lenSend;
     }
@@ -676,13 +695,13 @@ DevI2cTransmitPio(devI2cSc_t *psc, devI2cPkt *pkt)
       p->CR2 |= I2C_CR2_START;
 
       /* send the slave address */
-      while((p->ISR & I2C_ISR_TXIS_MASK));
+      if(DevI2cWaitISR(p, I2C_ISR_TXIS_MASK, 0, 100) < 0) goto fail;
       if(p->ISR & I2C_ISR_NACKF_MASK) goto fail;
 
       /* recv */
       ptr = pkt->ptrRecv;
       for(int i = 0; i < pkt->lenRecv; i++) {
-        while(!(p->ISR & I2C_ISR_RXNE_MASK));
+        if(DevI2cWaitISR(p, I2C_ISR_RXNE_MASK, I2C_ISR_RXNE_MASK, 100) < 0) goto fail;
         *ptr++ = p->RXDR;
       }
 
@@ -719,12 +738,18 @@ DevI2cTransmitPio(devI2cSc_t *psc, devI2cPkt *pkt)
       p->CR2 |= I2C_CR2_START;
     }
 
+    sz = 0;
   }
 
-
 fail:
+  if(sz < 0) {
+    p->CR1  &= ~I2C_CR1_PE_MASK;
+    p->CR1  |=  I2C_CR1_PE_YES;
+  }
+
   return sz;
 }
+
 
 /*********************************
  * dma
@@ -896,4 +921,24 @@ DevI2cTransmitDma(devI2cSc_t *psc, devI2cPkt *pkt)
 
 fail:
   return sz;
+}
+
+
+int
+DevI2cWaitISR(stm32Dev_I2C *p, uint32_t mask, uint32_t expect, uint32_t tout)
+{
+  int           result = -1;
+  uint32_t      t;
+
+  tout *= SYSTEM_COUNTER_1M000S;
+
+  t = SystemGetSysCounter();
+  while((p->ISR & mask) != expect) {
+    if((t - SystemGetSysCounter()) > tout) goto fail;
+  }
+
+  result = 0;
+
+ fail:
+  return result;
 }

@@ -120,6 +120,8 @@ static int              DevI2cSendDma(devI2cSc_t *psc, uint32_t addr, uint8_t *p
 static int              DevI2cRecvDma(devI2cSc_t *psc, uint8_t *ptr, int size);
 static int              DevI2cTransmitDma(devI2cSc_t *psc, devI2cPkt *pkt);
 
+static int              DevI2cWaitISR(stm32Dev_I2C *p, uint32_t mask, uint32_t expect, uint32_t tout);
+
 #endif
 
 #endif
