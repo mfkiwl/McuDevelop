@@ -56,6 +56,8 @@ typedef struct {
 #define DEVI2C_SPEED_400KHZ             400000
 #define DEVI2C_SPEED_1000KHZ            1000000
 
+  uint32_t              tout;           // in ms
+
   uint8_t               dma:    1;      /* use dma */
   uint8_t               intr:   1;
 
@@ -107,6 +109,7 @@ int                     DevI2cRecv(int unit, uint32_t addr, uint8_t *ptr, int si
 int                     DevI2cSend(int unit, uint32_t addr, uint8_t *ptr, int size);
 int                     DevI2cTransmit(int unit, devI2cPkt *p);
 int                     DevI2cCtrl(int unit, uint32_t req, void *ptr, int size);
+void                    DevI2cScan(int unit);
 
 
 #ifdef  _DEV_I2C_C_

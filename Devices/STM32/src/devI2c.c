@@ -475,6 +475,33 @@ fail:
 }
 
 
+void
+DevI2cScan(int unit)
+{
+  devI2cSc_t            *psc;
+  int                   re;
+  uint8_t               buf[4];
+
+  if(unit > I2C_MODULE_COUNT) goto fail;
+  psc = &i2c.sc[unit];
+
+  printf("I2C(%d) 7bit addr list", unit);
+  for(int i = 0; i <= 0x7f; i++) {
+    if(!(i & 0xf)) printf("\n%02x: ", i);
+    re = DevI2cRecvPio(psc, i, buf, 1);
+    if(re >= 0) {
+      printf(" %02x", i);
+    } else {
+      puts(" --");
+    }
+  }
+  _putchar('\n');
+
+fail:
+  return;
+}
+
+
 /*********************************
  * pio
  */
@@ -493,6 +520,7 @@ DevI2cSendPio(devI2cSc_t *psc, uint32_t addr, uint8_t *ptr, int size)
 
   int                   sz = -1;
   uint32_t              val;
+  uint32_t              tout;
 
   p = psc->dev;
 
@@ -500,9 +528,15 @@ DevI2cSendPio(devI2cSc_t *psc, uint32_t addr, uint8_t *ptr, int size)
 
   /*p->CR2 |= I2C_CR2_START | I2C_CR2_STOP | I2C_CR2_AUTOEND | I2C_CR2_RELOAD;*/
   p->CR2 |= I2C_CR2_START;
+  //SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
 
   /* send the slave address */
-  while((p->ISR & I2C_ISR_TXIS_MASK));
+  tout = SystemGetSysCounter() - psc->param.tout * 1000;
+  while((p->ISR & I2C_ISR_TXIS_MASK)) {
+    if(tout - SystemGetSysCounter() > 0) goto fail;
+  }
+  SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
+  while(!(p->ISR & I2C_ISR_TXE_MASK));
   if(p->ISR & I2C_ISR_NACKF_MASK) goto fail;
 
 
@@ -533,13 +567,47 @@ DevI2cRecvPio(devI2cSc_t *psc, uint32_t addr, uint8_t *ptr, int size)
 {
   stm32Dev_I2C          *p;
 
-  int                   sz = 0, cntTx = 0, cntRx = 0;
+  int                   sz = -1, cntTx = 0, cntRx = 0;
   uint32_t              val;
+  uint32_t              tout;
 
   p = psc->dev;
 
+  p->ICR = I2C_ISR_STOPF_MASK | I2C_ISR_NACKF_MASK | I2C_ISR_ADDR_MASK;
+  p->ISR |= I2C_ISR_TXE_MASK;
+  //p->ICR = 0x3f38;
+  p->CR2 =  I2C_CR2_NBYTES_VAL(size) | I2C_CR2_SADD_VAL((addr<<1)|1) | I2C_CR2_RDWRN_RD;
+
+  /*p->CR2 |= I2C_CR2_START | I2C_CR2_STOP | I2C_CR2_AUTOEND | I2C_CR2_RELOAD;*/
+  //p->CR2 |= I2C_CR2_AUTOEND_YES;
+  p->CR2 |= I2C_CR2_START;
+  //SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
+
+  /* send the slave address */
+  tout = SystemGetSysCounter() - psc->param.tout * 1000;
+  while((p->ISR & I2C_ISR_TXIS_MASK)) {
+    if((tout - SystemGetSysCounter()) > 0) goto fail;
+  }
+  SystemWaitSysCounter(SYSTEM_COUNTER_100U0S);
+  while(!(p->ISR & I2C_ISR_TXE_MASK));
+  if(p->ISR & I2C_ISR_NACKF_MASK) goto fail;
+
+  // recv data
+  for(int i = 0; i < size; i++) {
+    tout = SystemGetSysCounter() - psc->param.tout * 1000;
+    while(!(p->ISR & I2C_ISR_RXNE_MASK))     {
+      if((int)(tout - SystemGetSysCounter()) > 0) goto fail;
+    }
+    *ptr++ = p->RXDR;
+  }
+  while(!(p->ISR & I2C_ISR_TC_MASK));
+
+  sz = size;
 
 fail:
+  // stop
+  p->CR2 |= I2C_CR2_STOP;
+
   return sz;
 }
 /**
