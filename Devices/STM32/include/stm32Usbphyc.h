@@ -25,7 +25,7 @@
 #define _STM32USBPHYC_H_
 
 typedef struct {
-  __IO uint32_t         PLL1;
+  __IO uint32_t         PLL1;           // 0x00
 #define USBPHYC_PLL1_EN_SHIFT           (0)
 #define USBPHYC_PLL1_EN_MASK            (1 << (USBPHYC_PLL1_EN_SHIFT))
 #define USBPHYC_PLL1_EN_NO              (0 << (USBPHYC_PLL1_EN_SHIFT))
@@ -43,7 +43,7 @@ typedef struct {
   uint32_t              reserved04;
   uint32_t              reserved08;
 
-  __IO uint32_t         TUNE;
+  __IO uint32_t         TUNE;           // 0x0c
 #define USBPHYC_TUNE_SQLBYP_SHIFT      (23)
 #define USBPHYC_TUNE_SQLBYP_MASK       (1 << (USBPHYC_TUNE_SQLBYP_SHIFT))
 #define USBPHYC_TUNE_SQLBYP_NO         (0 << (USBPHYC_TUNE_SQLBYP_SHIFT))
@@ -129,7 +129,7 @@ typedef struct {
   uint32_t              reserved10;
   uint32_t              reserved14;
 
-  __IO uint32_t         LDO;
+  __IO uint32_t         LDO;            // 0x18
 #define USBPHYC_LDO_ENABLE_SHIFT        (2)
 #define USBPHYC_LDO_ENABLE_MASK         (1 << (USBPHYC_LDO_ENABLE_SHIFT))
 #define USBPHYC_LDO_ENABLE_NO           (0 << (USBPHYC_LDO_ENABLE_SHIFT))

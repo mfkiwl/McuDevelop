@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 zhtlab
+ * Copyright (c) 2018, 2019, 2020 zhtlab
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -121,15 +121,14 @@ typedef int     IRQn_Type;
 #define BUS_PERIPHERAL          0x40000000
 
 
-
-/*************************************************************
- * GPIO definitions
+/*******************************************
+ * 03 FLASH
  */
-#include        "stm32Gpio.h"
+#include        "stm32h7Flash.h"
 
-#define GPIO_PTR        ((stm32Dev_GPIO *) ((AHB4_BASE)))
+#define FLASH_ERASED_VALUE32    0xffffffff
 
-
+#define FLASH_PTR       ((stm32Dev_FLASH *) ((AHB3_BASE) + 0x01002000))
 
 
 /*******************************************
@@ -176,6 +175,7 @@ typedef struct {
 
 #define PWR_PTR ((stm32Dev_PWR *) (AHB4_BASE + 0x4800))
 
+
 /*******************************************
  * 08 RCC
  */
@@ -191,33 +191,42 @@ typedef struct {
 #define CRS_PTR        ((stm32Dev_CRS *) (APB1_BASE + 0x8400))
 
 
+/*************************************************************
+ * 11 GPIO
+ */
+#include        "stm32Gpio.h"
+
+#define GPIO_PTR        ((stm32Dev_GPIO *) ((AHB4_BASE)))
+
+
 /*******************************************
  * 14 MDMA
  */
 /*******************************************
  * 15 DMA1,2
  */
+//#include        "stm32Dma7.h"
+
+#define DMA_MODULE1     0
+#define DMA_MODULE2     1
+
+typedef enum  {
+  DMA_NUM_INIT = -1,
+  DMA1_NUM = 0,
+  DMA2_NUM,
+} dmaNo_t;
+
+
+#define DMA_CH1         0
+#define DMA_CH2         1
+#define DMA_CH3         2
+#define DMA_CH4         3
+#define DMA_CH5         4
+#define DMA_CH6         5
+#define DMA_CH7         6
 
 
 /* DMA CR */
-#if 0
-
-#define DMA_CR_MSIZE_SHIFT      (13)
-#define DMA_CR_MSIZE_MASK       (3 << (DMA_CR_MSIZE_SHIFT))
-#define DMA_CR_MSIZE_8BITS      (0 << (DMA_CR_MSIZE_SHIFT))
-#define DMA_CR_MSIZE_16BITS     (1 << (DMA_CR_MSIZE_SHIFT))
-#define DMA_CR_MSIZE_32BITS     (2 << (DMA_CR_MSIZE_SHIFT))
-#define DMA_CR_MSIZE_RESERVED   (3 << (DMA_CR_MSIZE_SHIFT))
-
-#define DMA_CR_PSIZE_SHIFT      (11)
-#define DMA_CR_PSIZE_MASK       (3 << (DMA_CR_PSIZE_SHIFT))
-#define DMA_CR_PSIZE_8BITS      (0 << (DMA_CR_PSIZE_SHIFT))
-#define DMA_CR_PSIZE_16BITS     (1 << (DMA_CR_PSIZE_SHIFT))
-#define DMA_CR_PSIZE_32BITS     (2 << (DMA_CR_PSIZE_SHIFT))
-#define DMA_CR_PSIZE_RESERVED   (3 << (DMA_CR_PSIZE_SHIFT))
-#endif
-
-
 
 typedef struct {
   __IO uint32_t         CR;
@@ -312,6 +321,7 @@ typedef struct {
   __IO uint32_t         FCR;
 } stm32Dev_DMA_Stream;
 
+
 typedef struct {
   __IO uint32_t         LISR;
 /* DMA LISR, HISR, LIFCR, HIFCR */
@@ -379,9 +389,22 @@ typedef struct {
   stm32Dev_DMA_Stream   S[8];
 } stm32Dev_DMA;
 
+
+
+
+
+
+#define IS_USB_HS(unit)         ((unit)==USBHS_NUM)
+#define IS_USB_FS(unit)         ((unit)==USBFS_NUM)
+
 #define DMA1_PTR        ((stm32Dev_DMA *) (AHB1_BASE + 0x0000))
 #define DMA2_PTR        ((stm32Dev_DMA *) (AHB1_BASE + 0x0400))
+#define DMA_PTR         DMA1_PTR
 
+/* [7:4]:ch [3:0]:req */
+/*                               USART1, USART2, USART6 */
+#define DMAMUX_REQ_USARTTX_TBL     {0x7c,   0x64,   0x6d}
+#define DMAMUX_REQ_USARTRX_TBL     {0x5c,   0x54,   0x1d}
 
 
 
@@ -803,6 +826,25 @@ typedef struct {
 
 #include        "stm32Tim.h"
 
+typedef enum  {
+  TIM_NUM_INIT = -1,
+  TIM1_NUM = 0,
+  TIM2_NUM,
+  TIM3_NUM,
+  TIM4_NUM,
+  TIM5_NUM,
+  TIM6_NUM,
+  TIM7_NUM,
+  TIM8_NUM,
+  TIM9_NUM,
+  TIM12_NUM,
+  TIM13_NUM,
+  TIM14_NUM,
+  TIM15_NUM,
+  TIM16_NUM,
+  TIM_NUM_MAX
+} timNo_t;
+
 #define TIM2_PTR        ((stm32Dev_TIM *) (APB1_BASE + 0x0000))
 #define TIM3_PTR        ((stm32Dev_TIM *) (APB1_BASE + 0x0400))
 #define TIM4_PTR        ((stm32Dev_TIM *) (APB1_BASE + 0x0800))
@@ -825,6 +867,15 @@ typedef struct {
  */
 #define I2C_MODULE_COUNT                (4)
 
+typedef enum  {
+  I2C_NUM_INIT = -1,
+  I2C1_NUM = 0,
+  I2C2_NUM,
+  I2C3_NUM,
+  I2C4_NUM,
+  I2C_NUM_MAX
+} i2cNo_t;
+
 #include        "stm32I2c.h"
 
 #define I2C1_PTR        ((stm32Dev_I2C *) (APB1_BASE + 0x5400))
@@ -840,8 +891,18 @@ typedef struct {
 
 #include        "stm32Usart.h"
 
-#define USART1_PTR      ((stm32DEV_USART *) ((APB2_BASE) + 0x1000))
-#define USART6_PTR      ((stm32DEV_USART *) ((APB2_BASE) + 0x1400))
+typedef enum  {
+  USART_NUM_INIT = -1,
+  USART1_NUM = 0,
+  USART2_NUM,
+  USART3_NUM,
+  USART4_NUM,
+  USART6_NUM,
+  USART_NUM_MAX
+} usartNo_t;
+
+#define USART1_PTR      ((stm32Dev_USART *) ((APB2_BASE) + 0x1000))
+#define USART6_PTR      ((stm32Dev_USART *) ((APB2_BASE) + 0x1400))
 
 #define USART_PTR       ((stm32Dev_USART *) ((APB1_BASE) + 0x4000))
 #define USART2_PTR      (&USART_PTR[1])
@@ -876,6 +937,18 @@ typedef struct {
 
 #include        "stm32Otg.h"
 
+typedef enum  {
+  USB_NUM_INIT = -1,
+  USB1_NUM = 0,
+  USB2_NUM,
+  USB_NUM_MAX
+} usbtNo_t;
+
+#define HAS_EMBEDDED_PHY        0
+
+#define USBHS_NUM               (USB1_NUM)
+#define USBFS_NUM               (USB2_NUM)
+
 #define USB1_HS                 ((stm32Dev_USB *) (BUS_PERIPHERAL+0x40000))
 #define USB2_FS                 ((stm32Dev_USB *) (BUS_PERIPHERAL+0x80000))
 
@@ -888,5 +961,10 @@ typedef struct {
 #define USB_SPEED_FULL                  0
 
 #define USB_MODULE_TBL                  {NULL, USB1_OTG_HS, USB2_OTG_FS}
+
+
+/*******************************************
+ * 
+ */
 
 #endif
