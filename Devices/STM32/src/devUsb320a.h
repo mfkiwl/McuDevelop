@@ -88,7 +88,7 @@ typedef struct {
 } devUsbSc_t;
 
 struct _stDevUsb {
-  devUsbSc_t            sc[3];
+  devUsbSc_t            sc[USB_NUM_MAX];
 };
 
 
@@ -117,7 +117,9 @@ static void     DevUsbInterruptEpIn(devUsbSc_t *psc);
 static void     DevUsbInterruptSof(devUsbSc_t *psc);
 static int      DevUsbInterruptRecvData(devUsbSc_t *psc);
 
+#ifdef _STM32USBPHYC_H_
 static int      DevUsbInitPhy(void);
+#endif
 static int      DevUsbResetModule(devUsbSc_t *psc);
 static int      DevUsbResetPort(devUsbSc_t *psc);
 

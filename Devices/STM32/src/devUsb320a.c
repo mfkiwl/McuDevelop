@@ -76,35 +76,39 @@ DevUsbInit(int unit, devUsbParam_t *param)
   /* deactivate the power down mode */
   p->GCCFG &= ~USB_GCCFG_PWRDWN_MASK;
 
-#ifdef USB_HS_INTPHY
-  DevUsbInitPhy();
-  RtosTaskSleep(10);
-
-
-  p->GUSBCFG &= ~( USB_GUSBCFG_MOD_MASK |
-                   USB_GUSBCFG_PHYSEL_MASK |
-                   USB_GUSBCFG_TRDT_MASK |
-                   USB_GUSBCFG_TSDPS_MASK |
-                   USB_GUSBCFG_ULPISEL_MASK );
-
-  p->GUSBCFG |=  ( /* USB_GUSBCFG_FDMOD_YES |*/
-                   USB_GUSBCFG_PHYSEL_FS |
-                   USB_GUSBCFG_TRDT_HS   |
-                   //USB_GUSBCFG_TSDPS_TERMSEL |
-                   USB_GUSBCFG_ULPISEL_INT );
-
-
-  p->GCCFG |= USB_GCCFG_PHYHSEN_YES;
-
-#else
-  p->GUSBCFG |= USB_GUSBCFG_PHYSEL_FS;
+  if(IS_USB_HS(unit)) {
+#ifdef _STM32USBPHYC_H_
+    DevUsbInitPhy();
+    RtosTaskSleep(10);
 #endif
 
+    p->GCCFG |= USB_GCCFG_PHYHSEN_YES;
 
-  if(0) {
-    p->GUSBCFG |= USB_GUSBCFG_ULPIEVBUSD_EXT;
+    p->GUSBCFG &= ~( USB_GUSBCFG_MOD_MASK |
+                     USB_GUSBCFG_PHYSEL_MASK |
+                     USB_GUSBCFG_TRDT_MASK |
+                     USB_GUSBCFG_TSDPS_MASK |
+                     USB_GUSBCFG_ULPISEL_MASK );
+    p->GUSBCFG |=  ( //USB_GUSBCFG_FDMOD_YES |
+                    //USB_GUSBCFG_TSDPS_TERMSEL |
+                    USB_GUSBCFG_ULPIAR_YES |
+                    USB_GUSBCFG_ULPISEL_INT );
+
+    if(IS_USB_HS(unit)) {               // 1: PHYHS-HS, 0: PHYHS-FS
+      RCC_PTR->AHB1ENR |= RCC_AHB1ENR_OTGHSULPIEN_YES;
+      p->GUSBCFG |=  (USB_GUSBCFG_PHYSEL_HS |
+                      USB_GUSBCFG_TRDT_HS);
+      p->DCFG = USB_DCFG_DSPD_HS;
+    } else {
+      p->GUSBCFG |=  (USB_GUSBCFG_PHYSEL_FS |
+                      USB_GUSBCFG_TRDT_HS);
+      p->DCFG = USB_DCFG_DSPD_FS;
+    }
+  } else if(IS_USB_FS(unit)) {
+
   }
 
+  //p->GUSBCFG |= USB_GUSBCFG_ULPIEVBUSD_EXT;
 
   /* reset the module */
   RtosTaskSleep(1);
@@ -121,11 +125,9 @@ DevUsbInit(int unit, devUsbParam_t *param)
     p->GAHBCFG |= USB_GAHBCFG_DMAEN_YES;
   }
 
-
   p->GUSBCFG &= ~USB_GUSBCFG_MOD_MASK;
   p->GUSBCFG |=  USB_GUSBCFG_FDMOD_YES;        // force device mode
   RtosTaskSleep(25);
-
 
   for(i = 0; i < USB_EPOUT_COUNTS; i++) {       /* adhoc */
     psc->out[i].epnum   =        i;             /* adhoc */
@@ -147,20 +149,8 @@ DevUsbInit(int unit, devUsbParam_t *param)
     p->GOTGCTL |=  USB_GOTGCTL_BVALOVAL_YES;
   }
 
-
   /* phy clock restarting */
   p->PCGCCTL = 0;
-
-  /* Device mode configuration */
-  /*p->DCFG |= DCFG_FRAME_INTERVAL_80;          defined 0 */
-  p->DCFG = 0;
-
-  /* device speed */
-#if 0
-  p->DCFG |= USB_DCFG_DSPD_HS;
-#else
-  p->DCFG |= USB_DCFG_DSPD_FS;
-#endif
 
   /* flush all fifos */
   DevUsbFlushFifoRx(psc, 0x10);
@@ -457,7 +447,6 @@ DevUsbInterrupt(devUsbSc_t *psc)
     }
   }
 
-
   /* suspend interrupt */
   if(intr & USB_GINTSTS_USBSUSP_MASK) {
     if((p->DSTS & USB_DSTS_SUSPSTS_MASK) == USB_DSTS_SUSPSTS_YES) {
@@ -466,7 +455,6 @@ DevUsbInterrupt(devUsbSc_t *psc)
       if(cb->busState) cb->busState(psc->unit, USBDIF_BUSSTATE_SUSPEND);
     }
   }
-
 
   /* SOF interrupt */
   if(intr & USB_GINTSTS_SOF_MASK) DevUsbInterruptSof(psc);
@@ -615,6 +603,7 @@ DevUsbInterruptEnumerate(devUsbSc_t *psc)
 
   p->GUSBCFG &= ~USB_GUSBCFG_TRDT_MASK;
 
+#if 0
   if(DevUsbGetBusSpeed(psc) == USB_SPEED_HIGH) {
     psc->speed  = USB_SPEED_HIGH;
     psc->ep0Mps = USB_HS_MAX_PACKET_SIZE;
@@ -626,6 +615,7 @@ DevUsbInterruptEnumerate(devUsbSc_t *psc)
 
     DevUsbSetTurnArroundTime(psc);
   }
+#endif
 
   DevUsbOpenEp(psc->unit, DEVUSB_EPNUM_DIR_OUT | 0, USBIF_EP_CTRL, psc->ep0Mps);
   DevUsbOpenEp(psc->unit, DEVUSB_EPNUM_DIR_IN  | 0, USBIF_EP_CTRL, psc->ep0Mps);
@@ -891,6 +881,7 @@ DevUsbInterruptRecvData(devUsbSc_t *psc)
 }
 
 
+#ifdef _STM32USBPHYC_H_
 static int
 DevUsbInitPhy(void)
 {
@@ -910,16 +901,22 @@ DevUsbInitPhy(void)
   case 25000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_25MHZ; break;
   }
 
+  USBPHYC_PTR->PLL1 |= USBPHYC_PLL1_EN_YES;
+
+  RtosTaskSleep(10);
+
   USBPHYC_PTR->TUNE =
+    USBPHYC_TUNE_HFRXGNEQEN_YES |
     USBPHYC_TUNE_HSDRVCHKITRM_20_94MA |
     USBPHYC_TUNE_HSDRVRFRED_INC20PER |
     USBPHYC_TUNE_HSDRVDCCUR_DEC5MV |
-    /*USBPHYC_TUNE_LFSCAPEN_YES |*/  USBPHYC_TUNE_INCURRINT_YES | USBPHYC_TUNE_INCURREN_YES;
-
-  USBPHYC_PTR->PLL1 |= USBPHYC_PLL1_EN_YES;
+    //USBPHYC_TUNE_LFSCAPEN_YES |
+    USBPHYC_TUNE_INCURRINT_YES |
+    USBPHYC_TUNE_INCURREN_YES;
 
   return 0;
 }
+#endif
 
 
 static int
