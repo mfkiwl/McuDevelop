@@ -51,10 +51,10 @@ typedef enum {
   RTOS_PRI_HIGHEST      = 0,
   RTOS_PRI_HIGHER,
   RTOS_PRI_HIGH,
-  RTOS_PRI_NORMAL       = 5,
+  RTOS_PRI_NORMAL       = 3,
   RTOS_PRI_LOW,
   RTOS_PRI_LOWER,
-  RTOS_PRI_IDLE         = 15,
+  RTOS_PRI_IDLE         = 6,
   RTOS_PRI_END,
 
 } rtosTaskPriority;
