@@ -31,13 +31,15 @@
 
 void             MainInitI2c(void);
 void             MainInitSi5351(void);
+void             MainInitCounter(void);
 
 #ifdef _MAIN_C_
 static void             MainTask(void const * argument);
 static void             MainUsbdifTask(void const * argument);
+static void             MainPllTask(void const * argument);
 static void             MainIdleLoop(void);
 static void             MainInitUsart(void);
-static void             MainInitCounter(void);
+//static void             MainInitCounter(void);
 static void             MainInitSpi(void);
 static void             MainInitAdc(void);
 static void             MainInitDac(void);

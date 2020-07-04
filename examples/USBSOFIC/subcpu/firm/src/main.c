@@ -83,6 +83,13 @@ const static rtosTaskInfo_t     mainTaskList[] = {
     .priority = RTOS_PRI_NORMAL,
     .szStack = 0x1000,
   },
+  /*** pll task */
+  {
+    .pFunc = (rtosTaskFunc)MainPllTask,
+    .pName = "pll",
+    .priority = RTOS_PRI_NORMAL,
+    .szStack = 0x200,
+  },
   /* end of list */
   {
     .pFunc = NULL,
@@ -94,47 +101,29 @@ const static rtosTaskInfo_t     mainTaskList[] = {
 
 
 
+#define PRINTF_CDC_FIFO  1
 void
 MainUartLoop(void)
 {
+  uint8_t           str[128];
+  int               len;
 
-#if 1
-  {
-    uint8_t           str[128];
-    int               size;
+  DevUsartLoop(CONFIG_SYSTEM_USART_PORT);
 
-    DevUsartLoop(CONFIG_SYSTEM_USART_PORT);
-
-    if(DevUsartGetDataLen(CONFIG_SYSTEM_USART_PORT) > 0) {
-      size = DevUsartRecv(CONFIG_SYSTEM_USART_PORT, str, sizeof(str)-1);
-      if(size > 0) {
-        str[size] = '\0';
-        puts(str);
-      }
+  if(DevUsartGetDataLen(CONFIG_SYSTEM_USART_PORT) > 0) {
+    len = DevUsartRecv(CONFIG_SYSTEM_USART_PORT, str, sizeof(str)-1);
+    if(len > 0) {
+      str[len] = '\0';
+      puts(str);
     }
   }
-#endif
-
-
-#define PRINTF_CDC_FIFO  0
 
 #if PRINTF_CDC_FIFO
   UsbCdcAcmLoop(dUsbCdc);
-#endif
 
-#if 1
-  {
-    uint8_t           str[256];
-    int               len;
-    static int        cnt = 0;
-
-    len = UsbCdcAcmRecv(dUsbCdc, str, 200);
-    if(len > 0) {
-      str[len] = '\0';
-      printf(str);
-      UsbCdcAcmSend(dUsbCdc, str, len);
-    }
-    UsbCdcAcmLoop(dUsbCdc);
+  len = UsbCdcAcmRecv(dUsbCdc, str, 200);
+  if(len > 0) {
+    UsbCdcAcmSend(dUsbCdc, str, len);
   }
 #endif
 
@@ -146,10 +135,7 @@ MainIdleLoop(void)
 {
   static uint32_t       tCnt, i;
 
-  static uint32_t       pp;
-
-  if(tCnt >= 1000) {
-    systemClockFreq_t         p;
+  if(tCnt >= 999) {
     tCnt = 0;
     i++;
     printf("idle %d\r\n", i);
@@ -157,7 +143,6 @@ MainIdleLoop(void)
     GpioSetUpdateLedOn();
     RtosTaskSleep(1);
     GpioSetUpdateLedOff();
-    RtosTaskSleep(1);
 
 #if CONFIG_RTOS_DEBUG_SHOW_STACK
     {
@@ -167,10 +152,6 @@ MainIdleLoop(void)
     }
 #endif
 
-#if 0
-    SystemGetClockValue(&p);
-    SystemDebugShowClockValue(&p);
-#endif
   }
   tCnt++;
 }
@@ -184,15 +165,19 @@ MainTask(void const * argument)
   //MainInitSpi();
 
   MainInitUsart();
-  //MainInitI2c();
+  MainInitI2c();
+  //MainInitCounter();
 
+  puts("\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n#-----\r\n");
+  puts("# " CONFIG_PRODUCT_NAME_TEXT " was started\r\n");
+
+#if 0
   {
     systemClockFreq_t         p;
     SystemGetClockValue(&p);
     SystemDebugShowClockValue(&p);
   }
-  //MainInitCounter();
-
+#endif
 
   /* start all tasks */
   const static rtosTaskInfo_t     *pRtos;
@@ -203,8 +188,11 @@ MainTask(void const * argument)
     pRtos++;
   }
 
-  puts("\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n#-----\r\n");
-  puts("# " CONFIG_PRODUCT_NAME_TEXT " was started\r\n");
+  /*
+   * re-enable interrpt after RTOS is started
+   */
+  NVIC_SetPriority(TIM2_IRQn, 4);
+  NVIC_EnableIRQ(TIM2_IRQn);
 
   /* Infinite loop */
   while(1) {
@@ -243,15 +231,15 @@ MainEntry(void)
   SysTick_Config(systick/1000);
 #endif
 
-  NVIC_SetPriority(PendSV_IRQn, 0);
-  NVIC_SetPriority(SysTick_IRQn, 1);
+  NVIC_SetPriority(PendSV_IRQn,           1);
+  //NVIC_SetPriority(SysTick_IRQn,          2);
 
   /* System interrupt init*/
   NVIC_SetPriority(MemoryManagement_IRQn, 0);
-  NVIC_SetPriority(BusFault_IRQn, 0);
-  NVIC_SetPriority(UsageFault_IRQn, 0);
-  NVIC_SetPriority(SVCall_IRQn, 0);
-  NVIC_SetPriority(DebugMonitor_IRQn, 0);
+  NVIC_SetPriority(BusFault_IRQn,         0);
+  NVIC_SetPriority(UsageFault_IRQn,       0);
+  NVIC_SetPriority(SVCall_IRQn,           0);
+  NVIC_SetPriority(DebugMonitor_IRQn,     0);
 
   /* Start the first task */
   RtosTaskCreate(&mainTaskList[0], RTOS_NULL, RTOS_NULL);
@@ -306,7 +294,7 @@ MainInitI2c(void)
 }
 
 
-static void
+void
 MainInitCounter(void)
 {
   devCounterParam_t     param;
@@ -316,8 +304,9 @@ MainInitCounter(void)
   SystemGetClockValue(&clk);
   div = clk.hclk / 48000 / 2;
 
-  DevCounterInit(-1, NULL);
+  DevCounterInit(TIM_NUM_INIT, NULL);
 
+#if 0
   /********************************************************
    * TIM4:  ADC converter sampling timing
    * PWM, AD timing generator,  98,304kHz / 2048 = 48kHz duty 50% clock
@@ -339,30 +328,33 @@ MainInitCounter(void)
   __NVIC_SetPriority(TIM4_IRQn, 0);
   __NVIC_EnableIRQ(TIM4_IRQn);
 #endif
-
+#endif
 
   /********************************************************
-   *  TIM2: 24.576MHz (49.152?, 98.304?)
+   *  TIM2: 96MHz
    *        CNT  freerun  decrement counter
    *        CH1  GPS PPS counter
    *        CH2  xxx
-   *        CH3
+   *        CH3  xxx
    *        CH4  SOF input (from FS SOF OUT)
    */
-#if 1
-  TIM2_PTR->SMCR  = 0x0;
-  TIM2_PTR->ARR   = 0xffffffff;
-  TIM2_PTR->PSC   = 0;
-  TIM2_PTR->CCMR1 = 0x2121; /* ch1,2 input capture */
-  TIM2_PTR->CCMR2 = 0x0121; /* ch3,4 input capture */
-  TIM2_PTR->CCER  = 0xb101;
-  TIM2_PTR->DIER = 0x1a;
-  TIM2_PTR->TISEL = 0;
-  TIM2_PTR->CR1 = 0x11;
+  memset(&param, 0, sizeof(param));
+  param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG) |
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_4));
+  param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
+                       DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
+  param.clktrg.prescaler = 0;
+  param.clktrg.reload = 0xffffffff;
+  param.clktrg.down = 1;
 
-  NVIC_SetPriority(TIM2_IRQn, 2);
-  NVIC_EnableIRQ(TIM2_IRQn);
-#endif
+  param.ch.val  = 0;
+  param.ch.intr = 1;
+  param.ch.mode = DEVCOUNTER_MODE_IC;
+
+  DevCounterInit(TIM2_NUM, &param);
+
+  //NVIC_SetPriority(TIM2_IRQn, 4);
+  //NVIC_EnableIRQ(TIM2_IRQn);
 
 
 #if 0
@@ -380,62 +372,41 @@ MainInitCounter(void)
 #endif
 
 
+#if 0
   /********************************************************
-   *  TIM8, TIM3  write counter
-   *  NWE -- [TIM8_ETR, CH2OUT(PWM:1/2)] -- [TIM3_CH3(IC), INTR] -- DMA
-   *  [TIM3CH1,2,4, PWM]
+   *  TIM8
+   *  SYSCLK -- [TIM8, 1/192000, CH2] -- PD
    */
 #define DIV     2
   memset(&param, 0, sizeof(param));
   param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG) |
                  DEVCOUNTER_SETCH(DEVCOUNTER_CH_2));
   param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
-                       DEVTIME_CLKTRG_CTG_EXTERNAL2 | DEVTIME_CLKTRG_SEL(0));
+                       DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
   param.clktrg.filter = 2;
-  param.clktrg.reload = DIV-1;
-  param.ch.val  = DIV/2;
+  param.clktrg.reload = 12000-1;
+  param.clktrg.prescaler = 15;
+  param.ch.val  = 6000;
   param.ch.mode = DEVCOUNTER_MODE_PWM;
-  DevCounterInit(8, &param);
+  param.ch.polneg  = 1;
+  DevCounterInit(TIM8_NUM, &param);
+#endif
 
 
   /********************************************************
    * TIM3
    */
   memset(&param, 0, sizeof(param));
-  /* TIM3 CH3 */
+  /* TIM3 CH1 PWM  */
   param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG) |
-                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_3));
+                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_1));
   param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
                        DEVTIME_CLKTRG_CTG_INTERNAL | DEVTIME_CLKTRG_SEL(0));
-  param.clktrg.filter = 2;
-  param.clktrg.polneg = 1;
+  param.clktrg.filter = 0;
   param.clktrg.reload = 0xffff;
-  param.ch.val  = DIV/2;
-  param.ch.mode = DEVCOUNTER_MODE_IC;
-  param.ch.intr = 1;
-  param.ch.filter = 1;
-  param.ch.dma = 1;
-  DevCounterInit(3, &param);
-
-  /* TIM3CH1,2,4  are PWM */
-  param.chnum = (DEVCOUNTER_SETCH(DEVCOUNTER_CH_1) |
-                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_2) |
-                 DEVCOUNTER_SETCH(DEVCOUNTER_CH_4));
+  param.ch.val  = 0x8000;
   param.ch.mode = DEVCOUNTER_MODE_PWM;
-  param.ch.intr = 0;
-  param.ch.filter = 0;
-  param.ch.dma = 0;
-  param.ch.val  = 0xffff;
-  DevCounterInit(3, &param);
-
-  DevCounterSetPwmDutyValue(3, 1, 0xffff);
-  DevCounterSetPwmDutyValue(3, 2, 0x7fff);
-  DevCounterSetPwmDutyValue(3, 4, 0x0fff);
-
-#if 0
-  __NVIC_SetPriority(TIM3_IRQn, 0);
-  __NVIC_EnableIRQ(TIM3_IRQn);
-#endif
+  DevCounterInit(TIM3_NUM, &param);
 
   return;
 }
@@ -514,7 +485,6 @@ MainInitUsb(void)
   dUsbCdc = UsbifRegisterClass(unit, &class);
 #endif
 
-
   /* start usb middleware */
   UsbifStart(unit);
 
@@ -557,11 +527,29 @@ MainUsbdifTask(void const * argument)
 
   /* Infinite loop */
   while(1) {
-    RtosTaskSleep(4000);
+    RtosTaskSleep(100);
   }
 }
 
 
+static rtosQueueId     mainEventPll;
+static void
+MainPllTask(void const * argument)
+{
+  uint32_t      val;
+
+  //mainEventPll = RtosEventCreate();
+  mainEventPll = RtosQueueCreate(4, 4);
+
+  PllpidInit(96000000, 2);
+
+  while(1) {
+    RtosQueueRecv(mainEventPll, &val, 1000);
+    PllpidLoop(val);
+  }
+
+  return;
+}
 
 /*
  *   XO -- PLLA -- MULTISYNTH0 -- DIV_R0 -- CLK0
@@ -597,10 +585,11 @@ MainInitSi5351(void)
 {
 
   Si5351Init(0,
+             1,
              26000000,                  // IN
              786432000, 0,              // VCO0, VCO1
              24576000, 0, 24000000,     // OUT0, 1, 2
-             0);
+             SI5351_OUT0_USE_VCO0 | SI5351_OUT2_USE_VCO0 | SI5351_OUT2_USE_VCO0);
 
   return;
 }
@@ -659,7 +648,7 @@ void
 TIM2_IRQHandler(void)
 {
   uint32_t              sr;
-  static uint32_t       ch1, ch3, prevCh1, prevCh3;
+  static uint32_t       ch1, ch3, ch4, prevCh1, prevCh3, prevCh4;
 
   sr = TIM2_PTR->SR;
   TIM2_PTR->SR = sr;
@@ -667,20 +656,34 @@ TIM2_IRQHandler(void)
   /* GPS pps pulse */
   if(sr & TIM_SR_CC1IF_MASK) {
     ch1 = TIM2_PTR->CCR1;
-    printf("TIM2->CCR1 %x %d\r\n", ch1, prevCh1 - ch1);
+    //printf("TIM2->CCR1 %x %d\r\n", ch1, prevCh1 - ch1);
     prevCh1 = ch1;
   }
   if(sr & TIM_SR_CC3IF_MASK) {
     ch3 = TIM2_PTR->CCR3;
-    printf("TIM2->CCR3 %x %d\r\n", ch3, prevCh3 - ch3);
+    //printf("TIM2->CCR3 %x %d\r\n", ch3, prevCh3 - ch3);
     prevCh3 = ch3;
   }
   /* SOF pulse */
+  static int   i = 0;
   if(sr & TIM_SR_CC4IF_MASK) {
+
+    if(i == 1999) {
+      uint32_t  val;
+      i = 0;
+      ch4 = TIM2_PTR->CCR4;
+      val = prevCh4 - ch4;
+      prevCh4 = ch4;
+
+      if(mainEventPll) {
+        RtosQueueSendIsr(mainEventPll, &val, 0);
+      }
+
+    }
+    i++;
+
     UsbdevSofEntry(0);
   }
 
   return;
 }
-
-

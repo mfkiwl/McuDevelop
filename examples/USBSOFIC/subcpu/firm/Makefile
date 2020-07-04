@@ -76,7 +76,8 @@ SOURCES =	\
 		src/rtos.c \
 		src/intr.c \
 		src/usb_desc.c \
-		src/usb_cdcacm.c
+		src/usb_cdcacm.c \
+		src/pllpid.c
 
 
 LIBSEXT		= -L$(LIBAEABI_CORTEXM7_DIR) -laeabi-cortexm7

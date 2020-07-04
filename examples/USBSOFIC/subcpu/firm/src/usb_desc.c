@@ -156,8 +156,8 @@ __ALIGN_BEGIN uint8_t usbDescBos[] __ALIGN_END = {
   USB_DESC_TYPE_DEVICE_CAPABILITY,    /* bDescriptorType               */
   USB_DEVCAP_TYPE_SUPERSPEED_USB,     /* bDevCapabilityType            */
   0x00,                               /* bmAttributes                  */
-  0x02, 0x00,                         /* wSpeedsSupport                */
-                                      /* 0:LS, 1:FS, 2:HS, 3:SS gen1   */
+  0x06, 0x00,                         /* wSpeedsSupport                */
+                                      /* b0:LS, b1:FS, b2:HS, b3:SS gen1   */
   0x02,                               /* bFunctionalitySupport         */
   0x0a,                               /* wU1DevExitLat   10us (unit 1us) */
   0xff, 0x01                          /* wU2DevExitLat  511us (unit 1us) */

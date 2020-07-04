@@ -39,7 +39,7 @@ void            MainInitI2c(void);
 void            MainInitSi5351(void);
 
 
-#define SYSTEM_TIMER_REG        (TIM5_PTR->CNT)     /* decrement counter */
+#define SYSTEM_TIMER_REG        (TIM2_PTR->CNT)     /* decrement counter */
 
 static systemClockFreq_t        systemClk;
 uint32_t                        SystemCoreClock; /* used in the CMSIS */
@@ -54,7 +54,7 @@ SystemInit(void)
    * cache control
    */
   //SystemMpuConfig();
-  //SCB_EnableICache();
+  SCB_EnableICache();
   //SCB_EnableDCache();
 
 
@@ -73,9 +73,7 @@ SystemInit(void)
    */
   //systemClockFreq_t     clk;
   RCC_PTR->APB2ENR |= RCC_APB2ENR_SYSCFGEN_YES;
-  //SystemChangeClockHigher();
   SystemUpdateClockValue();
-  //SystemGetClockValue(&clk);
 
 #if 0
   devCrsParam_t     crs;
@@ -110,11 +108,20 @@ SystemInit(void)
   /* usart */
   RCC_PTR->APB2ENR |= RCC_APB2ENR_USART1EN_YES;
 
+
   /*********************************
    * gpio initialize
    */
   DevGpioInit();
   DevGpioSets(gpioDefaultTbl);
+
+  /* timer */
+  RCC_PTR->APB1ENR |= RCC_APB1ENR_TIM2EN_YES;
+  RCC_PTR->APB1ENR |= RCC_APB1ENR_TIM3EN_YES;
+  RCC_PTR->APB1ENR |= RCC_APB1ENR_TIM5EN_YES;
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_TIM8EN_YES;
+  MainInitCounter();
+
 
   /*********************************
    * external pll control
@@ -123,43 +130,15 @@ SystemInit(void)
   MainInitSi5351();
 
   /* wait about 20ms @16MHz */
-  for(int i = 0; i < 20000;i++) RCC_PTR->CR;
+  for(int i = 0; i < 20000; i++) RCC_PTR->CR;
 
-  /* switch to higher freq */
+  /* switch to higher freq  24MHz -> 192MHz */
   SystemChangeClockHigher();
   SystemUpdateClockValue();
 
-  /* timer */
-  RCC_PTR->APB1ENR |= RCC_APB1ENR_TIM5EN_YES;
-
   /* usb, otg */
-  RCC_PTR->AHB1ENR |= RCC_AHB1ENR_OTGHSEN_YES;
   RCC_PTR->APB2ENR |= RCC_APB2ENR_OTGPHYCEN_YES;
-
-#if 0
-  /* usb phy controller,  enable LDO, enable CTRLer */
-  int         tout = 0x400000;
-  USBPHYC_PTR->LDO |= USBPHYC_LDO_DISABLE_YES;  /* errata: 1 is enable */
-  while(!(USBPHYC_PTR->LDO & USBPHYC_LDO_STATUS_MASK)) {
-    if(tout-- <= 0) break;
-  }
-
-  switch(CONFIG_CLOCK_HSE) {
-  case 12000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_12MHZ; break;
-  case 12500000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_12_5MHZ; break;
-  case 16000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_16MHZ; break;
-  case 24000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_24MHZ; break;
-  case 25000000: USBPHYC_PTR->PLL1 = USBPHYC_PLL1_SEL_25MHZ; break;
-  }
-
-  USBPHYC_PTR->TUNE =
-    USBPHYC_TUNE_HSDRVCHKITRM_20_94MA |
-    USBPHYC_TUNE_HSDRVRFRED_INC20PER |
-    USBPHYC_TUNE_HSDRVDCCUR_DEC5MV |
-    /*USBPHYC_TUNE_LFSCAPEN_YES |*/ USBPHYC_TUNE_INCURREN_YES | USBPHYC_TUNE_INCURRINT_YES;
-
-  USBPHYC_PTR->PLL1 |= USBPHYC_PLL1_EN_YES;
-#endif
+  RCC_PTR->AHB1ENR |= RCC_AHB1ENR_OTGHSEN_YES;
 
   return;
 }
@@ -448,6 +427,7 @@ SystemInitSystemTimer(void)
 {
   devCounterParam_t     param;
 
+#if 0
   memset(&param, 0, sizeof(param));
   param.chnum = DEVCOUNTER_SETCH(DEVCOUNTER_CH_CLKTRG);
   param.clktrg.mode = (DEVTIME_CLKTRG_MODE_FREERUN |
@@ -456,17 +436,18 @@ SystemInitSystemTimer(void)
   param.clktrg.reload = 0xffffffff;
   param.clktrg.down = 1;
   DevCounterInit(TIM5_NUM, &param);
+#endif
 
   return;
 }
 
 uint32_t
-SystemGetSystemTimer(void)
+SystemGetSysCounter(void)
 {
   return SYSTEM_TIMER_REG;
 }
 void
-SystemWaitSystemTimer(uint32_t tout)
+SystemWaitSysCounter(uint32_t tout)
 {
   uint32_t      t;
   t = SYSTEM_TIMER_REG;

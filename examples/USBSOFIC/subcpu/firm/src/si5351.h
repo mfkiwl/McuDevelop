@@ -178,11 +178,18 @@ struct _stSi5351MultiSynth {
 
 
 int             Si5351Init(int unit,
+                           int      fInit,
                            uint32_t in,
                            uint32_t vco0,       /* PLLA */
                            uint32_t vco1,       /* PLLB */
                            uint32_t out0, uint32_t out1, uint32_t out2,
                            uint32_t selVco
+#define SI5351_OUT0_USE_VCO0    (0<<0)
+#define SI5351_OUT0_USE_VCO1    (1<<0)
+#define SI5351_OUT1_USE_VCO0    (0<<1)
+#define SI5351_OUT1_USE_VCO1    (1<<1)
+#define SI5351_OUT2_USE_VCO0    (0<<2)
+#define SI5351_OUT2_USE_VCO1    (1<<2)
                            );
 
 #ifdef  _SI5351_C_

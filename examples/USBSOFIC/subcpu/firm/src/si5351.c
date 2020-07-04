@@ -23,11 +23,13 @@
 
 #define _SI5351_C_
 
+#include        <string.h>
 #include        <stdlib.h>
 #include        <stdint.h>
 
 #include        "config.h"
 #include        "stm32f7.h"
+#include        "system.h"
 #include        "devI2c.h"
 
 #include        "si5351.h"
@@ -68,6 +70,7 @@ static const uint8_t     Si5351InitParam1[] = {
 
 int
 Si5351Init(int unit,
+           int      fInit,
            uint32_t in,
            uint32_t vco0,       /* PLLA */
            uint32_t vco1,       /* PLLB */
@@ -88,70 +91,75 @@ Si5351Init(int unit,
   addr = CONFIG_I2C_ADDR_SI5351;
 
   /* initialize */
-  p = Si5351InitParam0;
-  for(int i = 0; i < sizeof(Si5351InitParam0)/2; i++) {
-    reg  = *p++;
-    data = *p++;
-    Si5351Send(0, reg, &data, 1);
+  if(fInit) {
+    p = Si5351InitParam0;
+    for(int i = 0; i < sizeof(Si5351InitParam0)/2; i++) {
+      reg  = *p++;
+      data = *p++;
+      Si5351Send(0, reg, &data, 1);
+    }
   }
 
   /* PLL settings */
+
   val.denomi  = in;
-  memset(buf, 0, SI5331_MSN_LEN);
-  if(vco0 > 0) {
+  if(in > 0 && vco0 > 0) {
+    memset(buf, 0, SI5331_MSN_LEN);
     val.num = vco0;
     Si5351CalcVco(&val);
     Si5351ConvertABC2REG(&val);
     Si5351FillBufVco(buf, &val, 0);
+    Si5351Send(0, SI5331_REG_MSNA_P3M, buf, SI5331_MSN_LEN);
   }
-  Si5351Send(0, SI5331_REG_MSNA_P3M, buf, SI5331_MSN_LEN);
 
-  memset(buf, 0, SI5331_MSN_LEN);
-  if(vco1 > 0) {
+  if(in > 0 && vco1 > 0) {
+    memset(buf, 0, SI5331_MSN_LEN);
     val.num = vco1;
     Si5351CalcVco(&val);
     Si5351ConvertABC2REG(&val);
     Si5351FillBufVco(buf, &val, outdiv);
+    Si5351Send(0, SI5331_REG_MSNB_P3M, buf, SI5331_MSN_LEN);
   }
-  Si5351Send(0, SI5331_REG_MSNB_P3M, buf, SI5331_MSN_LEN);
 
   /* MultiSynth settings */
-  memset(buf, 0, SI5331_MSN_LEN);
   if(out0 > 0) {
+    memset(buf, 0, SI5331_MSN_LEN);
     val.num  = (selVco&1)? vco1: vco0;
     val.denomi = out0 << outdiv;
     Si5351CalcMultiSynth(&val);
     Si5351ConvertABC2REG(&val);
     Si5351FillBufDiv(buf, &val, outdiv);
+    Si5351Send(0, SI5331_REG_MS0_P3M, buf, SI5331_MSN_LEN);
   }
-  Si5351Send(0, SI5331_REG_MS0_P3M, buf, SI5331_MSN_LEN);
 
-  memset(buf, 0, SI5331_MSN_LEN);
   if(out1 > 0) {
+    memset(buf, 0, SI5331_MSN_LEN);
     val.num  = (selVco&2)? vco1: vco0;
     val.denomi = out1 << outdiv;
     Si5351CalcMultiSynth(&val);
     Si5351ConvertABC2REG(&val);
     Si5351FillBufDiv(buf, &val, outdiv);
+    Si5351Send(0, SI5331_REG_MS1_P3M, buf, SI5331_MSN_LEN);
   }
-  Si5351Send(0, SI5331_REG_MS1_P3M, buf, SI5331_MSN_LEN);
 
-  memset(buf, 0, SI5331_MSN_LEN);
   if(out2 > 0) {
+    memset(buf, 0, SI5331_MSN_LEN);
     val.num  = (selVco&4)? vco1: vco0;
     val.denomi = out2 << outdiv;
     Si5351CalcMultiSynth(&val);
     Si5351ConvertABC2REG(&val);
     Si5351FillBufDiv(buf, &val, outdiv);
+    Si5351Send(0, SI5331_REG_MS2_P3M, buf, SI5331_MSN_LEN);
   }
-  Si5351Send(0, SI5331_REG_MS2_P3M, buf, SI5331_MSN_LEN);
 
-  /* enable output */
-  p = Si5351InitParam1;
-  for(int i = 0; i < sizeof(Si5351InitParam1)/2; i++) {
-    reg  = *p++;
-    data = *p++;
-    Si5351Send(0, reg, &data, 1);
+  if(fInit) {
+    /* enable output */
+    p = Si5351InitParam1;
+    for(int i = 0; i < sizeof(Si5351InitParam1)/2; i++) {
+      reg  = *p++;
+      data = *p++;
+      Si5351Send(0, reg, &data, 1);
+    }
   }
 
   result = SI5351_SUCCESS;
@@ -206,14 +214,24 @@ Si5351GetMultiSynthValue(struct _stSi5351MultiSynth *p)
   uint32_t      a, b, c;
   uint32_t      val;
   uint32_t      gcd;
+  float         f;
 
   a = p->num / p->denomi;
   c = p->denomi;
   b = p->num - a * c;
 
+#if 0
   gcd = Si5351Gcd(b, c);
   b /= gcd;
   c /= gcd;
+#endif
+
+  f = (float)b * 1000000.0;
+  f = f / (float) c;
+  b = (int)f;
+  c = 1000000;
+
+  printf("xx abc %d %d %d\n", a, b, c);
 
   if(b > 1048575) goto fail;
   if(c > 1048575) goto fail;
@@ -254,12 +272,12 @@ Si5351FillBufVco(uint8_t *buf, struct _stSi5351MultiSynth *p, int vco)
   if(vco == 0) {
     buf[SI5331_MSN_P1H]  = ( (p)->p1 >> 16) & 0x03;
   } else {
-    buf[SI5331_MSN_P1H]  = ( (p)->p1 >> 10) & 0xc0;
+    buf[SI5331_MSN_P1H]  = ( (p)->p1 >> 10) & 0x03;
   }
   buf[SI5331_MSN_P1M]    = ( (p)->p1 >>  8) & 0xff;
   buf[SI5331_MSN_P1L]    = ( (p)->p1      ) & 0xff;
-  buf[SI5331_MSN_P3HP2H] = (((p)->p3 >> 20) & 0xf0) | (((p)->p2 >>  16) & 0x0f);
-  buf[SI5331_MSN_P2L]    = ( (p)->p2 >>  8) & 0xff;
+  buf[SI5331_MSN_P3HP2H] = (((p)->p3 >> 12) & 0xf0) | (((p)->p2 >>  16) & 0x0f);
+  buf[SI5331_MSN_P2M]    = ( (p)->p2 >>  8) & 0xff;
   buf[SI5331_MSN_P2L]    = ( (p)->p2      ) & 0xff;
 
   return;
@@ -274,8 +292,8 @@ Si5351FillBufDiv(uint8_t *buf, struct _stSi5351MultiSynth *p, uint32_t outdiv)
   buf[SI5331_MS_P1H_DIV] = (((p)->p1 >> 16) & 0x03) | ((outdiv << 4) & 0x70);
   buf[SI5331_MS_P1M]     = ( (p)->p1 >>  8) & 0xff;
   buf[SI5331_MS_P1L]     = ( (p)->p1      ) & 0xff;
-  buf[SI5331_MS_P3HP2H]  = (((p)->p3 >> 20) & 0xf0) | (((p)->p2 >>  16) & 0x0f);
-  buf[SI5331_MS_P2L]     = ( (p)->p2 >>  8) & 0xff;
+  buf[SI5331_MS_P3HP2H]  = (((p)->p3 >> 12) & 0xf0) | (((p)->p2 >>  16) & 0x0f);
+  buf[SI5331_MS_P2M]     = ( (p)->p2 >>  8) & 0xff;
   buf[SI5331_MS_P2L]     = ( (p)->p2      ) & 0xff;
 
   return;

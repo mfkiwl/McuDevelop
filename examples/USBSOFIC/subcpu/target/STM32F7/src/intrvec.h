@@ -87,7 +87,7 @@ void *__vector_table_user[] __attribute__((section(".isr_vector_usr"))) = {
   IntrException,                        /*  25 TIM1 update                  */
   IntrException,                        /*  26 TIM1 trigger                 */
   IntrException,                        /*  27 TIM1 capture/compare         */
-  IntrException,                        /*  28 TIM2                         */
+  TIM2_IRQHandler,                      /*  28 TIM2                         */
   IntrException,                        /*  29 TIM3                         */
   IntrException,                        /*  30 TIM4                         */
   DevI2c1Interrupt,                     /*  31 I2C1 Event                   */

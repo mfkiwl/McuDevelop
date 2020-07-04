@@ -220,6 +220,7 @@ UsbCdcAcmSend(int drc, const uint8_t *ptr, int len)
   int                   size;
 
   prc = UsbifGetClassData(drc);
+  if(!prc->pUserData) goto end;
   pAcm = ((usbdcdcCb_t *)prc->pUserData)->pCdcParam;
   if(!pAcm) goto end;
 
@@ -236,9 +237,10 @@ UsbCdcAcmRecv(int drc, uint8_t *ptr, int len)
 {
   usbdifClassDef_t      *prc;
   usbCdcAcm_t           *pAcm;
-  int                   size;
+  int                   size = -1;
 
   prc = UsbifGetClassData(drc);
+  if(!prc->pUserData) goto end;
   pAcm = ((usbdcdcCb_t *)prc->pUserData)->pCdcParam;
   if(!pAcm) goto end;
 
