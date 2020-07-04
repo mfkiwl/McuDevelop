@@ -524,7 +524,7 @@ UsbifGetClassData(int drc)
   re = &usbdif.rc[drc];
 
 fail:
-  return &usbdif.rc[drc];
+  return re;
 }
 
 
