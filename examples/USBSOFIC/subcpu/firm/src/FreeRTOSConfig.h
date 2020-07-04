@@ -63,6 +63,7 @@ extern uint32_t         SystemCoreClock;
 /**************************************
  * use/unuse functions
  */
+// task
 #define INCLUDE_vTaskPrioritySet                1
 #define INCLUDE_uxTaskPriorityGet               1
 #define INCLUDE_vTaskDelete                     1
@@ -71,16 +72,21 @@ extern uint32_t         SystemCoreClock;
 #define INCLUDE_vTaskDelayUntil                 0
 #define INCLUDE_vTaskDelay                      1
 #define INCLUDE_xTaskGetSchedulerState          1
+// queue
+#define INCLUDE_xQueueCreate                    1
+#define INCLUDE_xQueueSend                      1
+#define INCLUDE_xQueueSendFromISR               1
+#define INCLUDE_xQueueReceive                   1
 
 
 /**************************************
  * priority settings
  */
 #define configPRIO_BITS                                 (__NVIC_PRIO_BITS)
-#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY         15
-#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY    5
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY         7
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY    2
 
-#define configKERNEL_INTERRUPT_PRIORITY         ( configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
+#define configKERNEL_INTERRUPT_PRIORITY         ( configLIBRARY_LOWEST_INTERRUPT_PRIORITY      << (8 - configPRIO_BITS) )
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY    ( configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 
 
