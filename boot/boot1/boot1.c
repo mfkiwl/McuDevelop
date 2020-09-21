@@ -130,6 +130,8 @@ MainEntry(int forceUpdate)
 
   /* init the systick counter */
 
+  SystemInit();
+
   SystemGpioInit();
 
   if(!forceUpdate) {

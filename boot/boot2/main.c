@@ -97,13 +97,15 @@ MainEntry(void)
 
   while(SystemGpioGetPowerSw());
 
+  SystemInit();
+
   __enable_irq();
+
   SystemGpioSetPowerLedOff();
   PeriInit();
 
   /* search active peripheral */
   while(1) {
-
     MainIdle();
     SystemLoop();
     SystemWdtClear();
