@@ -24,24 +24,100 @@
 #ifndef _DEV_FLASH_H_
 #define _DEV_FLASH_H_
 
+#define DEVFLASH_ERRNO_SUCCESS          (0)
+#define DEVFLASH_ERRNO_UNKNOWN          (-1)
+
 
 int             DevFlashInit(int unit);
+
+int             DevFlashUnlockErase(int unit);
+int             DevFlashUnlockProgram(int unit);
+int             DevFlashUnlockOption(int unit);
+
 int             DevFlashErase(int unit, uint32_t addr, int size);
+int             DevFlashEraseSector(int unit, uint32_t sect, int size);
 int             DevFlashProgram(int unit, uint32_t addr, int size, uint8_t *pBuf);
 int             DevFlashWrite32(int unit, uint32_t addr, uint32_t word);
 
 int             DevFlashEraseEeprom(int unit, uint32_t addr, int size);
 
+int             DevFlashProgramX64(int unit, uint32_t addr, int size, uint8_t *p);
+int             DevFlashProgramX32(int unit, uint32_t addr, int size, uint8_t *p);
+int             DevFlashProgramX16(int unit, uint32_t addr, int size, uint8_t *p);
+int             DevFlashProgramX8 (int unit, uint32_t addr, int size, uint8_t *p);
+
+
+uint16_t        DevFlashAsm8toL16(uint8_t *p);
+uint16_t        DevFlashAsm8toB16(uint8_t *p);
+uint32_t        DevFlashAsm8toL32(uint8_t *p);
+uint32_t        DevFlashAsm8toB32(uint8_t *p);
+void            DevFlashAsm32toB8(uint8_t *p, uint32_t val);
+void            DevFlashAsm32toL8(uint8_t *p, uint32_t val);
 
 
 
 #ifdef  _DEV_FLASH_C_
 
 /* prototypes */
-static uint32_t DevFlashAsm8toL32(uint8_t *p);
-static uint32_t DevFlashAsm8toB32(uint8_t *p);
-static void     DevFlashAsm32toB8(uint8_t *p, uint32_t val);
-static void     DevFlashAsm32toL8(uint8_t *p, uint32_t val);
+
+
+
+uint16_t
+DevFlashAsm8toL16(uint8_t *p)
+{
+  uint16_t	val;
+  val  = (*p++ <<  0);
+  val |= (*p++ <<  8);
+  return val;
+}
+uint16_t
+DevFlashAsm8toB16(uint8_t *p)
+{
+  uint16_t	val;
+  val |= (*p++ <<  8);
+  val |= (*p   <<  0);
+  return val;
+}
+uint32_t
+DevFlashAsm8toL32(uint8_t *p)
+{
+  uint32_t	val;
+  val  = (*p++ <<  0);
+  val |= (*p++ <<  8);
+  val |= (*p++ << 16);
+  val |= (*p   << 24);
+  return val;
+}
+uint32_t
+DevFlashAsm8toB32(uint8_t *p)
+{
+  uint32_t	val;
+  val  = (*p++ << 24);
+  val |= (*p++ << 16);
+  val |= (*p++ <<  8);
+  val |= (*p   <<  0);
+  return val;
+}
+void
+DevFlashAsm32toB8(uint8_t *p, uint32_t val)
+{
+  p[0] = val >> 24;
+  p[1] = val >> 16;
+  p[2] = val >>  8;
+  p[3] = val >>  0;
+  return;
+}
+#if 0
+static void
+DevFlashAsm32toL8(uint8_t *p, uint32_t val)
+{
+  p[0] = val >>  0;
+  p[1] = val >>  8;
+  p[2] = val >> 16;
+  p[3] = val >> 24;
+  return;
+}
+#endif
 
 #endif
 
