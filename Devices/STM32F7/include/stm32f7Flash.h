@@ -69,8 +69,8 @@ typedef struct {
   __IO uint32_t		POPTKEYR;        /* 0x08   for option */
 #define OPTKEYR_KEY1	0x08192a3b
 #define OPTKEYR_KEY2	0x4c5d6e7f
-#define FLASH_OPTKEYR1          0x08192a3b
-#define FLASH_OPTKEYR2          0x4c5d6e7f
+#define FLASH_OPTKEY1           0x08192a3b
+#define FLASH_OPTKEY2           0x4c5d6e7f
 
   __IO uint32_t		SR;             /* 0x0c */
 #define FLASH_SR_BSY_SHIFT		16
@@ -152,8 +152,9 @@ typedef struct {
 
 #define FLASH_PECR_PRGLOCK_MASK FLASH_PECR_LOCK_MASK
 #define FLASH_PECR_PELOCK_MASK  FLASH_PECR_LOCK_MASK
+#define FLASH_PECR_OPTLOCK_MASK FLASH_PECR_LOCK_MASK
 #define FLASH_PECR_FPRG_YES     0
-#define FLASH_PECR_PROG_YES     0
+#define FLASH_PECR_PROG_YES     (FLASH_PECR_PG_YES)
 #define FLASH_PECR_ERASE_YES    0
 #define FLASH_PECR_DATA_YES     0
 #endif
