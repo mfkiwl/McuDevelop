@@ -194,6 +194,7 @@ UpdateLoop(void)
 
       /*** read ********************************/
     case        UPDATE_SEQ_READ_ADDR:
+      MainSetUpdateLedSpeed(1);
       addr = DevFlashAsm8toB32(buf);
       res = STM32_RES_ACK;
       if((buf[0] ^ buf[1] ^ buf[2] ^ buf[3]) != buf[4]) res = STM32_RES_NACK;
@@ -323,7 +324,7 @@ UpdateLoop(void)
 	  break;
 	case	3:			/* Firmware version number */
 	  p = (const uint8_t **)CONFIG_FIRMWARE_INFO_VERSION_POS;
-	  if(*p != (const uint8_t *)0xffffffff &&  *p != (const uint8_t *)0) {
+	  if( ((uint32_t)*p & CONFIG_MEMORY_ROM_BASE_MASK) == CONFIG_MEMORY_ROM_BASE) {
 	    pInfo = *p;
 	    /*pInfo = systemVersion;*/
 	  } else {
