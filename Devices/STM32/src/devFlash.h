@@ -36,6 +36,7 @@ int             DevFlashUnlockOption(int unit);
 
 int             DevFlashErase(int unit, uint32_t addr, int size);
 int             DevFlashEraseSector(int unit, uint32_t sect, int size);
+int             DevFlashEraseChip(int unit);
 int             DevFlashProgram(int unit, uint32_t addr, int size, uint8_t *pBuf);
 int             DevFlashWrite32(int unit, uint32_t addr, uint32_t word);
 

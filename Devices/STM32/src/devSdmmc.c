@@ -31,7 +31,7 @@
 #include        "devErrno.h"
 #include        "intr.h"
 
-#include        "rtos.h"
+//#include        "rtos.h"
 
 #include        "sdmmc_def.h"
 #include        "devSdmmc.h"
