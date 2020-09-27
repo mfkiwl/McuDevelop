@@ -88,7 +88,7 @@ CONFIG_MEMORY_ROM_BOOT1_END		= ((CONFIG_MEMORY_ROM_BASE)+0x007ff)
 CONFIG_MEMORY_ROM_BOOT1_SIZE		= ((CONFIG_MEMORY_ROM_BOOT1_END)-(MEMORY_ROM_BOOT1_START)+1)
 
 CONFIG_MEMORY_ROM_BOOT2_START		= ((CONFIG_MEMORY_ROM_BASE)+0x00800)
-CONFIG_MEMORY_ROM_BOOT2_END		= ((CONFIG_MEMORY_ROM_BASE)+0x027ff)
+CONFIG_MEMORY_ROM_BOOT2_END		= ((CONFIG_MEMORY_ROM_BASE)+0x077ff)
 CONFIG_MEMORY_ROM_BOOT2_SIZE		= ((CONFIG_MEMORY_ROM_BOOT2_END)-(CONFIG_MEMORY_ROM_BOOT2_START)+1)
 CONFIG_MEMORY_ROM_BOOT2_OFFSET		= -0x17fff800	# ((CONFIG_MEMORY_ROM_BOOT2_START)-(CONFIG_MEMORY_RAM_BOOT2_START))
 
@@ -181,21 +181,23 @@ CONFIG_SYSTEM_USART_PORT                        = USART1_NUM
 CONFIG_SYSTEM_USART_BAUD                        = 921600
 
 
+### program width
+CONFIG_UPDATE_PROGRAM_DOUBLE_WORD_EN            = 0
+CONFIG_UPDATE_PROGRAM_SINGLE_WORD_EN            = 1
+CONFIG_UPDATE_PROGRAM_HALF_WORD_EN              = 0
+CONFIG_UPDATE_PROGRAM_BYTE_EN                   = 0
+CONFIG_UPDATE_PROGRAM_BURST_EN                  = 0
+
+
+
 ###############################
 ### rtos
 CONFIG_RTOS_DEBUG_SHOW_STACK                    = 0
 
+
 ###############################
 ### I2C addr list
-CONFIG_I2C_ADDR_SI5351                          = SI5351_I2C_ADDR0
-CONFIG_I2C_ADDR_LTC2609                         = 0x62
-CONFIG_I2C_ADDR_SN65DP141                       = 0x03
-CONFIG_I2C_ADDR_STUSB4500                       = 0x28
-CONFIG_I2C_ADDR_FUSB308B                        = 0x51
-CONFIG_I2C_ADDR_TMP102A_0                       = 0x48
-CONFIG_I2C_ADDR_TMP102A_1                       = 0x49
-CONFIG_I2C_ADDR_TMP102A_2                       = 0x4a
-CONFIG_I2C_ADDR_TMP102A_3                       = 0x4b
+
 
 ###############################
 ### fatfs
@@ -204,86 +206,7 @@ CONFIG_FATFS_EXFAT_ENABLE                       = 1
 
 
 ###############################
-### fpga
-CONFIG_FPGA_SPI_DEVNUM                          = 0
-CONFIG_FPGA_SPI_STATUS_RETRY                    = 5000
-
-CONFIG_FPGA_8BIT_DMA_MODULE                     = DMA2_NUM
-CONFIG_FPGA_8BIT_DMA_CH                         = 1
-
-CONFIG_FPGA_DATABUF_SIZE                        = 32768
-
-###############################
 # sdmmc
 CONFIG_SDMMC_MIDDLE_USE_RTOS                    = 0
-CONFIG_SDMMC_SLEEP                              = RtosTaskSleep
-
-
-###############################
-### DPCAM AXI
-# 1st corssbar
-CONFIG_FPGAAXI_INTR_BASE                        = 0x41200000    # axiM00 INTR
-CONFIG_FPGAAXI_TIMER0_BASE                      = 0x41c00000    # axiM01 TIMER0
-CONFIG_FPGAAXI_UART0_BASE                       = 0x40600000    # axiM02 UART
-CONFIG_FPGAAXI_IIC0_BASE                        = 0x40810000    # axiM03 IIC
-CONFIG_FPGAAXI_SPI0_BASE                        = 0x40c00000    # axiM04 SPI
-CONFIG_FPGAAXI_TIMER1_BASE                      = 0x41c10000    # axiM05 TIMER1
-CONFIG_FPGAAXI_AXIGPIO0_BASE                    = 0x40000000    # axiM06 AXIGPIO
-CONFIG_FPGAAXI_AXIGPIO00_BASE                   = ((CONFIG_FPGAAXI_AXIGPIO0_BASE)+0x00)
-CONFIG_FPGAAXI_AXIGPIO01_BASE                   = ((CONFIG_FPGAAXI_AXIGPIO0_BASE)+0x40)
-CONFIG_FPGAAXI_AXIGPIO02_BASE                   = ((CONFIG_FPGAAXI_AXIGPIO0_BASE)+0x80)
-CONFIG_FPGAAXI_AXIGPIO03_BASE                   = ((CONFIG_FPGAAXI_AXIGPIO0_BASE)+0xc0)
-
-# 2nd corssbar
-CONFIG_FPGAAXI_VIDEO_BASE                       = 0x50000000    # axiM05
-CONFIG_FPGAAXI_GPIO_BASE                        = 0x44a80000    # axiM08
-CONFIG_FPGAAXI_DPRX_BASE                        = 0x44a00000    # axiM09
-CONFIG_FPGAAXI_DPTX_BASE                        = 0x44a40000    # axiM0a
-CONFIG_FPGAAXI_DPPHY_BASE                       = 0x44a20000    # axiM0b
-CONFIG_FPGAAXI_DPCRC_BASE                       = 0x44a30000    # axiM0c
-CONFIG_FPGAAXI_DPEDID_BASE                      = 0x44a10000    # axiM0d
-
-### axi bus for video exclude DP  (axiM05 - Mxx)
-CONFIG_FPGAAXI_OLEDL_BASE                       = ((CONFIG_FPGAAXI_VIDEO_BASE)+0x00000)    # axiM05 - M00
-CONFIG_FPGAAXI_OLEDR_BASE                       = ((CONFIG_FPGAAXI_VIDEO_BASE)+0x10000)    # axiM05 - M01
-CONFIG_FPGAAXI_ATV_BASE                         = ((CONFIG_FPGAAXI_VIDEO_BASE)+0x20000)    # axiM05 - M02
-CONFIG_FPGAAXI_ATV_TCFIFOINL_BASE                 = ((CONFIG_FPGAAXI_ATV_BASE)+0x0000)
-CONFIG_FPGAAXI_ATV_TCFIFOINR_BASE                 = ((CONFIG_FPGAAXI_ATV_BASE)+0x1000)
-CONFIG_FPGAAXI_ATV_TCFIFOOUT_BASE                 = ((CONFIG_FPGAAXI_ATV_BASE)+0x2000)
-CONFIG_FPGAAXI_ATV_TCDECAXIS_BASE                 = ((CONFIG_FPGAAXI_ATV_BASE)+0x3000)
-CONFIG_FPGAAXI_ATV_TCVIDOUT_BASE                  = ((CONFIG_FPGAAXI_ATV_BASE)+0x4000)
-CONFIG_FPGAAXI_ATV_GPIO_BASE                      = ((CONFIG_FPGAAXI_ATV_BASE)+0x8000)
-CONFIG_FPGAAXI_ATV_TPG192_BASE                    = ((CONFIG_FPGAAXI_ATV_BASE)+0x9000)
-CONFIG_FPGAAXI_ATV_AXISSW_BASE                    = ((CONFIG_FPGAAXI_ATV_BASE)+0xa000)
-CONFIG_FPGAAXI_ATV_GPIO2_BASE                     = ((CONFIG_FPGAAXI_ATV_BASE)+0xb000)
-CONFIG_FPGAAXI_TPG96_VTC_BASE                   = ((CONFIG_FPGAAXI_VIDEO_BASE)+0xe0000)    # axiM05 - M14
-CONFIG_FPGAAXI_TPG96_BASE                       = ((CONFIG_FPGAAXI_VIDEO_BASE)+0xe1000)    # axiM05 - M14
-
-
-###############################
-### image resolution
-###
-CONFIG_OLED118_SIZE_W                           = 4000
-CONFIG_OLED118_SIZE_H                           = 2475
-CONFIG_OLED118_ACT_W                            = 3216
-CONFIG_OLED118_ACT_H                            = 2400
-CONFIG_8K_SIZE_W                                = 9000
-CONFIG_8K_SIZE_H                                = 4400
-CONFIG_8K_ACT_W                                 = 7680
-CONFIG_8K_ACT_H                                 = 4320
-
-
-###############################
-# cam
-CONFIG_IMX388_I2C_ADDR                          = 0x1a
-CONFIG_IMX418_I2C_ADDR                          = 0x1a
-
-###############################
-# thermal
-CONFIG_THERMAL_SHUTDOWN_THRESH                  = (75)  # in degree
-CONFIG_THERMAL_SHUTDOWN_CHECKTIME               = (10)  # in sec
-
-
-###############################
-# CC
-CONFIG_CC_CHECKINHIBIT_TIME                     = (4*(SYSTEM_COUNTER_1S000))
+CONFIG_SDMMC_SLEEP                              = SystemWaitCounter
+#CONFIG_SDMMC_SLEEP                              = RtosTaskSleep

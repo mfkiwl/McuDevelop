@@ -21,8 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _GPIO_USBSOFIC_H_
-#define _GPIO_USBSOFIC_H_
+#ifndef _GPIO_TARGET_H_
+#define _GPIO_TARGET_H_
 
 #define GPIO_POWER_SW           GPIO_PORTNUM(CONFIG_POWER_SW_PORTNUM,   \
                                              CONFIG_POWER_SW_BITNUM)
@@ -43,7 +43,16 @@
 #define GPIO_I2C2_SCL           GPIO_PORTNUM(GPIO_PORT_B, 10)
 #define GPIO_I2C2_SDA           GPIO_PORTNUM(GPIO_PORT_B, 11)
 
+// sdio
+#define GPIO_SDMMC_CLK          GPIO_PORTNUM(GPIO_PORT_C, 12)
+#define GPIO_SDMMC_CMD          GPIO_PORTNUM(GPIO_PORT_D,  2)
+#define GPIO_SDMMC_D0           GPIO_PORTNUM(GPIO_PORT_C,  8)
+#define GPIO_SDMMC_D1           GPIO_PORTNUM(GPIO_PORT_C,  9)
+#define GPIO_SDMMC_D2           GPIO_PORTNUM(GPIO_PORT_C, 10)
+#define GPIO_SDMMC_D3           GPIO_PORTNUM(GPIO_PORT_C, 11)
+#define GPIO_SDMMC_CDETX        GPIO_PORTNUM(GPIO_PORT_C, 13)
 
+// USB
 #define GPIO_USB_FS_DM          GPIO_PORTNUM(GPIO_PORT_A, 11)
 #define GPIO_USB_FS_DP          GPIO_PORTNUM(GPIO_PORT_A, 12)
 #define GPIO_USB_FS_VBUS        GPIO_PORTNUM(GPIO_PORT_A, 13)
@@ -53,6 +62,7 @@
 #define GpioSetPowerLedOn()     (GPIO_PTR[CONFIG_POWER_LED_PORTNUM].BSRR = (1UL<<(CONFIG_POWER_LED_BITNUM)))
 #define GpioSetUpdateLedOff()   (GPIO_PTR[CONFIG_UPDATE_LED_PORTNUM].BRR = (1UL<<(CONFIG_UPDATE_LED_BITNUM)))
 #define GpioSetUpdateLedOn()    (GPIO_PTR[CONFIG_UPDATE_LED_PORTNUM].BSRR = (1UL<<(CONFIG_UPDATE_LED_BITNUM)))
+#define GpioIsSdmmc1CardInserted()   (!GPIO_GET(GPIO_SDMMC_CDETX))
 
 
 #endif

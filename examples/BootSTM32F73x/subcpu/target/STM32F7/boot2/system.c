@@ -24,11 +24,16 @@
 #define _SYSTEM_STM32L0_C_
 
 #include        <stdint.h>
+#include        <string.h>
 
 #include        "config.h"
 #include        "gpio.h"
+#include        "intr.h"
 #include        "system.h"
 
+
+#define SYSTEM_TIMER_REG        (TIM5_PTR->CNT)     /* decrement counter */
+static systemClockFreq_t        systemClk;
 
 uint32_t SystemCoreClock = CONFIG_CLOCK_FREQ_SYSCLK_BOOT2;
 
@@ -64,15 +69,13 @@ SystemInit(void)
    */
   SystemChangeClockHigher();
 
-  SysTick_Config(CONFIG_CLOCK_FREQ_SYSCLK_BOOT2/1000);
-  NVIC_SetPriority(SysTick_IRQn, 5);
-  NVIC_EnableIRQ(SysTick_IRQn);
-
   RCC_PTR->AHB1ENR |= RCC_AHB1ENR_DMA1EN_YES;
   RCC_PTR->AHB1ENR |= (RCC_GPIOAEN_YES |
                        RCC_GPIOBEN_YES |
                        RCC_GPIOCEN_YES |
+                       RCC_GPIODEN_YES |
                        RCC_GPIOHEN_YES);
+
 
   RCC_PTR->APB2ENR |= RCC_APB2ENR_USART1EN_YES;
 
@@ -84,7 +87,31 @@ SystemInit(void)
   while(PWR_PTR->CSR1 & PWR_CSR1_VOSRDY_MASK);
 #endif
 
+  // SDMMC
+  RCC_PTR->APB2ENR |= RCC_APB2ENR_SDMMC1EN_YES;
+  RCC_PTR->DCKCFGR2 |= RCC_DCKCFGR2_SDMMC1SEL_SYS;
+
+
   SystemGpioInit();
+
+#if 1
+  IntrInit(0);
+  NVIC_SetPriority(SysTick_IRQn, 1);
+
+  {
+    systemClockFreq_t     clk;
+    uint32_t              systick;
+    SystemGetClockValue(&clk);
+    systick = clk.systick;
+    SysTick_Config(systick/1000);
+  }
+#endif
+
+#if 0
+  SysTick_Config(CONFIG_CLOCK_FREQ_SYSCLK_BOOT2/1000);
+  NVIC_SetPriority(SysTick_IRQn, 5);
+  NVIC_EnableIRQ(SysTick_IRQn);
+#endif
 
   return;
 }
@@ -273,6 +300,106 @@ SystemChangeClockHigher(void)
 }
 
 
+const static uint8_t   systemAHBPrescalerTable[]   = RCC_CLOCK_HPRETABLE;
+const static uint8_t   systemPeri1PrescalerTable[] = RCC_CLOCK_PPRETABLE;
+const static uint8_t   systemPeri2PrescalerTable[] = RCC_CLOCK_PPRETABLE;
+void
+SystemUpdateClockValue(void)
+{
+  int           div, shift;
+  uint32_t      freqPllIn;
+  uint32_t      m, n;
+  uint32_t      vco;
+
+  /*** PLL clock source selector */
+  switch(RCC_PTR->PLLCFGR & RCC_PLLCFGR_PLLSRC_MASK) {
+  case RCC_PLLCFGR_PLLSRC_HSI16: freqPllIn = RCC_CLOCK_HSI;    break;
+  case RCC_PLLCFGR_PLLSRC_HSE:   freqPllIn = CONFIG_CLOCK_HSE; break;
+    /* case PLLCKSELR_PLLSRC_CSI: */
+  default:                   freqPllIn = 0;    break;
+  }
+  systemClk.pllin = freqPllIn;
+
+  /*** freq_VCO = (freq_PLLIN / M) * N,   freq_SYSCLK = freq_VCO / DIVP */
+  /*** calc PLL1 frequency value */
+  CALCPLL(RCC_PTR->PLLCFGR, 1, freqPllIn);
+
+  /* calc core,HCLK,SysTick clock */
+  SystemCoreClockUpdate();
+
+  /* APB1, 2 */
+  div   = (RCC_PTR->CFGR &  RCC_CFGR_PPRE1_MASK) >>  RCC_CFGR_PPRE1_SHIFT;
+  shift = systemPeri1PrescalerTable[div];
+  systemClk.pclk1 = systemClk.hclk >> shift;
+  div   = (RCC_PTR->CFGR &  RCC_CFGR_PPRE2_MASK) >>  RCC_CFGR_PPRE2_SHIFT;
+  shift = systemPeri2PrescalerTable[div];
+  systemClk.pclk2 = systemClk.hclk >> shift;
+
+  return;
+}
+void
+SystemCoreClockUpdate(void)
+{
+  int           div, shift;
+  uint32_t      clk;
+
+  /* SYSCLK selector */
+  switch (RCC_PTR->CFGR & RCC_CFGR_SWS_MASK) {
+  case RCC_CFGR_SWS_HSI:
+    clk = RCC_CLOCK_HSI;
+    break;
+
+  case RCC_CFGR_SWS_HSE:
+    clk = CONFIG_CLOCK_HSE;
+    break;
+
+  case RCC_CFGR_SWS_PLL:
+    clk = systemClk.pll1.P;
+    break;
+  }
+  systemClk.sysclk  = clk;
+
+  /* AHB1: HCLK frequency */
+  div   = (RCC_PTR->CFGR & RCC_CFGR_HPRE_MASK);
+  div >>= RCC_CFGR_HPRE_SHIFT;
+  shift = systemAHBPrescalerTable[div];
+  systemClk.hclk  = clk >> shift;
+  systemClk.core = systemClk.hclk;
+  systemClk.systick = systemClk.hclk;
+
+  /* for FreeRTOS */
+  SystemCoreClock = systemClk.hclk;
+
+  return;
+}
+int
+SystemGetClockValue(systemClockFreq_t *p)
+{
+  int           result = -1;
+  if(p) {
+    memcpy(p, &systemClk, sizeof(systemClockFreq_t));
+    result = 0;
+  }
+
+  return result;
+}
+
+
+uint32_t
+SystemGetSystemTimer(void)
+{
+  return SYSTEM_TIMER_REG;
+}
+void
+SystemWaitSystemTimer(uint32_t tout)
+{
+  uint32_t      t;
+  t = SYSTEM_TIMER_REG;
+  while((t - (SYSTEM_TIMER_REG)) < tout);
+  return;
+}
+
+
 void
 SystemWdtInit(void)
 {
@@ -282,4 +409,9 @@ void
 SystemWdtClear(void)
 {
   return;
+}
+
+int
+puts(const char *str)
+{
 }

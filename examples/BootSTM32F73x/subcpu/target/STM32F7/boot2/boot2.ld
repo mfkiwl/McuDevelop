@@ -28,8 +28,8 @@
 /*********************************************************
  * definitons
  */
-szHeap        = 0x0700;
-szStack       = 0x0200;
+szHeap        = 0x100;
+szStack       = 0x1500;
 
 /*********************************************************
  * memory maps
@@ -38,16 +38,22 @@ MEMORY
 {
 /* flash rom and ram existed area */
   FLASH1                (rx) : ORIGIN = 0x08000000, LENGTH =  192K
-  RAM                   (rw) : ORIGIN = 0x20000000, LENGTH =   20K
-
-/* flash area */
-  FLASH_INTERRUPTS      (rx) : ORIGIN = 0x20000000, LENGTH = 0x0040
-  FLASH_CONFIG          (rx) : ORIGIN = 0x20000400, LENGTH = 0x0020
-  FLASH_TEXT            (rx) : ORIGIN = 0x20000420, LENGTH = 0x2be0
-  FLASH_TEXT2           (rx) : ORIGIN = 0x20000420, LENGTH = 0x0000
 
 /* ram area */
-  RAM_DATA              (rw) : ORIGIN = 0x20004000, LENGTH = 0x4000     /* upto 0x20008000 */
+  RAM_ITCM             (xrw) : ORIGIN = 0x00000000, LENGTH =   16K
+
+  RAM_DTCM             (xrw) : ORIGIN = 0x20000000, LENGTH =   64K
+  RAM_D1               (xrw) : ORIGIN = 0x20010000, LENGTH =  176K
+  RAM_D2               (xrw) : ORIGIN = 0x2003c000, LENGTH =   16K
+
+
+/* flash area */
+  FLASH_INTERRUPTS      (rx) : ORIGIN = 0x20000000, LENGTH = 0x0400
+  FLASH_CONFIG          (rx) : ORIGIN = 0x20000400, LENGTH = 0x0020
+  FLASH_TEXT            (rx) : ORIGIN = 0x20000420, LENGTH = 0x5be0
+
+  RAM_DATA              (rw) : ORIGIN = 0x20006000, LENGTH = 0x2000
+
 }
 
 SECTIONS {
@@ -56,15 +62,10 @@ SECTIONS {
   .interrupts : {
     __VECTOR_TABLE = .;
     . = ALIGN(4);
-    KEEP(*(.isr_vector))     /* Startup code */
+    KEEP(*(.isr_vector))       /* Startup code 0x00 -- 0x3f */
+    KEEP(*(.isr_vector_usr))   /* Startup code 0x40 -- 0xff */
     . = ALIGN(4);
   } > FLASH_INTERRUPTS
-
-  /* text area in un-used vector area */
-  .text2 : {
-    *(boot1.text)
-    *(.text2)
-  } > FLASH_TEXT2
 
   /* special area for kinetis */
   .flash_config : {
@@ -138,6 +139,7 @@ SECTIONS {
   } > RAM_DATA
 
   /* Initializes stack on the end of block */
+  /*  sectStackTop = ORIGIN(RAM) + LENGTH(RAM);*/
   sectStackTop = ORIGIN(RAM_DATA) + LENGTH(RAM_DATA);
   __StackLimit = sectStackTop - szStack;
   PROVIDE(__stack = sectStackTop);

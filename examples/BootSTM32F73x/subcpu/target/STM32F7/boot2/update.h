@@ -64,6 +64,10 @@ void		UpdateLoop(void);
 
 int		UpdateCmdParse(uint8_t cmd);
 
+int             UpdateProgram(int unit, uint32_t addr, int len, uint8_t *buf);
+int             UpdateEraseSect(int unit, uint32_t sector);
+
+
 #ifdef	_UPDATE_C_
 static uint16_t UpdateAsm8toL16(uint8_t *p);
 static uint16_t UpdateAsm8toB16(uint8_t *p);

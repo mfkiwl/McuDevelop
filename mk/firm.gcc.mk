@@ -36,7 +36,7 @@ LSTFLAGS	= -Wa,-a,-ad,-alms=$(OBJDIR)/$(notdir $(<:.c=.lst))
 CFLAGS_DEV	= -ffunction-sections -fdata-sections -Os -gdwarf-2 \
 			-mthumb -mcpu=$(CPU_CORTEX_ARCH) -mlittle-endian
 
-ASFLAGS		= $(CPU) #-acdghlmns=${@:.o=.lst}
+ASFLAGS		= $(CPU) -DNO_VECTOR=1   #-acdghlmns=${@:.o=.lst}
 
 #LIBS		= -lc -lm -lnosys #-specs=nano.specs
 LIBS		= -nostdlib

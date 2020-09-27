@@ -29,28 +29,33 @@
  * definitons
  */
 szHeap        = 0x0010;
-szStack       = 0x1000;
+szStack       = 0x0800;
 
 /*********************************************************
  * memory maps
  */
 MEMORY
 {
-  FLASH1                (rx) : ORIGIN = 0x08000000, LENGTH =   64K
-  RAM                   (rw) : ORIGIN = 0x20000000, LENGTH =  256K
-
 /* flash area */
-  FLASH_INTERRUPTS      (rx) : ORIGIN = 0x08000000, LENGTH = 0x0040
-  FLASH_TEXT2           (rx) : ORIGIN = 0x08000040, LENGTH = 0x03c0
-  FLASH_CONFIG          (rx) : ORIGIN = 0x08000400, LENGTH = 0x0020
-  FLASH_TEXT            (rx) : ORIGIN = 0x08000420, LENGTH = 0x03e0
+  FLASH1                (rx) : ORIGIN = 0x08000000, LENGTH =  256K
 
 /* ram area */
   RAM_ITCM             (xrw) : ORIGIN = 0x00000000, LENGTH =   16K
 
   RAM_DTCM             (xrw) : ORIGIN = 0x20000000, LENGTH =   64K
-  RAM_D1               (xrw) : ORIGIN = 0x20010000, LENGTH =   64K
+  RAM_D1               (xrw) : ORIGIN = 0x20010000, LENGTH =  172K
   RAM_D2               (xrw) : ORIGIN = 0x2003c000, LENGTH =   16K
+
+
+/* firm flash area */
+  FLASH_INTERRUPTS      (rx) : ORIGIN = 0x08000000, LENGTH = 0x0040
+  FLASH_TEXT2           (rx) : ORIGIN = 0x08000040, LENGTH = 0x03c0
+  FLASH_CONFIG          (rx) : ORIGIN = 0x08000400, LENGTH = 0x0020
+  FLASH_TEXT            (rx) : ORIGIN = 0x08000420, LENGTH = 0x03e0
+
+/* firm ram area   */
+  RAM                   (rw) : ORIGIN = 0x20007000, LENGTH = 0x1000
+
 }
 
 /* Define output sections */
@@ -119,7 +124,7 @@ SECTIONS
     KEEP(*(.jcr*))
     . = ALIGN(4);
     sectDataEnd = .;        /* define a global symbol at data end */
-  } > RAM_D1
+  } > RAM
 
   __DATA_END = __DATA_ROM + (sectDataEnd - sectDataStart);
   sectTextDataSize = __DATA_END - __VECTOR_TABLE;
@@ -134,7 +139,7 @@ SECTIONS
     *(COMMON)
     . = ALIGN(4);
     sectBssEnd = .;
-  } > RAM_D1
+  } > RAM
 
   .heap : {
     . = ALIGN(8);
@@ -143,16 +148,16 @@ SECTIONS
     __HeapBase = .;
     . += szHeap;
     __HeapLimit = .;
-  } > RAM_D1
+  } > RAM
 
   .stack : {
     . = ALIGN(8);
     . += szStack;
-  } > RAM_DTCM
+  } > RAM
 
 
 /* Initializes stack on the end of block */
-  sectStackTop = ORIGIN(RAM_DTCM) + LENGTH(RAM_DTCM);
+  sectStackTop = ORIGIN(RAM) + LENGTH(RAM);
   __StackLimit = sectStackTop - szStack;
   PROVIDE(__stack = sectStackTop);
 

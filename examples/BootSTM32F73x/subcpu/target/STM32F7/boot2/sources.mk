@@ -22,17 +22,32 @@
 #
 
 SOURCESASM	= $(COMMON_DIR)/start_gcc.s
+
 SOURCES		= \
 		$(CONFIG_ROOTDIR)/../boot/$(TARGET)/main.c \
 		$(CONFIG_ROOTDIR)/../boot/$(TARGET)/peri.c \
 		../target/$(DEVICE_TYPE)/$(TARGET)/system.c \
 		../target/$(DEVICE_TYPE)/$(TARGET)/update.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/updateSdmmc.c \
 		../target/$(DEVICE_TYPE)/$(TARGET)/periI2c.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/periSdmmc.c \
 		../target/$(DEVICE_TYPE)/$(TARGET)/periUart.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/fatfsdio.c \
+		../target/$(DEVICE_TYPE)/$(TARGET)/intr.c \
 		$(CONFIG_ROOTDIR)/../lib/common/string_gcc.c \
 		$(CONFIG_ROOTDIR)/../lib/common/crc32.c \
 		$(CONFIG_ROOTDIR)/../lib/common/fifo.c \
-		$(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/src/devFlashF73x.c
+		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strcmp.c \
+		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strncpy.c \
+		$(CONFIG_ROOTDIR)/../lib/openbsd/string/strtok.c \
+		$(CONFIG_ROOTDIR)/../lib/openbsd/stdlib/strtoul.c \
+		$(CONFIG_ROOTDIR)/../lib/openbsd/stdlib/ctype_.c \
+		$(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/src/devFlashF73x.c \
+		$(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/src/devSdmmc.c \
+		$(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/src/devDma7.c \
+		$(CONFIG_ROOTDIR)/../Middlewares/Sdmmc/src/sdmmc.c \
+		$(CONFIG_ROOTDIR)/../Middlewares/Fatfs/source/ff.c \
+		$(CONFIG_ROOTDIR)/../Middlewares/Fatfs/source/ffunicode.c
 
 
 DEFINES		= -DCPU_$(DEVICE_NAME) -D$(DEVICE_NAME) \
@@ -46,10 +61,14 @@ INCDIRS		= -I obj/$(DEVICE_TYPE)_$(ENV_CC) \
 		-I $(CONFIG_ROOTDIR)/../boot/$(TARGET) \
 		-I ../target/$(DEVICE_TYPE)/$(TARGET) \
 		-I $(CONFIG_ROOTDIR)/../CMSIS/Include \
+		-I $(CONFIG_ROOTDIR)/../Devices/include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(DEVICE_TYPE)/include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/include \
 		-I $(CONFIG_ROOTDIR)/../Devices/$(VENDOR_SERIES)/src \
 		-I $(DEVICE_DIR) \
 		-I $(CONFIG_ROOTDIR)/../Middlewares/Usbdif/include \
 		-I $(CONFIG_ROOTDIR)/../Middlewares/Usbdif/src \
+		-I $(CONFIG_ROOTDIR)/../Middlewares/Fatfs/source \
+		-I $(CONFIG_ROOTDIR)/../Middlewares/Sdmmc/include \
+		-I $(CONFIG_ROOTDIR)/../Middlewares/Sdmmc/src \
 		-I $(COMMON_DIR) \

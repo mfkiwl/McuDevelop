@@ -60,11 +60,13 @@ extern const uint8_t	strProductText[];
 
 #define UPDATE_BLANKVALUE               0xff
 
-#define UPDATE_PROGRAM_DOUBLE_WORD_EN   0
-#define UPDATE_PROGRAM_SINGLE_WORD_EN   1
-#define UPDATE_PROGRAM_HALF_WORD_EN     0
-#define UPDATE_PROGRAM_BYTE_EN          0
-#define UPDATE_PROGRAM_BURST_EN         0
+
+#define UPDATE_PROGRAM_DOUBLE_WORD_EN   CONFIG_UPDATE_PROGRAM_DOUBLE_WORD_EN
+#define UPDATE_PROGRAM_SINGLE_WORD_EN   CONFIG_UPDATE_PROGRAM_SINGLE_WORD_EN
+#define UPDATE_PROGRAM_HALF_WORD_EN     CONFIG_UPDATE_PROGRAM_HALF_WORD_EN
+#define UPDATE_PROGRAM_BYTE_EN          CONFIG_UPDATE_PROGRAM_BYTE_EN
+#define UPDATE_PROGRAM_BURST_EN         CONFIG_UPDATE_PROGRAM_BURST_EN
+
 
 static int		seq = UPDATE_SEQ_IDLE;
 static uint8_t		cmd, /*lenData, */sum;
@@ -153,8 +155,6 @@ UpdateLoop(void)
       val |= buf[1] << 0;
       sum = buf[0] ^ buf[1];
 
-      DevFlashUnlockErase(0);
-
       seq = UPDATE_SEQ_ERASE_BLOCK_EXEC;
       if(val == 0xffff) {
         FLASH_PTR->PECR =               FLASH_PECR_ERASE_YES;
@@ -173,7 +173,8 @@ UpdateLoop(void)
       val  = buf[0] << 8;
       val |= buf[1] << 0;
 
-      re = DevFlashEraseSector(0, val, 0);
+      // go erase
+      UpdateEraseSect(0, val);
 
       lenRecv = 2;
       cntRecv--;
@@ -238,24 +239,8 @@ UpdateLoop(void)
         res = STM32_RES_NACK;
 
       } else {
-        DevFlashUnlockProgram(0);
-
-#if UPDATE_PROGRAM_DOUBLE_WORD_EN         /* double word program */
-        re = DevFlashProgramX64(0, addr, lenRecv-1, buf);
-
-#elif UPDATE_PROGRAM_SINGLE_WORD_EN       /* single word program */
-        re = DevFlashProgramX32(0, addr, lenRecv-1, buf);
-
-#elif UPDATE_PROGRAM_HALF_WORD_EN         /* half-word program */
-        re = DevFlashProgramX16(0, addr, lenRecv-1, buf);
-
-#elif UPDATE_PROGRAM_BYTE_EN              /* byte program */
-        re = DevFlashProgramX8 (0, addr, lenRecv-1, buf);
-
-#elif UPDATE_PROGRAM_BURST_EN         /* burst program */
-        re = UpdateProgX320(pAddr32, buf, lenRecv);
-#endif
-
+        // go program
+        re = UpdateProgram(0, addr, lenRecv-1, buf);
         if(re != DEVFLASH_ERRNO_SUCCESS) {
           res = STM32_RES_NACK;
         }
@@ -479,4 +464,42 @@ static int
 UpdateSendResponse(uint8_t res)
 {
   return PeriSend(&res, 1);
+}
+
+
+int
+UpdateProgram(int unit, uint32_t addr, int len, uint8_t *buf)
+{
+  int           re;
+
+  DevFlashUnlockProgram(0);
+
+#if UPDATE_PROGRAM_DOUBLE_WORD_EN         /* double word program */
+  re = DevFlashProgramX64(0, addr, len, buf);
+
+#elif UPDATE_PROGRAM_SINGLE_WORD_EN       /* single word program */
+  re = DevFlashProgramX32(0, addr, len, buf);
+
+#elif UPDATE_PROGRAM_HALF_WORD_EN         /* half-word program */
+  re = DevFlashProgramX16(0, addr, len, buf);
+
+#elif UPDATE_PROGRAM_BYTE_EN              /* byte program */
+  re = DevFlashProgramX8 (0, addr, len1, buf);
+
+#elif UPDATE_PROGRAM_BURST_EN         /* burst program */
+  re = UpdateProgX320(pAddr32, buf, len);
+#endif
+
+  return re;
+}
+
+
+int
+UpdateEraseSect(int unit, uint32_t sector)
+{
+  int           re;
+  DevFlashUnlockErase(0);
+  re = DevFlashEraseSector(0, sector, 0);
+
+  return re;
 }

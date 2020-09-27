@@ -26,7 +26,14 @@
 
 #include        <stdint.h>
 
-#include	"stm32f7.h"
+#include        "config.h"
+
+#include        "stm32f7.h"
+#include        "devDma7.h"
+#include        "devSdmmc.h"
+
+#include        "gpio.h"
+
 
 #if (DEVICE_ARCHTYPE == CONFIG_ARCHTYPE_CORTEX_M0)
 #include	"core_cm0.h"
@@ -42,8 +49,37 @@
 #error "DEVICE_ARCHTYPE is not defined"
 #endif
 
+typedef struct {
+  uint32_t      vco;
+  uint32_t      P;
+  uint32_t      Q;
+  uint32_t      R;
+} systemClockPllFreq_t;
+typedef struct {
+  uint32_t              pllin;
+  systemClockPllFreq_t  pll1;
+  systemClockPllFreq_t  pll2;
+  systemClockPllFreq_t  pll3;
+  uint32_t              sysclk;         // after clock selector
+  uint32_t              core;
+#define       SYSTEM_CLOCK_FREQ_DIV_SYSTICK_SHIFT   3
+  uint32_t              systick;
+  uint32_t              hclk;   /* AHB1,2,3,4 clock */
+  uint32_t              pclk1;  /* D2 APB1 clock */
+  uint32_t              pclk1tim;
+  uint32_t              pclk2;  /* D2 APB2 clock */
+  uint32_t              pclk2tim;
+  uint32_t              pclk3;  /* D1 APB3 clock */
+  uint32_t              pclk4;  /* D3 APB4 clock */
+} systemClockFreq_t;
+
+
 void		SystemInit(void);
 void		SystemLoop(void);
+
+void            SystemUpdateClockValue(void);
+void            SystemCoreClockUpdate(void);
+int             SystemGetClockValue(systemClockFreq_t *p);
 
 void		SystemGpioInit(void);
 void		SystemGpioSet(uint16_t v);
@@ -56,8 +92,12 @@ void		SystemGpioSetUpdateLedOff(void);
 void		SystemGpioSetUpdateLedOn(void);
 int		SystemGpioGetPowerSw(void);
 
+
 void		SystemWdtInit(void);
 void		SystemWdtClear(void);
+
+uint32_t        SystemGetCounter(void);
+void            SystemWaitCounter(int ms);
 
 #if 0
 void *		memset(void *s, int c, int size);
