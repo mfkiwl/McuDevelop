@@ -41,6 +41,7 @@
 #define	PERI_IF_SPI		2
 #define	PERI_IF_I2C		3
 #define	PERI_IF_USB		4
+#define	PERI_IF_SD		5
 
 
 struct _stPeriEntry {

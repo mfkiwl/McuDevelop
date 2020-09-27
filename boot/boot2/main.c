@@ -69,7 +69,7 @@ MainSetUpdateLedSpeed(int val)
 void
 MainIdle(void)
 {
-  ledSpeed = CONFIG_FIRMUPDATE_POWERLED_BLINK_SLOW;;
+  ledSpeed = CONFIG_FIRMUPDATE_POWERLED_BLINK_SLOW;
   if(activeTimer) {
     ledSpeed = CONFIG_FIRMUPDATE_POWERLED_BLINK_FAST;
     if((activeTimer - SystemGetCounter()) > CONFIG_FIRMUPDATE_POWERLED_BLINK_TIME) {
@@ -122,7 +122,6 @@ MainEntry(void)
   UpdateInit();
 
   while(1) {
-
     SystemLoop();
     MainIdle();
     SystemWdtClear();

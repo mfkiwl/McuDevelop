@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 zhtlab
+ * Copyright (c) 2019 zhtlab
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -21,18 +21,27 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef	_MAIN_H_
-#define	_MAIN_H_
+#ifndef _FATFSDIO_H_
+#define _FATFSDIO_H_
 
-void                    MainIdle(void);
-void                    MainEntry(void);
-void                    MainSetUpdateLedSpeed(int val);
-uint32_t                SystemGetCounter(void);
-void                    SystemWaitCounter(int ms);
-uint32_t                System1GetCounter(void);
 
-#ifdef  _MAIN_C_
-static void             SystemIncrement1ms(void);
+typedef struct {
+  sdmmcResult   (*init)(int);
+  //int           (*getStat)(int);
+  sdmmcResult   (*read)(int unit, uint32_t lba, int count, uint8_t *ptr);
+  sdmmcResult   (*write)(int unit, uint32_t lba, int count, uint8_t *ptr);
+  sdmmcResult   (*ioctl)(int, int, void *);
+} fatfsdioFunc_t;
+
+
+int             FatfsdioRegsiterFunc(int unit, const fatfsdioFunc_t *ptr);
+
+#if 0
+DSTATUS         disk_status(BYTE pdrv);
+DSTATUS         disk_initialize(BYTE pdrv);
+DRESULT         disk_read(BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
+DRESULT         disk_write(BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
+DRESULT         disk_ioctl(BYTE pdrv, BYTE cmd, void *buff);
 #endif
 
 #endif

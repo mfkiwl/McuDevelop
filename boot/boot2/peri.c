@@ -31,6 +31,7 @@
 
 #include	"periUart.h"
 #include	"periI2c.h"
+#include	"periSdmmc.h"
 #if (defined(CONFIG_PERIPHERAL_USB1) || defined(CONFIG_PERIPHERAL_USB2) || defined(CONFIG_PERIPHERAL_USB_ALL))
 #include	"periUsb.h"
 #endif
@@ -82,6 +83,12 @@ const struct _stPeriEntry periEntry[] = {
 #if (defined(CONFIG_PERIPHERAL_USB1) || defined(CONFIG_PERIPHERAL_USB_ALL))
   {9, 0, PeriUsbInit, PeriUsbUninit, PeriUsbProbe,
    PeriUsbSend, PeriUsbRecv, PeriUsbIoctl},		/* USB */
+#endif
+
+  // SDMMC
+#if (defined(CONFIG_PERIPHERAL_SDMMC1))
+  {10, 0, PeriSdmmcInit, PeriSdmmcUninit, PeriSdmmcProbe,
+   NULL, NULL, NULL},	/* SDMMC1 */
 #endif
 
   /*{PERI_LIST_TERMINATOR, 0, NULL, NULL, NULL, NULL, NULL, NULL},*/

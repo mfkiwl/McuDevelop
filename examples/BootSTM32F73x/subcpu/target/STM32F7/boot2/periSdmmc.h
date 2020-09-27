@@ -21,18 +21,18 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef	_MAIN_H_
-#define	_MAIN_H_
+#ifndef _PERISDMMC_H_
+#define _PERISDMMC_H_
 
-void                    MainIdle(void);
-void                    MainEntry(void);
-void                    MainSetUpdateLedSpeed(int val);
-uint32_t                SystemGetCounter(void);
-void                    SystemWaitCounter(int ms);
-uint32_t                System1GetCounter(void);
+int             PeriSdmmcInit(int unit);
+int             PeriSdmmcUninit(int unit);
+int             PeriSdmmcProbe(int unit);
+int             PeriSdmmcSend(int unit, const uint8_t *ptr, int len);
+int             PeriSdmmcRecv(int unit, uint8_t *ptr, int *len);
+int             PeriSdmmcIoctl(int unit, int req, void *ptr, int len);
 
-#ifdef  _MAIN_C_
-static void             SystemIncrement1ms(void);
+#ifdef  _PERISDMMC_C_
+static void     PeriSdmmcRxd(int unit);
 #endif
 
 #endif
