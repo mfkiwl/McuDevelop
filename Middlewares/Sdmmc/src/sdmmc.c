@@ -37,9 +37,7 @@
 #include        "sdmmc.h"
 #include        "sdmmc_def.h"
 
-#if CONFIG_SDMMC_MIDDLE_USE_RTOS || 1
 #define SDMMC_SLEEP(x)          CONFIG_SDMMC_SLEEP(x)
-#endif
 
 #define SDMMC_DEBUG_API         0
 #define SDMMC_DEBUG_CMD         0
@@ -474,7 +472,7 @@ SdmmcCmd23SetBlockCount(int unit, uint32_t cnt)
 
   SdmmcSubSendCommand(unit, SDMMC_CMD23_SET_BLOCK_COUNT, &cnt);
   result = SdmmcSubRecvCmdResp1(unit, &val);
-  printf("# SdmmcCmd23SetBlockCount() xxxx  val:%x %d\n", val, result);
+  //printf("# SdmmcCmd23SetBlockCount() xxxx  val:%x %d\n", val, result);
 
 #if SDMMC_DEBUG_CMD
   printf("# SdmmcCmd23SetBlockCount() unit:%d, count:%d, result:%d\n",
