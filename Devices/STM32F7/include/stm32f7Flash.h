@@ -75,7 +75,7 @@ typedef struct {
   __IO uint32_t		SR;             /* 0x0c */
 #define FLASH_SR_BSY_SHIFT		16
 #define FLASH_SR_BSY_MASK		(1 << (FLASH_SR_BSY_SHIFT))
-#define FLASH_SR_BSY_NO		(0 << (FLASH_SR_BSY_SHIFT))
+#define FLASH_SR_BSY_NO			(0 << (FLASH_SR_BSY_SHIFT))
 #define FLASH_SR_BSY_YES		(1 << (FLASH_SR_BSY_SHIFT))
 #define FLASH_SR_RDERR_SHIFT		8
 #define FLASH_SR_RDERR_MASK		(1 << (FLASH_SR_RDERR_SHIFT))
@@ -103,7 +103,7 @@ typedef struct {
 #define FLASH_SR_OPERR_YES		(1 << (FLASH_SR_OPERR_SHIFT))
 #define FLASH_SR_EOP_SHIFT		0
 #define FLASH_SR_EOP_MASK		(1 << (FLASH_SR_EOP_SHIFT))
-#define FLASH_SR_EOP_NO		(0 << (FLASH_SR_EOP_SHIFT))
+#define FLASH_SR_EOP_NO			(0 << (FLASH_SR_EOP_SHIFT))
 #define FLASH_SR_EOP_YES		(1 << (FLASH_SR_EOP_SHIFT))
 
   __IO uint32_t		PECR;           /* 0x10 */
